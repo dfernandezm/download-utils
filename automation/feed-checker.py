@@ -5,10 +5,9 @@
 # to own.
 FEEDS = [
        "http://showrss.info/feeds/818.rss",
+       "http://showrss.info/feeds/350.rss"
 
 ]
- # "http://showrss.info/feeds/505.rss",	
- # "http://showrss.info/feeds/27.rss"
 TIMESTAMP    = "/home/pi/rsstorrent.stamp"
 FORCED       = True
 
@@ -122,9 +121,9 @@ def save_timestamp(downloading_torrent):
 
 
 items = parse_feeds()
-last_check_date = check_timestamp()
-downloading_torrent = process_feeds(items, last_check_date)
-save_timestamp(downloading_torrent)
+#last_check_date = check_timestamp()
+#downloading_torrent = process_feeds(items, last_check_date)
+#save_timestamp(downloading_torrent)
 
 
 

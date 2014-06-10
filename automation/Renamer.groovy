@@ -50,19 +50,29 @@ tvShowsTitles = [
 
 @Field
 String acceptedFileRegex = "\\.(avi|mp4|srt|mkv)\$"
+
 @Field
 String regex1 = "[Ss]([0-9]{1,2})[Ee]([0-9]{1,2})[^0-9]"
+
 @Field
 String regex2 = "([0-9]{1,2})x([0-9]{1,2})[^0-9]"
+
+@Field
+String seasonDirectory = "[Ss](eason)*([0-9]{1,2})[^0-9]"
+
 @Field
 String renamedRegex = "(\\w+\\s)+([0-9]{1,2})x([0-9]{1,2})\\.(avi|mp4|srt|mkv)\$"
+
 @Field
 String titleRegex = "^(((\\w|\\(|\\))+(\\s|\\.|\\-))+)(([Ss](eason|\\d{1,2}))|(\\d{1,2}x))"
 
 @Field
 Pattern pattern1 = Pattern.compile(regex2)
+
 @Field
 Pattern pattern2 = Pattern.compile(regex1)
+
+
 @Field
 Pattern renamedPattern = Pattern.compile(renamedRegex)
 
