@@ -1,4 +1,4 @@
 #!/bin/sh
-MOUNT_POINT=/media/Elements_
+MOUNT_POINT=$DISK_MOUNT_POINT
 touch $MOUNT_POINT/keepAlive.txt
 rm $MOUNT_POINT/keepAlive.txt

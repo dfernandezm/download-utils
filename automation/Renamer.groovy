@@ -1,4 +1,3 @@
-package com.david.util
 import groovy.transform.Field
 
 import java.nio.file.Files
@@ -7,9 +6,6 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-/**
- * Created by david on 01/06/14.
- */
 
 basePath = args[0]
 def folderToOrganize
@@ -22,7 +18,6 @@ if (args.length > 1 && args[1].equals("-organize")) {
     renameFiles("$basePath/torrents", copyOriginal, false)
 }
 
-//def showName = args[1]
 @Field
 tvShowsTitles = [
         "24",
@@ -52,13 +47,13 @@ tvShowsTitles = [
 String acceptedFileRegex = "\\.(avi|mp4|srt|mkv)\$"
 
 @Field
-String regex1 = "[Ss]([0-9]{1,2})[Ee]([0-9]{1,2})[^0-9]"
+String regex1 = "[Ss](\\d{1,2})[Ee](\\d{1,2})\\D"
 
 @Field
-String regex2 = "([0-9]{1,2})x([0-9]{1,2})[^0-9]"
+String regex2 = "(\\d{1,2})x(\\d{1,2})\\D"
 
 @Field
-String seasonDirectory = "[Ss](eason)*([0-9]{1,2})[^0-9]"
+String seasonDirectoryRegex = "[Ss](eason(\\s|\\.|_)(\\d{1,2}))?(\\d{1,2})?\\D"
 
 @Field
 String renamedRegex = "(\\w+\\s)+([0-9]{1,2})x([0-9]{1,2})\\.(avi|mp4|srt|mkv)\$"
@@ -72,15 +67,13 @@ Pattern pattern1 = Pattern.compile(regex2)
 @Field
 Pattern pattern2 = Pattern.compile(regex1)
 
-
 @Field
 Pattern renamedPattern = Pattern.compile(renamedRegex)
 
-
-
 def isValidSubDirectory(File dir, String name, boolean enterAllSubdirectories) {
     File d = new File(dir.getAbsolutePath() + File.separator + name)
-    if (d.exists() && d.isDirectory() && (name.find(regex1) || name.find(regex2)) || enterAllSubdirectories) {
+    if (d.exists() && d.isDirectory() && (name.find(regex1) || name.find(regex2)
+        || name.find(seasonDirectoryRegex) || enterAllSubdirectories)) {
         println("Found valid subdirectory $name")
         return true
     } else {
