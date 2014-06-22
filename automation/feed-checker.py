@@ -23,7 +23,7 @@ from subprocess import check_output
 import shlex
 import logging
 
-logging.basicConfig(filename='/tmp/feed-checker.log',format='%(asctime)s %(message)s',level=logging.DEBUG)
+logging.basicConfig(filename='/var/log/download-utils/feed-checker.log',format='%(asctime)s %(message)s',level=logging.DEBUG)
 
 
 def execute_command(command):
