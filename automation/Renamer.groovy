@@ -9,14 +9,14 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 @Log4j
-class Renamer {
+class RenamerScript {
 
     static Logger LOG
     final static String TVDB_TV_SHOWS_FOLDER = "TV Shows"
     final static String LOG_FILE_LOCATION = "/opt/download-utils/logs/renamer.log"
 
     static {
-        String PATTERN = "%d{ABSOLUTE} %-5p [%c{1}] %m%n"
+        String PATTERN = "%d{dd-MM-yyyy HH:mm:ss} %-5p [%c{1}] %m%n"
         def simple = new PatternLayout(PATTERN)
         LogManager.rootLogger.level = Level.DEBUG
         LogManager.rootLogger.removeAllAppenders()
@@ -24,32 +24,7 @@ class Renamer {
         LOG = Logger.getLogger(Renamer.class)
     }
 
-    def tvShowsTitles = [
-                    "24",
-                    "Supernatural",
-                    "Big Bang Theory",
-                    "The Big Bang Theory",
-                    "Big Bang",
-                    "How I Met Your Mother",
-                    "The Wire",
-                    "Dexter",
-                    "Castle",
-                    "Game of Thrones",
-                    "The Walking Dead",
-                    "Sanctuary",
-                    "Spartacus",
-                    "Touch",
-                    "True Blood",
-                    "Black Mirror",
-                    "Bones",
-                    "Breaking Bad",
-                    "Sherlock",
-                    "Homeland",
-                    "Arrow",
-                    "The IT Crowd",
-                    "Family Guy",
-                    "The Community"
-            ]
+    def tvShowsTitles = []
     String acceptedFileRegex = "\\.(avi|mp4|srt|mkv)\$"
 
     // Seasons and episodes regex
@@ -68,10 +43,26 @@ class Renamer {
     String basePath
     String folderToOrganize
 
-    public Renamer(String basePath, String folderToOrganize) {
+    public RenamerScript(String basePath, String folderToOrganize) {
         this.basePath = basePath
         this.folderToOrganize = folderToOrganize
     }
+
+    def readTvShowsListing(String tvShowsFilePath) {
+        File f = new File(tvShowsFilePath)
+
+        f.eachLine { line ->
+            tvShowsTitles << line
+        }
+
+        LOG.debug("Read file containing TV Shows");
+        tvShowsTitles.each {
+            LOG.debug(it)
+        }
+    }
+
+
+
 
     /**
      * Checks whether the subdirectory found is valid or not to explore it
@@ -119,6 +110,10 @@ class Renamer {
         Path source = Paths.get(sourceFilePath)
         String destinationFilenamePath = destination.getAbsolutePath() + File.separator + source.fileName
         Files.move(source, Paths.get(destinationFilenamePath), StandardCopyOption.REPLACE_EXISTING)
+        File sourceDir = source.getParent().toFile()
+        if (sourceDir.isDirectory() && sourceDir.listFiles().length == 0) {
+            sourceDir.delete()
+        }
     }
 
     /**
@@ -228,11 +223,31 @@ class Renamer {
             String cleaned1 = titleSequence.replaceAll("\\.", " ")
             String cleaned2 = cleaned1.replaceAll("_", " ")
             String cleaned = cleaned2.replaceAll("-", " ")
-            String lowerStr = cleaned.toLowerCase();
+            String lowerStr = cleaned.toLowerCase().trim()
             for (int i = 0; i < tvShowsTitles.size(); i++) {
                 String currentTitle = tvShowsTitles.get(i)
-                def currentTitleNorm = currentTitle.toLowerCase()
+                def currentTitleNorm = currentTitle.toLowerCase().trim()
+                if (currentTitleNorm.startsWith(lowerStr)) {
+                    LOG.debug("Title is $currentTitle")
+                    return currentTitle
+                }
                 if (lowerStr.startsWith(currentTitleNorm)) {
+                    LOG.debug("Title is $currentTitle")
+                    return currentTitle
+                }
+
+                String[] currentTitleNormSplit = currentTitleNorm.split(" ")
+                String[] lowerStrNormSplit = lowerStr.split(" ")
+
+                def maxCoincidences = currentTitleNormSplit.size()
+                def actualCoincidences = 0
+                for (int j = 0; j < lowerStrNormSplit.size() ; j++) {
+                    if (j < currentTitleNormSplit.size() && lowerStrNormSplit[j].equals(currentTitleNormSplit[j])) {
+                        actualCoincidences++
+                    }
+                }
+
+                if (actualCoincidences > 0 && maxCoincidences > 2 && (actualCoincidences == (maxCoincidences - 1))) {
                     LOG.debug("Title is $currentTitle")
                     return currentTitle
                 }
@@ -248,23 +263,79 @@ class Renamer {
     def organizeFolder(String path) {
         renameFiles(path, false, true)
     }
+
+    def cleanup(String path) {
+
+        File baseDir = new File(path)
+
+        File[] files = baseDir.listFiles(new FilenameFilter() {
+            @Override
+            boolean accept(File dir, String name) {
+                return !name.find(acceptedFileRegex)  || !name.endsWith(".part");
+            }
+        })
+
+        for (int i = 0; i < files.length; i++) {
+            File f = files[i]
+            if (f.isDirectory()) {
+                String directoryName = f.getName()
+                LOG.debug("Entering directory to cleanup... $directoryName")
+                cleanup(f.getAbsolutePath())
+                if (f.listFiles().length == 0) {
+                    f.delete()
+                }
+            }
+            f.delete()
+        }
+    }
 }
 
-// Script handling
-basePath = args[0]
-def folderToOrganize
-def copyOriginal = false
+def main() {
+    def cli = new CliBuilder(usage: 'Renamer.groovy [--base-path downloadPath --tv-shows-file file.txt] [--organize folder]')
 
-if (args.length > 1 && args[1].equals("-organize")) {
-    folderToOrganize = args[2]
-    Renamer renamerScript = new Renamer(basePath, folderToOrganize)
-    renamerScript.organizeFolder(folderToOrganize)
-} else {
-    def renamerScript = new Renamer(basePath, null)
-    renamerScript.renameFiles("$basePath/torrents", copyOriginal, false)
+    cli.with {
+        h longOpt: 'help', 'Show usage information'
+        bp longOpt: 'base-path', args: 1, argName: 'path','Folder with downloads to organize'
+        f longOpt: 'tv-shows-file', args: 1, argName: 'file.txt', 'File containing a list of TV Shows to match against'
+        o longOpt: 'organize', args: 1, argName: 'path', 'Folder to organize into TVDB library'
+        cl longOpt: 'cleanup', args: 1, argName: 'path', 'Folder to clean, clears everything but the accepted files [avi|mp4|mkv|srt]'
+    }
+
+    def options = cli.parse(args)
+    if (!options) {
+        return
+    }
+
+    if (options.h) {
+        cli.usage()
+        return
+    }
+
+    RenamerScript renamerScript;
+
+    if (options.bp && options.f) {
+
+        renamerScript = new RenamerScript(options.bp, null)
+        renamerScript.readTvShowsListing(options.f)
+        println(options.bp)
+        def base = options.bp
+        renamerScript.renameFiles("$base/torrents", false, false)
+        return
+    }
+
+    if (options.o && options.f) {
+        renamerScript = new RenamerScript(options.o, null)
+        renamerScript.readTvShowsListing(options.f)
+        renamerScript.organizeFolder(options.o)
+        return
+    }
+
+    if (options.cl) {
+        renamerScript = new RenamerScript(options.cl, null)
+        renamerScript.cleanup(options.cl)
+    }
 }
 
-
-
+main()
 
 
