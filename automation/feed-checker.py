@@ -11,6 +11,7 @@ FEEDS = [
 
 TIMESTAMP    = "/home/pi/rsstorrent.stamp"
 FORCED       = True
+AUTH_TOKEN   = "transmission:ZVCvrasp"
 
 import feedparser
 import pickle
@@ -33,12 +34,13 @@ def execute_command(command):
 def download(torrent_name, magnet_link):
    logging.info('Downloading file %s', torrent_name)
    logging.debug("The magnet link is %s", magnet_link)  
-   execute_command("transmission-remote --add \"{magnet_link}\"".format(magnet_link=magnet_link))
+   execute_command("transmission-remote --auth {authToken} --add \"{magnet_link}\"".format(magnet_link=magnet_link,authToken=AUTH_TOKEN))
 
 
 def parse_feeds():
     global FEEDS
     items = []
+    bad_quality = []
     feed_bad = False
 
     # Build up a list of torrents to check
@@ -52,6 +54,8 @@ def parse_feeds():
                 logging.debug("Item read: %s", title)
                 if "720p" in title:    
                     items.append((item["published_parsed"], item))
+                else:
+                    bad_quality.append((item["published_parsed"], item))
         else:
             logging.warning("bad feed: %s",feed_url)     
             feed_bad = True
