@@ -1,0 +1,26 @@
+Transmission
+------------
+
+Logging
+=======
+
+CONFIG_DIR="/var/lib/transmission-daemon/info"
+LOG_FILE="/opt/download-utils/logs/transmission.log"
+
+# Default options for daemon, see transmission-daemon(1) for more options
+OPTIONS="--config-dir $CONFIG_DIR --logfile $LOG_FILE"
+
+Permissions
+===========
+
+sudo usermod -a -G pi debian-transmission
+sudo chmod 775 -R /opt/download-utils/logs
+sudo chown debian-transmission -R  /var/lib/transmission-daemon/
+sudo chgrp debian-transmission -R  /var/lib/transmission-daemon/
+sudo chown debian-transmission /etc/transmission-daemon
+
+# it should be less than 777
+sudo chmod -R 777 /var/lib/transmission-daemon
+
+sudo chown debian-transmission -R /etc/transmission-daemon
+

@@ -3,7 +3,10 @@
 # basic setup
 mkdir -p /opt/download-utils
 mkdir -p /opt/download-utils/logs
-chmod -R +x /opt/download-utils
+mkdir -p ~/.dutils
+chmod -R +wx /opt/download-utils
+cp create-envvars.sh .dutils
+chmod -R +x ~/.dutils
 
 source create-envvars.sh
 

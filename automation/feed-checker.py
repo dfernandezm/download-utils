@@ -9,9 +9,9 @@ FEEDS = [
        "http://showrss.info/feeds/350.rss"
 ]
 
-TIMESTAMP    = "/home/pi/rsstorrent.stamp"
-FORCED       = True
-AUTH_TOKEN   = "transmission:ZVCvrasp"
+TIMESTAMP = "/home/david/rsstorrent.stamp"
+FORCED = True
+AUTH_TOKEN = "transmission:ZVCvrasp"
 
 import feedparser
 import pickle
@@ -36,33 +36,60 @@ def download(torrent_name, magnet_link):
    logging.debug("The magnet link is %s", magnet_link)  
    execute_command("transmission-remote --auth {authToken} --add \"{magnet_link}\"".format(magnet_link=magnet_link,authToken=AUTH_TOKEN))
 
+def print_items(items):
+    items_str = ""
+    for it in items:
+        items_str += str(it[1]["title"]) + str(" // ")
+    logging.debug("Items is %s",items_str)
+
+
+# Given a read feed (current_item) checks whether to add it to the download list (items)
+# based on the quality indicated by its title, keeping the best quality or defaulting to 
+# regular quality
+def check_quality_to_add(current_item, items):
+    title = current_item["title"]
+    title_no_quality = title.replace("720p","").strip()
+
+    # Check if this title is already added to download (first match in the list)
+    item = next((x for x in items if title_no_quality in x[1]["title"]), None)
+    
+    if item == None:
+        logging.debug("Item was not previously added %s", title)
+        items.append((current_item["published_parsed"], current_item))
+    else:
+        logging.debug("Item was previously added %s", title)
+        logging.debug("Checking if new has better quality...")
+
+        if "720p" in item[1]["title"]:
+            logging.debug("Current item already has best quality. Keeping")
+        elif "720p" in title:
+            logging.debug("New item has 720p, replacing with new")
+            items.remove(item)
+            items.append((current_item["published_parsed"], current_item))
+        else:
+            logging.debug("No HD quality found for item. Keeping regular quality")
+
 
 def parse_feeds():
     global FEEDS
     items = []
-    bad_quality = []
     feed_bad = False
 
     # Build up a list of torrents to check
     for feed_url in FEEDS: 
         feed = feedparser.parse(feed_url)
 
-        # Valid feed ?
-        if feed["bozo"] != 1 or True:
+        # Valid feed?
+        if feed["bozo"] != 1:
             for item in feed["items"]:
                 title = item["title"]
-                logging.debug("Item read: %s", title)
-                if "720p" in title:    
-                    items.append((item["published_parsed"], item))
-                else:
-                    bad_quality.append((item["published_parsed"], item))
+                check_quality_to_add(item, items)
         else:
             logging.warning("bad feed: %s",feed_url)     
             feed_bad = True
     
     if not feed_bad:
-        # Sort by date
-        items.sort();    
+        items.sort()    
         return items
 
 
@@ -96,7 +123,7 @@ def process_feeds(items, last_check_date):
     downloading_torrent = False 
     
     for item in items:
-        # The 0 element of each item is the parsed timestamp
+        # The 0 element of each item (tuple) is the parsed timestamp
         id = item[0]
         item_date = datetime(id[0], id[1], id[2], id[3], id[4])
 
@@ -126,29 +153,4 @@ items = parse_feeds()
 last_check_date = check_timestamp()
 downloading_torrent = process_feeds(items, last_check_date)
 save_timestamp(downloading_torrent)
-
-
-
-
-
-
-
-
-
-
-
-
-
-# if not feed_bad and len(items) > 0:
-#    # stamp the timestamp file
-#     try:
-#         timestamp_file = open(TIMESTAMP, 'w')
-#         last_item = items[len(items)-1][0]
-#         last_item_date = datetime(last_item[0], last_item[1], last_item[2], last_item[3], last_item[4])
-
-#         pickle.dump(last_item_date, timestamp_file)
-
-#     except IOError:
-#         if VERBOSE:
-#             print "Cannot stamp file %s" % TIMESTAMP
 

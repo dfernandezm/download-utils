@@ -1,6 +1,7 @@
 import groovy.util.logging.Log4j
 import org.apache.log4j.*
 
+import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -31,8 +32,10 @@ class RenamerScript {
     String regex1 = "[Ss](\\d{1,2})[Ee](\\d{1,2})\\D"
     String regex2 = "(\\d{1,2})x(\\d{1,2})\\D"
     String seasonDirectoryRegex = "[Ss](eason(\\s|\\.|_)(\\d{1,2}))?(\\d{1,2})?\\D"
-    String renamedRegex = "(\\w+\\s)+([0-9]{1,2})x([0-9]{1,2})\\.(avi|mp4|srt|mkv)\$"
-    String titleRegex = "^(((\\w|\\(|\\))+(\\s|\\.|\\-|_))+)(([Ss](eason|\\d{1,2}))|(\\d{1,2}x))"
+    String renamedRegex = "^(\\w+\\s)+([0-9]{1,2})x([0-9]{1,2})\\.(avi|mp4|srt|mkv)\$"
+    String titleRegex = "^(([\\w\\(\\)]+[\\s\\.\\-_]+)+)(\\[)?(([Ss](eason|\\d{1,2}))|(\\d{1,2}x))(\\])?"
+
+
 
     // Pre compiled patterns
     Pattern pattern1 = Pattern.compile(regex2)
@@ -68,13 +71,11 @@ class RenamerScript {
      * Checks whether the subdirectory found is valid or not to explore it
      */
     def isValidSubDirectory(File dir, String name, boolean enterAllSubdirectories) {
+        LOG.debug("Entering subdirectoy $name")
         File d = new File(dir.getAbsolutePath() + File.separator + name)
         if (d.exists() && d.isDirectory() && (name.find(regex1) || name.find(regex2)
                 || name.find(seasonDirectoryRegex) || enterAllSubdirectories)) {
-           LOG.debug("Found valid subdirectory $name")
             return true
-        } else {
-            LOG.debug("Subdirectory not valid: $name")
         }
     }
 
@@ -111,7 +112,7 @@ class RenamerScript {
         String destinationFilenamePath = destination.getAbsolutePath() + File.separator + source.fileName
         Files.move(source, Paths.get(destinationFilenamePath), StandardCopyOption.REPLACE_EXISTING)
         File sourceDir = source.getParent().toFile()
-        if (sourceDir.isDirectory() && sourceDir.listFiles().length == 0) {
+        if (sourceDir.isDirectory() && !sourceDir.getName().contains("torrents") && sourceDir.listFiles().length == 0) {
             sourceDir.delete()
         }
     }
@@ -159,10 +160,10 @@ class RenamerScript {
                 if (filename.matches(renamedRegex)) {
                     Matcher matcher = renamedPattern.matcher(filename)
                     if (matcher.matches()) {
-                        def name = matcher.group(1)
+                        def name = matcher.group(1) // TODO: check this!!
                         def season = matcher.group(2)
                         LOG.debug("Already renamed $filename: $name $season -- moving")
-                        moveToTvDbFolder(file.getAbsolutePath(), name.trim(), season)
+                        moveToTvDbFolder(file.getAbsolutePath(), showName, season)
                     } else {
                         LOG.debug("Fail matcher")
                     }
@@ -193,13 +194,13 @@ class RenamerScript {
                 if (copyOriginal) {
                     File oldFilesFolder = new File("$path/old")
                     oldFilesFolder.mkdirs()
-                    Files.copy(Paths.get(file.getAbsolutePath()), Paths.get(oldFilesFolder.getAbsolutePath() + File.separator + filename))
+                    Files.copy(file.toPath(), Paths.get(oldFilesFolder.getAbsolutePath() + File.separator + filename))
                 }
 
                 def newPath = folder.getAbsolutePath() + File.separator + newName
 
                 // rename
-                Files.move(Paths.get(file.getAbsolutePath()), Paths.get(newPath), StandardCopyOption.REPLACE_EXISTING)
+                Files.move(file.toPath(), Paths.get(newPath), StandardCopyOption.REPLACE_EXISTING)
 
                 moveToTvDbFolder(newPath, showName, season)
             }
@@ -265,16 +266,16 @@ class RenamerScript {
     }
 
     def cleanup(String path) {
-
+        LOG.info("Cleaning up directory in path $path")
         File baseDir = new File(path)
 
         File[] files = baseDir.listFiles(new FilenameFilter() {
             @Override
             boolean accept(File dir, String name) {
-                return !name.find(acceptedFileRegex)  || !name.endsWith(".part");
+                return !name.find(acceptedFileRegex) && !name.endsWith(".part");
             }
         })
-
+        
         for (int i = 0; i < files.length; i++) {
             File f = files[i]
             if (f.isDirectory()) {
@@ -283,22 +284,25 @@ class RenamerScript {
                 cleanup(f.getAbsolutePath())
                 if (f.listFiles().length == 0) {
                     f.delete()
+                    LOG.debug("Deleting empty directory $directoryName")
                 }
             }
+            def fileToDelete = f.getName()
             f.delete()
+            LOG.debug("Deleting file $fileToDelete")
         }
     }
 }
 
 def main() {
-    def cli = new CliBuilder(usage: 'Renamer.groovy [--base-path downloadPath --tv-shows-file file.txt] [--organize folder]')
+    def cli = new CliBuilder(usage: 'Renamer.groovy [--base-path downloadPath --tv-shows-file file.txt] [--organize folder] [--cleanup]')
 
     cli.with {
         h longOpt: 'help', 'Show usage information'
         bp longOpt: 'base-path', args: 1, argName: 'path','Folder with downloads to organize'
         f longOpt: 'tv-shows-file', args: 1, argName: 'file.txt', 'File containing a list of TV Shows to match against'
         o longOpt: 'organize', args: 1, argName: 'path', 'Folder to organize into TVDB library'
-        cl longOpt: 'cleanup', args: 1, argName: 'path', 'Folder to clean, clears everything but the accepted files [avi|mp4|mkv|srt]'
+        cl longOpt: 'cleanup', 'Folder to clean, clears everything but the accepted files [avi|mp4|mkv|srt]'
     }
 
     def options = cli.parse(args)
@@ -319,7 +323,7 @@ def main() {
         renamerScript.readTvShowsListing(options.f)
         println(options.bp)
         def base = options.bp
-        renamerScript.renameFiles("$base/torrents", false, false)
+        renamerScript.renameFiles("$base/torrents", false, true)
         return
     }
 
@@ -330,12 +334,16 @@ def main() {
         return
     }
 
-    if (options.cl) {
-        renamerScript = new RenamerScript(options.cl, null)
-        renamerScript.cleanup(options.cl)
+    if (options.bp && options.cl) {
+        renamerScript = new RenamerScript(options.bp, null)
+        def base = options.bp
+        renamerScript.cleanup("$base/torrents")
     }
 }
 
-main()
-
+try {
+    main()
+} catch (Throwable t) {
+    RenamerScript.LOG.error("Error executing Groovy Script: " + t.getMessage(), t);
+}
 
