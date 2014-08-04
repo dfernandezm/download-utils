@@ -5,12 +5,11 @@
 # to own.
 
 FEEDS = [
-       "http://showrss.info/feeds/818.rss",
-       "http://showrss.info/feeds/350.rss"
+       "http://showrss.info/feeds/885.rss"
+       # "http://showrss.info/feeds/584.rss"
 ]
 
-TIMESTAMP = "/home/david/rsstorrent.stamp"
-FORCED = True
+TIMESTAMP = "/home/pi/rsstorrent.stamp"
 AUTH_TOKEN = "transmission:ZVCvrasp"
 
 import feedparser
@@ -61,7 +60,7 @@ def check_quality_to_add(current_item, items):
         logging.debug("Checking if new has better quality...")
 
         if "720p" in item[1]["title"]:
-            logging.debug("Current item already has best quality. Keeping")
+            logging.debug("Item already has best quality")
         elif "720p" in title:
             logging.debug("New item has 720p, replacing with new")
             items.remove(item)
@@ -82,7 +81,6 @@ def parse_feeds():
         # Valid feed?
         if feed["bozo"] != 1:
             for item in feed["items"]:
-                title = item["title"]
                 check_quality_to_add(item, items)
         else:
             logging.warning("bad feed: %s",feed_url)     
@@ -127,6 +125,9 @@ def process_feeds(items, last_check_date):
         id = item[0]
         item_date = datetime(id[0], id[1], id[2], id[3], id[4])
 
+        logging.info("Item %s has date %s", item[1]["title"], item_date)
+        logging.info("Last check date %s", last_check_date)
+
         if item_date > last_check_date:
             magnet_link = item[1]["link"].encode('unicode_escape')
             torrent_name = item[1]["title"]
@@ -145,7 +146,10 @@ def save_timestamp(downloading_torrent):
         try:
             logging.info("Saving timestamp file %s",TIMESTAMP)
             timestamp_file = open(TIMESTAMP, 'w')
-            pickle.dump(datetime.today(), timestamp_file)
+            # year, month, day, minute, second 
+            # date_dump = datetime(2014,7,21,2,0,0)
+            date_dump = datetime.today()
+            pickle.dump(date_dump, timestamp_file)
         except IOError:
             logging.warning("Cannot stamp file %s",TIMESTAMP) 
 

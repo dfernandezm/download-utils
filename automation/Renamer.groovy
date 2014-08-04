@@ -14,6 +14,7 @@ class RenamerScript {
 
     static Logger LOG
     final static String TVDB_TV_SHOWS_FOLDER = "TV Shows"
+    final static String MOVIES_FOLDER = "Movies"
     final static String LOG_FILE_LOCATION = "/opt/download-utils/logs/renamer.log"
 
     static {
@@ -258,8 +259,100 @@ class RenamerScript {
         }
     }
 
+
     /**
-     Given a folder path, renames and moves files to baseTvDb folder root in order to be recognised by the scraper
+     * Renames and moves possible movies, matching with list
+     */
+    def renameAndMoveMovies(String path) {
+        
+        LOG.debug("Looking up movies in path $path...")
+
+        File folder = new File(path)
+
+        if (folder.exists()) {
+
+            File[] files = folder.listFiles(new FilenameFilter() {
+                @Override
+                boolean accept(File dir, String name) {
+                    return name.find(acceptedFileRegex) || isValidSubDirectory(dir, name, true)
+                }
+            })
+
+            LOG.info("Checking " + files.length + " in folder " + folder.getAbsolutePath())
+
+            for (int i = 0; i < files.length; i++) {
+
+                File file = files[i]
+
+                if (file.isDirectory()) {
+                    renameAndMoveMovies(file.getAbsolutePath())
+                    continue
+                }
+
+                String filename = file.getName();
+                String extension = filename.substring(filename.lastIndexOf("."))
+
+                String cleaned1 = filename.replaceAll("\\.", " ")
+                String cleaned2 = cleaned1.replaceAll("_", " ")
+                String cleaned = cleaned2.replaceAll("-", " ")
+                String lowerStr = cleaned.toLowerCase().trim()
+
+                String movieTitle = "movie_" + System.currentTimeInMillis()
+
+                for (int i = 0; i < moviesTitles.size(); i++) {
+                    
+                    String currentTitle = moviesTitles.get(i)
+                    def currentTitleNorm = currentTitle.toLowerCase().trim()
+                    
+                    if (currentTitleNorm.startsWith(lowerStr)) {
+                        LOG.debug("Title is $currentTitle")
+                        movieTitle = currentTitle
+                        break
+                    }
+                    
+                    if (lowerStr.startsWith(currentTitleNorm)) {
+                        LOG.debug("Title is $currentTitle")
+                        movieTitle = currentTitle
+                        break
+                    }
+
+                    String[] currentTitleNormSplit = currentTitleNorm.split(" ")
+                    String[] lowerStrNormSplit = lowerStr.split(" ")
+
+                    def maxCoincidences = currentTitleNormSplit.size()
+                    def actualCoincidences = 0
+                    
+                    for (int j = 0; j < lowerStrNormSplit.size() ; j++) {
+                        if (j < currentTitleNormSplit.size() && lowerStrNormSplit[j].equals(currentTitleNormSplit[j])) {
+                            actualCoincidences++
+                        }
+                    }
+
+                    if (maxCoincidences > 1 && (actualCoincidences >= (maxCoincidences - 1))) {
+                        LOG.debug("Title is $currentTitle")
+                        movieTitle = currentTitle
+                        break
+                    }
+                }
+
+                String newMovieName = movieTitle + "." + extension 
+
+                File movieFolder = new File(basePath + File.separator + MOVIES_FOLDER + File.separator + movieTitle)
+                movieFolder.mkdirs()
+
+                String moviePath = movieFolder.getAbsolutePath() + File.separator + newMovieName  
+
+                // rename and move
+                Files.move(file.toPath(), Paths.get(moviePath), StandardCopyOption.REPLACE_EXISTING)
+
+                LOG.info("File moved $filename -> $moviePath")
+            }                
+        }
+    }
+
+
+    /**
+    * Given a folder path, renames and moves files to baseTvDb folder root in order to be recognised by the scraper
     */
     def organizeFolder(String path) {
         renameFiles(path, false, true)
