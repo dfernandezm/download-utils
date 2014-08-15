@@ -1,17 +1,17 @@
 #!/usr/bin/python
 
-# List of url feeds to be parsed. This entry is just an _example_. Please
-# do not download illegal torrents or torrents that you do not have permisson
-# to own.
+# List of url feeds to be parse
 
 FEEDS = [
-       "http://showrss.info/feeds/885.rss"
-       # "http://showrss.info/feeds/584.rss"
+    "http://showrss.info/feeds/885.rss"
+  # "http://showrss.info/feeds/584.rss"
 ]
 
 TIMESTAMP = "/home/pi/rsstorrent.stamp"
 AUTH_TOKEN = "transmission:ZVCvrasp"
+SERIES_EPISODE_REGEX = "^(([\w\(\)]+[\s\.\-_]+)+)(\[)?(([Ss](eason|\d{1,2}))|(\d{1,2})x(\d{1,2}))(\])?"
 
+import re
 import feedparser
 import pickle
 import os
@@ -27,7 +27,7 @@ logging.basicConfig(filename='/opt/download-utils/logs/feed-checker.log',format=
 def execute_command(command):
     p = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
     (output, err) = p.communicate()
-    logging.debug("Output for the command is %s", output)
+    logging.debug("Output for the command is %s - %s", output)
 
 
 def download(torrent_name, magnet_link):
@@ -42,46 +42,61 @@ def print_items(items):
     logging.debug("Items is %s",items_str)
 
 
-# Given a read feed (current_item) checks whether to add it to the download list (items)
+# Given a read feed (current_item) adds it to the download list (items)
 # based on the quality indicated by its title, keeping the best quality or defaulting to 
 # regular quality
-def check_quality_to_add(current_item, items):
+
+def check_quality_to_add(compiledRegex, current_item, items, list_added):
     title = current_item["title"]
-    title_no_quality = title.replace("720p","").strip()
+    matchObj = compiledRegex.search(title)
+    series_name = str(matchObj.group(1))
+    season = str(matchObj.group(7))
+    episode = str(matchObj.group(8))
 
-    # Check if this title is already added to download (first match in the list)
-    item = next((x for x in items if title_no_quality in x[1]["title"]), None)
-    
-    if item == None:
-        logging.debug("Item was not previously added %s", title)
-        items.append((current_item["published_parsed"], current_item))
-    else:
-        logging.debug("Item was previously added %s", title)
-        logging.debug("Checking if new has better quality...")
+    full_name = series_name.strip() + "_" + season + "x" + episode.zfill(2)
+    full_name_quality = full_name + "_720p"
+    logging.debug("Parsed from original title %s // %s", full_name, full_name_quality)
 
-        if "720p" in item[1]["title"]:
-            logging.debug("Item already has best quality")
-        elif "720p" in title:
-            logging.debug("New item has 720p, replacing with new")
-            items.remove(item)
-            items.append((current_item["published_parsed"], current_item))
+    if "720p" in title: 
+        if full_name_quality in list_added:
+            logging.debug("Quality 720p has already been added")
+        elif full_name in list_added:
+            logging.debug("Replacing standard quality with 720p")
+            list_added.remove(full_name)
+            list_added.append(full_name_quality)
+            to_remove = next((x for x in items if full_name == x[2]), None)
+            logging.debug("Item to remove: %s",to_remove[1]["title"])
+            items.remove(to_remove)
+            items.append((current_item["published_parsed"], current_item, full_name_quality))
         else:
-            logging.debug("No HD quality found for item. Keeping regular quality")
+            logging.debug("Adding 720p quality")
+            list_added.append(full_name_quality)
+            items.append((current_item["published_parsed"], current_item, full_name_quality))
+    else:
+        if full_name_quality in list_added:
+            logging.debug("Quality 720p has already been added")
+        elif full_name in list_added:
+            logging.debug("Standard quality has already been added")
+        else:
+            logging.debug("Adding standard quality")
+            list_added.append(full_name)
+            items.append((current_item["published_parsed"], current_item, full_name))
 
 
-def parse_feeds():
+def parse_feeds(compiledRegex):
     global FEEDS
     items = []
     feed_bad = False
+    list_added = []
 
     # Build up a list of torrents to check
     for feed_url in FEEDS: 
         feed = feedparser.parse(feed_url)
-
         # Valid feed?
         if feed["bozo"] != 1:
             for item in feed["items"]:
-                check_quality_to_add(item, items)
+                # print_items(items)
+                check_quality_to_add(compiledRegex, item, items, list_added)
         else:
             logging.warning("bad feed: %s",feed_url)     
             feed_bad = True
@@ -97,7 +112,7 @@ def check_timestamp():
 
     # Just default to now in case there is no stamp file
     # last_check_date = datetime.today()
-    last_check_date = datetime(2014,6,6,1,0,0)
+    last_check_date = datetime(2014,8,5,2,0,0)
     logging.info("Default last_check_date is %s", last_check_date)
 
     # Check to read the stamp file to see when we last checked for new torrents
@@ -132,7 +147,6 @@ def process_feeds(items, last_check_date):
             magnet_link = item[1]["link"].encode('unicode_escape')
             torrent_name = item[1]["title"]
             logging.info("Item detected to download: %s",torrent_name)
-            magnet_link = item[1]["link"].encode('unicode_escape')
             download(torrent_name, magnet_link)
             downloading_torrent = True
 
@@ -145,7 +159,7 @@ def save_timestamp(downloading_torrent):
     else:
         try:
             logging.info("Saving timestamp file %s",TIMESTAMP)
-            timestamp_file = open(TIMESTAMP, 'w')
+            # timestamp_file = open(TIMESTAMP, 'w')
             # year, month, day, minute, second 
             # date_dump = datetime(2014,7,21,2,0,0)
             date_dump = datetime.today()
@@ -153,7 +167,8 @@ def save_timestamp(downloading_torrent):
         except IOError:
             logging.warning("Cannot stamp file %s",TIMESTAMP) 
 
-items = parse_feeds()
+compiledRegex = re.compile(SERIES_EPISODE_REGEX)
+items = parse_feeds(compiledRegex)
 last_check_date = check_timestamp()
 downloading_torrent = process_feeds(items, last_check_date)
 save_timestamp(downloading_torrent)
