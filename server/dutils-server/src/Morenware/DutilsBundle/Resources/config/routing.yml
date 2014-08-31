@@ -1,0 +1,3 @@
+morenware_dutils_homepage:
+    path:     /hello/{name}
+    defaults: { _controller: MorenwareDutilsBundle:Default:index }

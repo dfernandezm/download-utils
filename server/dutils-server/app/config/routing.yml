@@ -1,0 +1,4 @@
+morenware_dutils:
+    resource: "@MorenwareDutilsBundle/Resources/config/routing.yml"
+    prefix:   /
+
