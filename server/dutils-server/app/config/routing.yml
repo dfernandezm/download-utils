@@ -1,4 +1,11 @@
 morenware_dutils:
     resource: "@MorenwareDutilsBundle/Resources/config/routing.yml"
-    prefix:   /
+    prefix:   /base
+    
+morenware_dutils_rest:
+    type: rest
+    resource: "@MorenwareDutilsBundle/Resources/config/routing-rest.yml"
+    prefix:   /rest
+    
+
 

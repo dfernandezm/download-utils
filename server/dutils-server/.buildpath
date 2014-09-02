@@ -25,6 +25,8 @@
 	<buildpathentry kind="src" path="vendor/composer"/>
 	<buildpathentry kind="src" path="vendor/twig/extensions/lib"/>
 	<buildpathentry kind="src" path="vendor/doctrine/inflector/lib"/>
+	<buildpathentry kind="src" path="vendor/jms"/>
+	<buildpathentry kind="src" path="vendor/friendsofsymfony"/>
 	<buildpathentry kind="con" path="org.eclipse.php.core.LANGUAGE"/>
 	<buildpathentry kind="src" path="vendor/symfony/symfony/src/Symfony/Component/Intl/Resources/stubs"/>
 	<buildpathentry kind="src" path="vendor/kriswallsmith/assetic/src"/>

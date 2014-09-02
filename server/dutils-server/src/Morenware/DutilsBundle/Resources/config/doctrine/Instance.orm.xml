@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="Morenware\DutilsBundle\Entity\Instance" table="instance">
+        <id name="id" type="integer">
+            <generator strategy="AUTO" />
+        </id>
+        <field name="name" column="name" type="string" length="100" />
+        <field name="sshPort" column="ssh_port" type="integer" />
+        <field name="osFamily" column="os_family" type="string" length="40" />
+        <field name="osName" column="os_name" type="string" length="40" />
+        <field name="description" type="text" />
+    </entity>
+</doctrine-mapping>

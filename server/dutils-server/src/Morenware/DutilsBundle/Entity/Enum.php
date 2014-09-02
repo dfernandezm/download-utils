@@ -1,5 +1,5 @@
 <?php
-namespace Morenwar\DutilsBundle\Entity;
+namespace Morenware\DutilsBundle\Entity;
 abstract class Enum
 {
     final public function __construct($value)
