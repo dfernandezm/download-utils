@@ -73,3 +73,28 @@ swiftmailer:
     username:  "%mailer_user%"
     password:  "%mailer_password%"
     spool:     { type: memory }
+    
+fos_rest:
+    disable_csrf_role: ROLE_API
+    view:
+        formats:
+            json: true
+        view_response_listener: 'force'
+    param_fetcher_listener: true
+    body_listener: true
+    format_listener: true
+    
+sensio_framework_extra:
+    view:
+        annotations: false
+
+jms_di_extra:
+    automatic_controller_injections:
+        properties:
+            request: "@request"
+            router: "@router"
+
+        method_calls:
+            setRouter: ["@router"]
+
+        

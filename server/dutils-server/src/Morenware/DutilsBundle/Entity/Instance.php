@@ -59,7 +59,6 @@ class Instance {
 	}
 	public function setId($id) {
 		$this->id = $id;
-		return $this;
 	}
 	
 	

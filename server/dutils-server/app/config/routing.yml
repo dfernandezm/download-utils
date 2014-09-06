@@ -5,7 +5,7 @@ morenware_dutils:
 morenware_dutils_rest:
     type: rest
     resource: "@MorenwareDutilsBundle/Resources/config/routing-rest.yml"
-    prefix:   /rest
+    prefix:   /api
     
 
 

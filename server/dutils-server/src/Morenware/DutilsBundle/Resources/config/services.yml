@@ -1,7 +1,9 @@
 parameters:
-#    morenware_dutils.example.class: Morenware\DutilsBundle\Example
+  morenware_dutils.instance.class: Morenware\DutilsBundle\Entity\Instance
+  morenware_dutils.instance.service.class: Morenware\DutilsBundle\Service\InstanceService
+    
 
 services:
-#    morenware_dutils.example:
-#        class: %morenware_dutils.example.class%
-#        arguments: [@service_id, "plain_value", %parameter%]
+    morenware_dutils.instance.service:
+        class: %morenware_dutils.instance.service.class%
+        arguments: [@doctrine.orm.entity_manager, %morenware_dutils.instance.class%]
