@@ -10,12 +10,19 @@
     <title>Download Utils Manager</title>
     
       	{% block stylesheets %}
-            <link href="{{ asset('client/css/bootstrap.min.css') }}" rel="stylesheet" />
-            <link href="{{ asset('client/css/plugins/metisMenu/metisMenu.min.css') }}" rel="stylesheet" />
-            <link href="{{ asset('client/css/plugins/timeline.css') }}" rel="stylesheet" />
-            <link href="{{ asset('client/css/sb-admin-2.css') }}" rel="stylesheet" />
-            <link href="{{ asset('client/css/plugins/morris.css') }}" rel="stylesheet" />
-            <link href="{{ asset('client/font-awesome-4.1.0/css/font-awesome.min.css') }}" rel="stylesheet" />
+      	
+      	  {% stylesheets  output="css/all.css"
+      	  	'@bootstrap_css'
+    		'@MorenwareDutilsBundle/Resources/public/css/plugins/metisMenu/metisMenu.css'
+    		'@MorenwareDutilsBundle/Resources/public/css/sb-admin-2.css'
+    		'@MorenwareDutilsBundle/Resources/public/font-awesome-4.1.0/fonts/*.ttf'
+    		'@MorenwareDutilsBundle/Resources/public/font-awesome-4.1.0/css/font-awesome.css'	
+    	
+		   %}
+      	
+            <link href="{{ asset_url }}" rel="stylesheet" />
+            
+          {% endstylesheets %}   
             
         {% endblock %}
 
@@ -153,11 +160,16 @@
     </div>
     <!-- /#wrapper -->
 
-    {% block javascripts %}
-            <script src="{{ asset('client/js/jquery-1.11.0.js') }}"></script>
-            <script src="{{ asset('client/js/bootstrap.min.js') }}"></script>
-            <script src="{{ asset('client/js/plugins/metisMenu/metisMenu.min.js') }}"></script>
-            <script src="{{ asset('client/js/sb-admin-2.js') }}"></script>
+    {% block javascripts  %}
+    
+	    {% javascripts 
+		    '@jquery'
+			'@bootstrap_js'
+	        '@MorenwareDutilsBundle/Resources/public/js/plugins/metisMenu/metisMenu.min.js'
+	        '@MorenwareDutilsBundle/Resources/public/js/sb-admin-2.js'  %}
+	            <script type="text/javascript" src="{{ asset_url }}"></script>
+	    {%  endjavascripts %} 
+    
     {% endblock %}
 
 </html>
