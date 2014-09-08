@@ -1,113 +1,80 @@
 <?php
 namespace Morenware\DutilsBundle\Controller;
 
-use FOS\RestBundle\Controller\FOSRestController;
-use FOS\RestBundle\Controller\Annotations;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Morenware\DutilsBundle\Entity\Instance;
-use Morenware\DutilsBundle\Form\InstanceType;
 use Symfony\Component\HttpFoundation\Request;
-use FOS\RestBundle\Util\Codes;
-use Symfony\Component\HttpFoundation\Response;
-use FOS\RestBundle\View\View;
 use JMS\DiExtraBundle\Annotation as DI;
-class InstanceController extends FOSRestController {
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
+
+/**
+ * @Route("/api")
+ */
+class InstanceController {
 	
-	/** @DI\Inject("morenware_dutils.instance.service") */
+	/** @DI\Inject("instance.service") */
 	private $instanceService;
 	
-	/** @DI\Inject("fos_rest.view_handler") */
-	private $fosRestViewHandler;
+	/** @DI\Inject("jms_serializer") */
+	private $serializer;
+	
+	/** @DI\Inject("torrent.feed.service") */
+	private $torrentService;
+	
 	
 	/**
 	 * Get single Instance,
 	 *
+     * @Route("/instances/{id}")
+     * @Method("GET")
 	 *
-	 * @Annotations\View(templateVar="instance")
-	 *
-	 * @param Request $request the request object
-	 * @param int     $id      the page id
-	 *
-	 * @return array
-	 *
-	 * @throws NotFoundHttpException when page not exist
 	 */
-	public function getInstanceAction($id)
-	{
+	public function getInstanceAction($id) {
 		$instance = $this->instanceService->find($id);
 	
 		if (!$instance) {
-			throw new NotFoundHttpException(sprintf('The resource %s was not found',$id));
+			$error = array(
+					"error" => "The required resource was not found",
+					"errorCode" => 404);
+			
+			return $this->createJsonResponseWithArray($error, 404);	
 		}
 		
- 		$view = View::create()
- 		->setStatusCode(200)
- 		->setData($instance)
- 		->setFormat('json');
-
-		return $this->fosRestViewHandler->handle($view);
+		return $this->createJsonResponseWithDto($instance);
 	}
 	
-	/*
-	* @Annotations\View(
-	*  statusCode = Codes::HTTP_BAD_REQUEST,
-	*  templateVar = "instanceForm"
-	* )
-	*
-	* @param Request $request the request object
-	*
-	* @return FormTypeInterface|View
-	*/
-	public function postInstanceAction(Request $request)
-	{
-		try {
-			$params = $request->request->all();
-			$newInstance = $this->handlePost($params);
+	/**
+	 * Create instance.
+	 *
+     * @Route("/instances")
+     * @Method("POST")
+     * 
+     * @ParamConverter("instance", class="Entity\Instance", options={"json_property" = "instance"})
+	 *
+	 */
+	public function postInstanceAction(Instance $instance) {
 			
-			
-			if (is_array($newInstance)) {
-				//BAD Request
-				return null;
-			} else {
-				$view = View::create()
-				->setStatusCode(200)
-				->setData($newInstance)
-				->setFormat('json');
-				
-				return $this->get('fos_rest.view_handler')->handle($view);
-			}
-			
-	
-		} catch (InvalidFormException $exception) {
+		if (!$instance->getId()) {
+			$this->instanceService->persist($instance);
+			return $this->createJsonResponseWithDto($instance, 201);
+		} else {
 
-			return $exception->getForm();
+			return $this->createJsonResponseWithArray(array("error"=>"ID found, use PUT to update", "errorCode" => 405), 405);
 		}
 	}
-
 	
-    function handlePost(array $parameters) {
-		$instance = new Instance();
-		return $this->processForm($instance, $parameters, 'POST');
-		
+	
+	
+	private function createJsonResponseWithDto($object, $statusCode = 200) {
+		$data = json_decode($this->serializer->serialize($object, 'json'));
+		return new JsonResponse($data, $statusCode);
 	}
 	
-	
-	private function processForm(Instance $instance, array $parameters, $method = "POST") {
-		$formFactory = $this->container->get('form.factory');
-		$instanceService = $this->container->get('morenware_dutils.instance.service');
-		$form = $formFactory->create(new InstanceType(), $instance, array('method' => $method));
-		$form->submit($parameters, 'PATCH' !== $method);
-		if ($form->isValid()) {
-	
-			$instance = $form->getData();
-			$instanceService->persist($instance);
-	
-			return $instance;
-		}
-	
-		return array('result'=>false, 'form'=>$form);
+	private function createJsonResponseWithArray($array, $statusCode = 200) {
+		return new JsonResponse($array, $statusCode);
 	}
-	
-	
 	
 }

@@ -1,6 +1,10 @@
 <?php
-namespace Morenwar\DutilsBundle\Service;
+namespace Morenware\DutilsBundle\Service;
+use JMS\DiExtraBundle\Annotation\Service;
 
+/**
+ * @Service("torrent.feed.service")
+ */
 class TorrentFeedService {
 
 

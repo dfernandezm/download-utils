@@ -10,7 +10,9 @@ class Instance {
 	private $sshPort;
 	private $description;
 	
-	
+	public function __construct() {
+		
+	}
 	
 	public function getName() {
 		return $this->name;
@@ -27,7 +29,6 @@ class Instance {
 
 	public function setOsFamily($osFamily) {
 		$this->osFamily = $osFamily;
-		return $this;
 	}
 
 	public function getOsName() {
@@ -36,7 +37,6 @@ class Instance {
 	
 	public function setOsName($osName) {
 		$this->osName = $osName;
-		return $this;
 	}
 	
 	public function getSshPort() {
@@ -45,18 +45,21 @@ class Instance {
 	
 	public function setSshPort($sshPort) {
 		$this->sshPort = $sshPort;
-		return $this;
 	}
+	
 	public function getDescription() {
 		return $this->description;
 	}
+	
 	public function setDescription($description) {
 		$this->description = $description;
 		return $this;
 	}
+	
 	public function getId() {
 		return $this->id;
 	}
+	
 	public function setId($id) {
 		$this->id = $id;
 	}

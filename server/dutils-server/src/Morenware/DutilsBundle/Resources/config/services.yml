@@ -2,8 +2,8 @@ parameters:
   morenware_dutils.instance.class: Morenware\DutilsBundle\Entity\Instance
   morenware_dutils.instance.service.class: Morenware\DutilsBundle\Service\InstanceService
     
-
 services:
-    morenware_dutils.instance.service:
+   instance.service:
         class: %morenware_dutils.instance.service.class%
         arguments: [@doctrine.orm.entity_manager, %morenware_dutils.instance.class%]
+   
