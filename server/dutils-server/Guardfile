@@ -1,0 +1,18 @@
+# More info at https://github.com/guard/guard#readme
+
+ignore %r{^node_modules/}
+
+#
+# Start the Guards running!
+#
+
+guard 'livereload' do
+  watch(%r{^src/Morenware/DutilsBundle/Resources/(.+)\.css}) { |m| ".css" }
+  watch(%r{^src/Morenware/DutilsBundle/Resources/(.+)\.js}) { |m| ".js" }
+  watch(%r{^src/Morenware/DutilsBundle/Resources/(.+)\.(png|jpg|jpeg|gif)}) { |m| "#{m[1]}.#{m[2]}" }
+  watch(%r{^src/Morenware/DutilsBundle/Resources/(.+)\.(html|html.twig)}) { |m| ".html" }
+end
+
+guard 'rake', :task => 'lint_coffeescript' do
+  watch(%r{^src/Morenware/DutilsBundle/Resources/client/app.*\.coffee$})
+end
