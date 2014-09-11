@@ -9,6 +9,7 @@ class Instance {
 	private $osName;
 	private $sshPort;
 	private $description;
+	private $domain;
 	
 	public function __construct() {
 		
@@ -63,6 +64,9 @@ class Instance {
 	public function setId($id) {
 		$this->id = $id;
 	}
+	
+	
+	
 	
 	
 }

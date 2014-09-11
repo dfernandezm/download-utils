@@ -10,7 +10,8 @@
         <field name="name" column="name" type="string" length="100" />
         <field name="sshPort" column="ssh_port" type="integer" />
         <field name="osFamily" column="os_family" type="string" length="40" />
-        <field name="osName" column="os_name" type="string" length="40" />
-        <field name="description" type="text" />
+        <field name="osName" column="os_name" type="string" length="40" nullable="true" />
+        <field name="description" type="text" nullable="true" />
+        <field name="domain" type="string" length="60" />
     </entity>
 </doctrine-mapping>
