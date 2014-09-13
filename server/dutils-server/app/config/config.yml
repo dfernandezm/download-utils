@@ -41,6 +41,9 @@ assetic:
         bootstrap_js:
             inputs:
                 - '@MorenwareDutilsBundle/Resources/public/js/lib/bootstrap.min.js'
+        angular_js:
+            inputs:
+                - '@MorenwareDutilsBundle/Resources/public/js/lib/angular.min.js'
         bootstrap_css:
             inputs:
                 - '@MorenwareDutilsBundle/Resources/public/css/base/bootstrap.min.css'    

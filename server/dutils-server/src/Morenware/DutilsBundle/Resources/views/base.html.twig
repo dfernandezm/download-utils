@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="dutilsApp">
    
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -160,15 +160,27 @@
     <!-- /#wrapper -->
 
     {% block javascripts  %}
-    
+        
 	    {% javascripts 
 		    '@jquery'
 			'@bootstrap_js'
 	        '@MorenwareDutilsBundle/Resources/public/js/plugins/metisMenu/metisMenu.min.js'
 	        '@MorenwareDutilsBundle/Resources/public/js/sb-admin-2.js'
-	        '@MorenwareDutilsBundle/Resources/public/js/app/*'  %}
+	          %}
 	            <script type="text/javascript" src="{{ asset_url }}"></script>
 	    {%  endjavascripts %} 
+	    
+	    <script type="text/javascript" src="{{ asset('client/js/lib/angular.min.js') }}"></script>
+	    <script type="text/javascript" src="{{ asset('client/js/lib/angular-route.min.js') }}"></script>
+
+	    {% javascripts output="init.js"
+	        '@MorenwareDutilsBundle/Resources/public/js/app/init.js'
+	          %}
+	            <script type="text/javascript" src="{{ asset_url }}"></script>
+	    {%  endjavascripts %} 
+	    
+	    
+	   
 	   
     {% endblock %}
 
