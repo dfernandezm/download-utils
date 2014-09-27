@@ -22,10 +22,13 @@ class InstanceController {
 	private $instanceService;
 	
 	/** @DI\Inject("jms_serializer") */
-	private $serializer;
+	private $serializer;   
 	
 	/** @DI\Inject("torrent.feed.service") */
 	private $torrentService;
+	
+	/** @DI\Inject("logger") */
+	private $logger;
 	
 	
 	/**
@@ -37,7 +40,9 @@ class InstanceController {
 	 */
 	public function getInstanceAction($id) {
 		$instance = $this->instanceService->find($id);
-	
+		
+		$this->logger->info('This is a log message I put here');
+		
 		if (!$instance) {
 			$error = array(
 					"error" => "The required resource was not found",
