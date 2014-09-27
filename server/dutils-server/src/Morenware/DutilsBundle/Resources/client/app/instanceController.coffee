@@ -1,4 +1,4 @@
-angular.module('dutilsApp').controller 'instanceController', ['$scope', 'apiFactory', ($scope, apiFactory) ->
+angular.module('dutilsApp').controller 'instanceController', ['$scope', 'apiFactory',  '$route', '$routeParams', ($scope, apiFactory) ->
   
   resolve = (promise, successCallback, errorCallback) ->
     promise().success(successCallback).error(errorCallback)

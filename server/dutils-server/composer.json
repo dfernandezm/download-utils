@@ -1,8 +1,8 @@
 {
-	"name" : "symfony/framework-standard-edition",
+	"name" : "Download Utils Organiser",
 	"license" : "MIT",
 	"type" : "project",
-	"description" : "The \"Symfony Standard Edition\" distribution",
+	"description" : "Tool to organise and automate downloads",
 	"autoload" : {
 		"psr-0" : {
 			"" : "src/",
@@ -60,5 +60,6 @@
 		"branch-alias" : {
 			"dev-master" : "2.5-dev"
 		}
-	}
+	},
+	"minimum-stability" : "stable"
 }

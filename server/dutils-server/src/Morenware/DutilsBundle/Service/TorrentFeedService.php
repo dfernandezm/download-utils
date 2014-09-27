@@ -4,9 +4,6 @@ use JMS\DiExtraBundle\Annotation\Service;
 use JMS\DiExtraBundle\Annotation as DI;
 use Doctrine\Common\Persistence\ObjectManager;
 
-/**
- * @Service("torrent.feed.service")
- */
 class TorrentFeedService {
 
 	private $em;
@@ -41,4 +38,20 @@ class TorrentFeedService {
 		return $this->repository->findAll();
 	}
 
+	
+	public function checkFeedsForTorrents() {
+
+		// list all feeds
+		// marshall to objects
+		// check dates
+		
+		
+		
+	}
+	
+	
+	
+	
+	
+	
 }

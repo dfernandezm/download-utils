@@ -1,3 +1,5 @@
+require '../lib/angular.min.js'
+require '../lib/angular-route.min.js'
 require './setup.coffee'
 require './apiFactory.coffee'
 require './instanceController.coffee'

@@ -24,7 +24,7 @@ class InstanceController {
 	/** @DI\Inject("jms_serializer") */
 	private $serializer;   
 	
-	/** @DI\Inject("torrent.feed.service") */
+	/** @DI\Inject("torrentfeed.service") */
 	private $torrentService;
 	
 	/** @DI\Inject("logger") */

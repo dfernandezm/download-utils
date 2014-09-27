@@ -2,7 +2,6 @@
 namespace Morenware\DutilsBundle\Service;
 
 use Doctrine\Common\Persistence\ObjectManager;
-use Symfony\Component\Form\FormFactoryInterface;
 use Morenware\DutilsBundle\Form\InstanceType;
 use Morenware\DutilsBundle\Entity\Instance;
 use JMS\DiExtraBundle\Annotation as DI;
@@ -12,9 +11,6 @@ class InstanceService {
 	private $em;
 	
 	private $repository;
-	
-	/** @DI\Inject("torrent.feed.service") */
-	private $torrentService;
 	
 	public function __construct(ObjectManager $em, $entityClass) {
 		$this->em = $em;
