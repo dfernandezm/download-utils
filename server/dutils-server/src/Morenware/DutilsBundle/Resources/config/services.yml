@@ -5,10 +5,10 @@ parameters:
   morenware_dutils.torrentfeed.service.class: Morenware\DutilsBundle\Service\TorrentFeedService
     
 services:
-   instance.service:
-        class: %morenware_dutils.instance.service.class%
-        arguments: [@doctrine.orm.entity_manager, %morenware_dutils.instance.class%]
-   torrentfeed.service:
-        class: %morenware_dutils.torrentfeed.service.class%
-        arguments: [@doctrine.orm.entity_manager, %morenware_dutils.torrentfeed.class%]
-   
+#   instance.service:
+#        class: %morenware_dutils.instance.service.class%
+#        arguments: [%morenware_dutils.instance.class%]
+#   torrentfeed.service:
+#        class: %morenware_dutils.torrentfeed.service.class%
+#        arguments: [@doctrine.orm.entity_manager, %morenware_dutils.torrentfeed.class%]
+#   I

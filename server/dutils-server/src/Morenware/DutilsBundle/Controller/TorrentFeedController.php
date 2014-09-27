@@ -16,7 +16,7 @@ use Morenware\DutilsBundle\Entity\JobState;
 /**
  * @Route("/api")
  */
-class InstanceController {
+class TorrentFeedController {
 	
 	/** @DI\Inject("instance.service") */
 	private $instanceService;
@@ -25,7 +25,7 @@ class InstanceController {
 	private $serializer;   
 	
 	/** @DI\Inject("torrentfeed.service") */
-	private $torrentFeedService;
+	private $torrentService;
 	
 	/** @DI\Inject("logger") */
 	private $logger;
@@ -34,11 +34,11 @@ class InstanceController {
 	/**
 	 * Get single Instance,
 	 *
-     * @Route("/instances/{id}")
+     * @Route("/feeds/{id}")
      * @Method("GET")
 	 *
 	 */
-	public function getInstanceAction($id) {
+	public function getFeedAction($id) {
 		$instance = $this->instanceService->find($id);
 		
 		$this->logger->info('This is a log message I put here');
@@ -50,22 +50,20 @@ class InstanceController {
 			
 			return ControllerUtils::createJsonResponseForArray($error, 404);	
 		}
-			
-		$this->torrentFeedService->checkFeedsForTorrents();
-	
+		
 		return ControllerUtils::createJsonResponseForDto($this->serializer, $instance);
 	}
 	
 	/**
 	 * Create instance.
 	 *
-     * @Route("/instances")
+     * @Route("/feeds")
      * @Method("POST")
      * 
      * @ParamConverter("instance", class="Entity\Instance", options={"json_property" = "instance"})
 	 *
 	 */
-	public function postInstanceAction(Instance $instance) {
+	public function postFeedAction(Instance $instance) {
 			
 		if (!$instance->getId()) {
 			$this->instanceService->persist($instance);

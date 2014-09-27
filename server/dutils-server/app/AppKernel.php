@@ -21,7 +21,8 @@ class AppKernel extends Kernel
         	new JMS\SerializerBundle\JMSSerializerBundle(),
         	new FOS\RestBundle\FOSRestBundle(),
         	new JMS\DiExtraBundle\JMSDiExtraBundle($this),
-        	new JMS\AopBundle\JMSAopBundle()
+        	new JMS\AopBundle\JMSAopBundle(),
+        	new Debril\RssAtomBundle\DebrilRssAtomBundle()
         );
 
         if (in_array($this->getEnvironment(), array('dev', 'test'))) {
