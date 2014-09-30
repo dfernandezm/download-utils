@@ -24,14 +24,13 @@ class JsonParamConverter implements ParamConverterInterface {
 			
 			$jsonStr = $request->getContent();
 		
+			// if present, deserialize only this part of the object
 			$specificProperty = $options['json_property']; 
 			
 			if ( $specificProperty != null) {
-				
 				$requestStr = $request->getContent();
 				$jsonArray = json_decode($requestStr, true);
 				$jsonStr = json_encode($jsonArray[$specificProperty]);
-			
 			}
 			
 			$object = $this->serializer->deserialize(

@@ -48,26 +48,26 @@ class TorrentFeedService {
 		return $this->repository;
 	}
 	
-	public function createFeed($feed) {
+	public function create($feed) {
 		$this->em->persist($feed);
 		$this->em->flush();
 	}
 	
-	public function mergeFeed($feed) {
+	public function merge($feed) {
 		$this->em->merge($feed);
 		$this->em->flush();
 	}
 	
-	public function findFeed($id) {
-		return $this->em->find($id);
+	public function find($id) {
+		return $this->getRepository()->find($id);
 	}	
 	
-	public function getAllFeeds() {
-		return $this->repository->findAll();
+	public function getAll() {
+		return $this->getRepository()->findAll();
 	}
 	
-	public function deleteFeed($feedId) {
-		$feed = $this->findFeed($feedId);
+	public function delete($feedId) {
+		$feed = $this->find($feedId);
 		$this->em->remove($feed);
 		$this->em->flush();
 	}
@@ -76,11 +76,12 @@ class TorrentFeedService {
 	public function checkFeedsForTorrents() {
 
 		// list all feeds
-		// get XML into entities
-		// loop checking dates
-		// generate Torrent entities with state AWAITING_DOWNLOAD
+		// - get XML into entities
+		// - loop checking dates
+		// - generate Torrent entities with state AWAITING_DOWNLOAD
 		// execute this as cron -- every day at 2:00 AM
 		
+		//TODO: remove this test code
 		$feed = new Feed();
 		
 		$feed->setUrl("http://showrss.info/feeds/885.rss");
@@ -152,7 +153,7 @@ class TorrentFeedService {
 	}
 	
 	
-	public function generateDownloadsForParsedFeed($feed, $torrents) {
+	public function generateJobsForParsedFeed($feed, $torrents) {
 		// Call transmission to start the downloads
 			// Generate download jobs referencing the torrents
 		// When transmission acknowledges, change the state of torrents to DOWNLOADING

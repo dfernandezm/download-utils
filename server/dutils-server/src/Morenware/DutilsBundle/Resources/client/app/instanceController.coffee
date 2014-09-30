@@ -1,5 +1,5 @@
-angular.module('dutilsApp').controller 'instanceController', ['$scope', 'apiFactory',  '$route', '$routeParams', ($scope, apiFactory) ->
-  
+app.controller 'instanceController', ['$scope', 'apiFactory',  '$route', '$routeParams', ($scope, apiFactory) ->
+
   resolve = (promise, successCallback, errorCallback) ->
     promise().success(successCallback).error(errorCallback)
     return
@@ -14,7 +14,7 @@ angular.module('dutilsApp').controller 'instanceController', ['$scope', 'apiFact
         return)
     return
 
- 
+
   getInstances()
 
   return

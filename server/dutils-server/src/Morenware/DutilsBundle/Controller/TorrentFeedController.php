@@ -12,38 +12,35 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Morenware\DutilsBundle\Util\ControllerUtils;
 use Morenware\DutilsBundle\Util\GuidGenerator;
 use Morenware\DutilsBundle\Entity\JobState;
+use Morenware\DutilsBundle\Entity\Feed;
 
 /**
  * @Route("/api")
  */
 class TorrentFeedController {
 	
-	/** @DI\Inject("instance.service") */
-	private $instanceService;
-	
 	/** @DI\Inject("jms_serializer") */
 	private $serializer;   
 	
 	/** @DI\Inject("torrentfeed.service") */
-	private $torrentService;
+	private $torrentFeedService;
 	
 	/** @DI\Inject("logger") */
 	private $logger;
 	
 	
 	/**
-	 * Get single Instance,
+	 * Get feed by id
 	 *
      * @Route("/feeds/{id}")
      * @Method("GET")
 	 *
 	 */
 	public function getFeedAction($id) {
-		$instance = $this->instanceService->find($id);
 		
-		$this->logger->info('This is a log message I put here');
+		$feed = $this->torrentFeedService->find($id);		
 		
-		if (!$instance) {
+		if (!$feed) {
 			$error = array(
 					"error" => "The required resource was not found",
 					"errorCode" => 404);
@@ -51,26 +48,73 @@ class TorrentFeedController {
 			return ControllerUtils::createJsonResponseForArray($error, 404);	
 		}
 		
-		return ControllerUtils::createJsonResponseForDto($this->serializer, $instance);
+		return ControllerUtils::createJsonResponseForDto($this->serializer, $feed);
 	}
 	
 	/**
-	 * Create instance.
+	 * Create new feed.
 	 *
      * @Route("/feeds")
      * @Method("POST")
      * 
-     * @ParamConverter("instance", class="Entity\Instance", options={"json_property" = "instance"})
+     * @ParamConverter("feed", class="Entity\Feed", options={"json_property" = "feed"})
 	 *
 	 */
-	public function postFeedAction(Instance $instance) {
+	public function createFeedPostAction(Feed $feed) {
 			
-		if (!$instance->getId()) {
-			$this->instanceService->persist($instance);
-			return ControllerUtils::createJsonResponseForDto($this->serializer, $instance, 201);
+		if (!$feed->getId()) {
+			$this->torrentFeedService->create($feed);
+			return ControllerUtils::createJsonResponseForDto($this->serializer, $feed, 201);
 		} else {
-			return ControllerUtils::createJsonResponseForArray(array("error"=>"ID found, use PUT to update", "errorCode" => 405), 405);
+			return $this->updateFeedAction($feed->getId(), $feed);
 		}
+	}
+	
+	/**
+	 * Update a feed.
+	 *
+	 * @Route("/feeds/{id}")
+	 * @Method("PUT")
+	 *
+	 * @ParamConverter("feed", class="Entity\Feed", options={"json_property" = "feed"})
+	 *
+	 */
+	public function updateFeedAction($id, Feed $feed) {
+			
+		if ($id) {
+			$feed->setId($id);
+			$this->torrentFeedService->merge($feed);
+			return ControllerUtils::createJsonResponseForDto($this->serializer, $feed, 200);
+		} else {
+			return $this->createFeedPostAction($feed);
+		}
+	}
+	
+	/**
+	 * Delete feed.
+	 *
+	 * @Route("/feeds/{id}")
+	 * @Method("DELETE")
+	 *
+	 * @ParamConverter("feed", class="Entity\Feed", options={"json_property" = "feed"})
+	 *
+	 */
+	public function deleteFeedAction($feedId) {
+		$this->torrentFeedService->delete($feedId);
+		return ControllerUtils::createJsonResponseForArray(null);
+	}
+	
+	/**
+	 * List all feeds.
+	 *
+	 * @Route("/feeds")
+	 * @Method("GET")
+	 *
+	 *
+	 */
+	public function listFeedsAction() {
+		
+		return ControllerUtils::createJsonResponseForDto($this->serializer, $this->torrentFeedService->getAll());
 	}
 	
 }
