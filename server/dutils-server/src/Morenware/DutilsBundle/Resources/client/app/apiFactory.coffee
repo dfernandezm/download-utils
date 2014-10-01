@@ -1,5 +1,5 @@
-angular.module('dutilsApp').factory 'apiFactory', ['$http', ($http) ->
-  
+app.factory 'apiFactory', ['$http', ($http) ->
+
   # $http.defaults.headers.common = {"Access-Control-Request-Headers": "accept, origin, authorization"}
   $http.defaults.headers.common['Authorization'] = 'Basic YWRtaW46YWRtaW5wYXNz'
 
