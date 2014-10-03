@@ -380,6 +380,8 @@
 	    }).when('/feeds', {
 	      controller: 'feedsController',
 	      templateUrl: '../client/html/feeds.html'
+	    }).otherwise({
+	      redirectTo: '/'
 	    });
 	  }
 	]);
@@ -452,11 +454,11 @@
 
 	app.factory('Feed', [
 	  '$resource', function($resource) {
-	    var Feed, feeds;
+	    var Feed;
 	    Feed = $resource('api/feeds/:feedId', {
 	      feedId: '@id'
 	    }, {
-	      query: {
+	      getAll: {
 	        method: 'GET',
 	        params: {},
 	        isArray: true
@@ -465,20 +467,7 @@
 	        method: 'PUT'
 	      }
 	    });
-	    feeds = {};
-	    feeds.getAll = function() {
-	      return Feed.query();
-	    };
-	    feeds.save = function(feed) {
-	      return feed.$save();
-	    };
-	    feeds.remove = function(feed) {
-	      return feed.$delete();
-	    };
-	    feeds.update = function(feed) {
-	      return feed.$update();
-	    };
-	    return feeds;
+	    return Feed;
 	  }
 	]);
 
@@ -491,18 +480,32 @@
 /***/ function(module, exports, require) {
 
 	app.controller('feedsController', [
-	  '$scope', 'Feed', '$route', '$routeParams', function($scope, Feed) {
-	    $scope.feeds = Feed.getAll();
-	    $scope.saveFeed = function(feed) {
-	      feed.$save(function(f) {
-	        console.log("Saved " + f);
+	  '$scope', 'Feed', '$route', '$routeParams', function($scope, Feed, $route) {
+	    var init;
+	    init = function() {
+	      $scope.feeds = Feed.getAll();
+	      $scope.showForm = false;
+	    };
+	    $scope.saveFeed = function() {
+	      $scope.feed.$save(function(f) {
+	        console.log("Feed saved");
+	        init();
 	      });
 	    };
-	    return $scope.updateFeed = function(feed) {
-	      feed.$update(function(f) {
+	    $scope.updateFeed = function() {
+	      $scope.feed.$update(function(f) {
 	        console.log("Updated " + f);
 	      });
 	    };
+	    $scope.showFeedForm = function() {
+	      $scope.feed = new Feed();
+	      $scope.showForm = !$scope.showForm;
+	    };
+	    $scope.editFeed = function(feed) {
+	      $scope.feed = feed;
+	      $scope.showForm = true;
+	    };
+	    init();
 	  }
 	]);
 

@@ -1,0 +1,23 @@
+
+  <div class="col-lg-12">
+    <h3>Add new feed</h3>
+    <div class="row">
+      <div class="form-group col-lg-4">
+        <label for="description" class="control-label">Description</label>
+        <input type="text" ng-model="feed.feed.description" class="form-control" id="description" placeholder="Feed description"/>
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group col-lg-4">
+        <label for="url" class="control-label">URL</label>
+        <input type="text" ng-model="feed.feed.url" class="form-control" id="url" placeholder="Feed URL"/>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <button class="btn" ng-click="saveFeed()">Add</button>
+      </div>
+    </div>
+
+</div>

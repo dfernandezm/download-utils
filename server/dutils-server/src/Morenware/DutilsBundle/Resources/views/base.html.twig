@@ -11,17 +11,10 @@
     
       	{% block stylesheets %}
       	
-      	  {% stylesheets  output="css/all.css"
-      	  	'@bootstrap_css'
-    		'@MorenwareDutilsBundle/Resources/public/css/plugins/metisMenu/metisMenu.css'
-    		'@MorenwareDutilsBundle/Resources/public/css/sb-admin-2.css'
-    		'@MorenwareDutilsBundle/Resources/public/css/main.css'
-		   %}
-      	
-      	    <link href="{{ asset_url }}" rel="stylesheet" />        
-            
-          {% endstylesheets %}   
-          
+          <link href="{{ asset('client/css/bootstrap.min.css') }}" rel="stylesheet" />
+          <link href="{{ asset('client/css/metis-menu.css') }}" rel="stylesheet" />
+          <link href="{{ asset('client/css/sb-admin-2.css') }}" rel="stylesheet" />
+          <link href="{{ asset('client/css/main.css') }}" rel="stylesheet" />
           <link href="{{ asset('client/font-awesome-4.1.0/css/font-awesome.min.css') }}" rel="stylesheet" />
             
         {% endblock %}
