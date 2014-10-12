@@ -12,11 +12,12 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Morenware\DutilsBundle\Util\ControllerUtils;
 use Morenware\DutilsBundle\Util\GuidGenerator;
 use Morenware\DutilsBundle\Entity\JobState;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 /**
  * @Route("/api")
  */
-class InstanceController {
+class InstanceController extends Controller {
 	
 	/** @DI\Inject("instance.service") */
 	private $instanceService;
@@ -30,6 +31,8 @@ class InstanceController {
 	/** @DI\Inject("logger") */
 	private $logger;
 	
+	/** @DI\Inject("async.service") */
+	private $asyncService;
 	
 	/**
 	 * Get single Instance,
@@ -51,8 +54,9 @@ class InstanceController {
 			return ControllerUtils::createJsonResponseForArray($error, 404);	
 		}
 			
-		$this->torrentFeedService->checkFeedsForTorrents();
-	
+		//$this->torrentFeedService->checkFeedsForTorrents();
+		$this->asyncService->test();
+		
 		return ControllerUtils::createJsonResponseForDto($this->serializer, $instance);
 	}
 	

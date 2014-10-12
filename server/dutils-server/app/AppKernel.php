@@ -22,7 +22,8 @@ class AppKernel extends Kernel
         	new FOS\RestBundle\FOSRestBundle(),
         	new JMS\DiExtraBundle\JMSDiExtraBundle($this),
         	new JMS\AopBundle\JMSAopBundle(),
-        	new Debril\RssAtomBundle\DebrilRssAtomBundle()
+        	new Debril\RssAtomBundle\DebrilRssAtomBundle(),
+         	new Leezy\PheanstalkBundle\LeezyPheanstalkBundle()
         );
 
         if (in_array($this->getEnvironment(), array('dev', 'test'))) {

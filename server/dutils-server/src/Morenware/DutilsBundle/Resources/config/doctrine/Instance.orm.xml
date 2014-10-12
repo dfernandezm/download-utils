@@ -16,7 +16,7 @@
     	<named-queries>
     		<named-query name="Instance.getAllNamed" 
     	     query=
-    	     "
+    	     "   
     	     select i 
     		 from DU:Instance i 
     		 where i.id > 1
