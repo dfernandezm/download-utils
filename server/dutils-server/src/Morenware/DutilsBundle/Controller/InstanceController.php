@@ -13,6 +13,7 @@ use Morenware\DutilsBundle\Util\ControllerUtils;
 use Morenware\DutilsBundle\Util\GuidGenerator;
 use Morenware\DutilsBundle\Entity\JobState;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Morenware\DutilsBundle\Service\WorkerType;
 
 /**
  * @Route("/api")
@@ -55,7 +56,9 @@ class InstanceController extends Controller {
 		}
 			
 		//$this->torrentFeedService->checkFeedsForTorrents();
-		$this->asyncService->test();
+		//$this->asyncService->test();
+		$message = $this->asyncService->prepareMessage("amnguGkl1nkm",WorkerType::TRANSMISSION,"");
+		$this->asyncService->sendMessage($message);
 		
 		return ControllerUtils::createJsonResponseForDto($this->serializer, $instance);
 	}

@@ -10,13 +10,16 @@ class Worker {
 	
 	private $pid;
 	
+	private $callback;
+	
 	const WORKER_ALIVE_TIME = 600;
 	
-	public function __construct($pid, $broker, $logger, $type) {
+	public function __construct($pid, $broker, $logger, $type, $callback) {
 		$this->type = $type;
 		$this->broker = $broker;
 		$this->logger = $logger;
 		$this->pid = $pid;
+		$this->callback = $callback;
 	}
 	
 	public function sendResponseMessage($message) {
@@ -41,7 +44,7 @@ class Worker {
 				try {
 					$this->logger->debug("Worker: Processing work...");
 					// isolate in separate transaction
-					sleep(10);
+					$this->callback();
 					$this->delete($job);
 					$this->logger->debug("Worker: Sending response back");
 					$this->sendResponse($job->getId()."-SUCCESS");
