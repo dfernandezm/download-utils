@@ -5,13 +5,14 @@
   "description": "Download Utils",
 
   "devDependencies": {
+    "lodash": "2.4.x",
     "grunt": "~0.4.1",
     "grunt-cli": "~0.1.11",
     "grunt-contrib-less": "~0.8.2",
     "grunt-contrib-watch": "~0.5.3",
     "grunt-contrib-coffee": "~0.7.0",
 
-    "webpack": "0.11.x",
+    "webpack": "1.3.x",
     "coffee-loader": "0.6.x",
     "raw-loader": "0.5.x",
     "style-loader": "0.6.x",

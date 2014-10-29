@@ -1,0 +1,16 @@
+
+  <div class="col-lg-12">
+    <h3>{{title}}</h3>
+    <div ng-repeat="field in fields" class="row">
+      <div class="form-group col-lg-4">
+        <label for="{{field.name}}" class="control-label">{{field.name}}</label>
+        <input type="text" ng-model="field.value" class="form-control" id="{{field.value}}" placeholder="{{field.placeholder}}"/>
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <button class="btn" ng-click="save()">{{submitText}}</button>
+      </div>
+    </div>
+
+</div>

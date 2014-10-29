@@ -20,7 +20,7 @@ task :webpack_watch, :environmentName do |t, args|
   baseWebDir = env[:baseWebDir]
   puts "== Watching for changes in #{baseDir} =="
   setup = 'PATH=node_modules/.bin:$PATH && export PATH && '
-  run setup + "./restart-if-crashes.sh 'webpack #{baseDir}/client/app/init.coffee #{baseWebDir}/js/app/init.js -d --watch'"
+  run setup + "webpack #{baseDir}/client/app/init.coffee #{baseWebDir}/js/app/init.js -d --watch"
 end
 
 task :lint_coffeescript do

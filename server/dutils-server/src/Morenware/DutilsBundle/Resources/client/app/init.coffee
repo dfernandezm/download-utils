@@ -1,3 +1,6 @@
+window._str = require '../lib/underscore.string.min.js'
+window._ = require '../lib/underscore.min.js'
+
 require '../lib/angular.min.js'
 require '../lib/angular-route.min.js'
 require '../lib/angular-resource.min.js'
@@ -6,3 +9,4 @@ require './apiFactory.coffee'
 require './instanceController.coffee'
 require './feeds.coffee'
 require './feedsController.coffee'
+require './components/adminForm.coffee'
