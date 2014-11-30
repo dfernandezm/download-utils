@@ -83,14 +83,26 @@ class AsyncService {
 		
 		while($job = $this->broker->reserve(0)) {
 			$this->logger->debug("Processing response \n".$job->getData());
-			$this->executeActionsFromMessage($job);
+			$this->processMessage($job->getData());
 			$this->broker->delete($job);	
 		}		
 	}
 	
-	public function executeActionsFromMessage($message) {
+	public function processMessage($message) {
 		// Parse the message
 		// Extract the job guid and update it to COMPLETED / FAILED
 		// do further work depending on job type 
+		$this->logger->debug("Executing actions \n");
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }

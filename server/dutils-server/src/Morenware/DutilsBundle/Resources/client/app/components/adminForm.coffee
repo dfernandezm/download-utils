@@ -4,17 +4,9 @@ app.directive 'adminForm', ->
   restrict: 'E',
   replace: true,
   transclude: true,
-  scope: {
-    object: '@'
-  },
-  controller: ($scope, $element, $attrs, $injector) ->
-    $scope.submitText = "Add "
-    $scope.title = "Admin " +  " Form"
-    $scope.save = ->
-      object = $scope.object
-      toSave = $scope.obj
-      return
-  ,
+  scope: false,
+  controller: 'feedsController',
+
   link: (scope, iElement, iAttrs, controller) ->
     fieldNames = iAttrs.fields.split ','
     fields = []
@@ -22,7 +14,8 @@ app.directive 'adminForm', ->
     for fieldName in fieldNames
       field = {
         name: _str.capitalize fieldName
-        placeholder: fieldName + " Placeholder"
+        placeholder: fieldName
+        value: null
       }
       fields.push field
 

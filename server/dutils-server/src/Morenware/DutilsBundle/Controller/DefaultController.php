@@ -9,7 +9,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 class DefaultController extends Controller
 {
 	/**
-	 * Create instance.
+	 * Home.
 	 *
 	 * @Route("/home")
 	 * @Method("GET")
@@ -18,5 +18,17 @@ class DefaultController extends Controller
 	public function indexAction()
     {
         return $this->render('MorenwareDutilsBundle:Default:index.html.twig');
+    }
+    
+    /**
+     * Feeds.
+     *
+     * @Route("/feeds")
+     * @Method("GET")
+     *
+     */
+    public function feedsAction()
+    {
+    	return $this->render('MorenwareDutilsBundle:Default:feeds.html.twig');
     }
 }

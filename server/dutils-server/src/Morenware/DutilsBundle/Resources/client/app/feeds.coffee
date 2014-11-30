@@ -5,5 +5,7 @@ app.factory 'Feed', ['$resource', ($resource) ->
     update: { method: 'PUT' }
   }
 
+  Feed.prototype.name = 'feed'
+
   Feed
 ]

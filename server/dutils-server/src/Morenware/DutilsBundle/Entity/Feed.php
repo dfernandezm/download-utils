@@ -1,12 +1,41 @@
 <?php
 namespace Morenware\DutilsBundle\Entity;
+use Doctrine\ORM\Mapping AS ORM;
 
+
+/**
+ *
+ * @ORM\Entity
+ * @ORM\Table(name="feed")
+ *
+ */
 class Feed {
 	
+	/**
+	 * @ORM\Column(type="integer")
+	 * @ORM\Id
+	 * @ORM\GeneratedValue(strategy="AUTO")
+	 */
 	private $id;
+	
+	/**
+	 * @ORM\Column(type="string", length=100, nullable=false)
+	 */
 	private $url;
+	
+	/**
+	 * @ORM\Column(type="string", length=200, nullable=true)
+	 */
 	private $description;
+	
+	/**
+	 * @ORM\Column(name="last_checked_date", type="datetime", nullable=true)
+	 */
 	private $lastCheckedDate;
+	
+	/**
+	 * @ORM\Column(name="last_download_date", type="datetime", nullable=true)
+	 */
 	private $lastDownloadDate;
 	
 	public function getId() {

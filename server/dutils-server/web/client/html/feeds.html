@@ -33,7 +33,7 @@
                                     <td>{{feed.description}}</td>
                                     <td>{{feed.url}}</td>
                                     <td>
-                                        <a href="#"><span class="glyphicon glyphicon-pencil"></span></a>&nbsp;
+                                        <a href="" ng-click="editFeed(feed)"><span class="glyphicon glyphicon-pencil"></span></a>&nbsp;
                                         <a href="#"><span class="glyphicon glyphicon-remove"></span></a>
                                     </td>
                                 </tr>
@@ -47,6 +47,6 @@
 
 
 <div class="row">
-    <admin-form object="feed" fields="url,description">
+    <admin-form object-name="Feed" fields="url,description" object="getSelectedFeed()">
     </admin-form>
 </div>
