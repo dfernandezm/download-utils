@@ -8,6 +8,7 @@ use Morenware\DutilsBundle\Entity\TorrentOrigin;
 use Morenware\DutilsBundle\Entity\TorrentContentType;
 use Morenware\DutilsBundle\Entity\TorrentState;
 use Morenware\DutilsBundle\Entity\Feed;
+use Morenware\DutilsBundle\Util\GuidGenerator;
 
 /** @Service("torrentfeed.service") */
 class TorrentFeedService {
@@ -22,6 +23,12 @@ class TorrentFeedService {
 	private $logger;
 	
 	private $debrilFeedReader;
+	
+	/** @DI\Inject("torrent.service") */
+	public $torrentService;
+	
+	/** @DI\Inject("transmission.service") */
+	public $transmissionService;
 
    
    /**
@@ -80,24 +87,31 @@ class TorrentFeedService {
 		// - loop checking dates
 		// - generate Torrent entities with state AWAITING_DOWNLOAD
 		// execute this as cron -- every day at 2:00 AM
+
+		$feeds = $this->getAll();
 		
-		//TODO: remove this test code
-		$feed = new Feed();
+		foreach ($feeds as $feed) {
+			
+			// Check each feed in a separate transaction
+			$this->em->transactional(function($em) use ($feed) {
+				
+				try {
+					$torrents = $this->parseFeedContentToTorrents($feed);
+				} catch(\Exception $e) {
+					$this->logger->warn("We assume there is an error in the feed -- continue ". $e->getMessage());
+					return;
+				}
+				
+				foreach ($torrents as $torrent) {
+					$this->torrentService->create($torrent);
+					$this->logger->info("Persisted torrent entity ". $torrent->getGuid() ." torrents from feed ".$feed->getDescription());
+					$this->logger->info("Sending torrent to remote Transmission...");
+					$this->transmissionService->startDownloadInRemoteTransmission($torrent);
+				}	
+			
+			});
+		}
 		
-		$feed->setUrl("http://showrss.info/feeds/885.rss");
-		$feed->setDescription("ShowRSS - The Strain");
-		$feed->setLastCheckedDate(new \DateTime());
-		
-		$lastDownloadDate = new \DateTime('05-Sep-2014');
-		
-		$feed->setLastDownloadDate($lastDownloadDate);
-		
-		$torrents = $this->parseFeedContentToTorrents($feed);
-		
-		//TODO: persist torrents in DB
-		
-		//TODO: Generate downloads: download jobs and call transmission with them
-		$this->generateDownloadsForParsedFeed($feed, $torrents);
 	}
 	
 	
@@ -116,6 +130,9 @@ class TorrentFeedService {
 		$titles = array();
 		$torrents = array();
 	
+		// Regardless of existing torrents or not, we are checking the feed, so set the lastCheckedDate to now
+		$feed->setLastCheckedDate(new \DateTime());
+		
 		foreach ($readItems as $item) {
 			
 			$torrent = new Torrent();
@@ -125,6 +142,7 @@ class TorrentFeedService {
 			$torrent->setContentType(TorrentContentType::TV_SHOW);
 			$torrent->setState(TorrentState::AWAITING_DOWNLOAD);
 			$torrent->setDate($item->getUpdated());
+			$torrent->setGuid(GuidGenerator::generate());
 		
 			$torrentTitle = $torrent->getTitle();
 			$currentIsHD = strpos($torrentTitle, '720p') !== false;
@@ -147,22 +165,15 @@ class TorrentFeedService {
 			}
 		}
 				
-		$this->logger->info("Created ". count($torrents) ." torrents from feed ".$feed->getDescription());
+		$this->logger->info("Created ". count($torrents) ." torrents from feed ".$feed->getDescription(). " awaiting download");
+		
+		if (count($torrents) > 0) {
+			// There are torrents to download, set lastDownloadDate to now
+			$feed->setLastDownloadDate(new \DateTime());
+		} 
+		
+		$this->merge($feed);
 		
 		return $torrents;
 	}
-	
-	
-	public function generateJobsForParsedFeed($feed, $torrents) {
-		// Call transmission to start the downloads
-			// Generate download jobs referencing the torrents
-		// When transmission acknowledges, change the state of torrents to DOWNLOADING
-		// Update the lastDownloadDate of the feed to NOW
-	}
-	
-	
-	
-	
-	
-	
 }

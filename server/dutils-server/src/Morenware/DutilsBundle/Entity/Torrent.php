@@ -1,17 +1,80 @@
 <?php
 namespace Morenware\DutilsBundle\Entity;
+use Doctrine\ORM\Mapping AS ORM;
 
+
+/**
+ * 
+ * @ORM\Entity
+ * @ORM\Table(name="torrent")
+ * 
+ */
 class Torrent {
 	
-	private $title;
-	private $hash;
-	private $magnetLink;
-	private $date;
-	private $asset;
-	private $state;
-	private $contentType;
-	private $filePath;
-	private $origin;
+	/**
+	 * @ORM\Column(type="integer")
+	 * @ORM\Id
+	 * @ORM\GeneratedValue(strategy="AUTO")
+	 */
+	protected $id;
+	
+	/**
+	 * @ORM\Column(type="string", length=100)
+	 */
+	protected $guid;
+	
+	/**
+	 * @ORM\Column(type="string", length=100)
+	 */
+	protected $title;
+	
+	/**
+	 * @ORM\Column(type="string", length=200, nullable=true)
+	 */
+	protected $torrentName;
+	
+	/**
+	 * @ORM\Column(type="string", length=100, nullable=true)
+	 */
+	protected $hash;
+	
+	/**
+	 * @ORM\Column(name="magnet_link", type="string", length=300)
+	 */
+	protected $magnetLink;
+	
+	/** 
+	 * @ORM\Column(type="datetime", nullable=true) 
+	 * 
+	 */
+	protected $date;
+	
+	/**
+	 * @ORM\Column(type="string", length=300, nullable=true)
+	 */
+	protected $asset;
+	
+	/**
+	 * @ORM\Column(type="string", length=300, nullable=true)
+	 */
+	protected $state;
+	
+	/**
+	 * @ORM\Column(name="content_type", type="string", length=300, nullable=true)
+	 */
+	protected $contentType;
+	
+	/**
+	 * @ORM\Column(name="file_path", type="string", length=300, nullable=true)
+	 */
+	protected $filePath;
+	
+	/**
+	 * @ORM\Column(name="transmission_id", type="integer", nullable=true)
+	 */
+	protected $transmissionId;
+	
+	protected $origin;
 	
 	public function getTitle() {
 		return $this->title;
@@ -74,6 +137,34 @@ class Torrent {
 	}
 	public function setOrigin($origin) {
 		$this->origin = $origin;
+		return $this;
+	}
+	public function getGuid() {
+		return $this->guid;
+	}
+	public function setGuid($guid) {
+		$this->guid = $guid;
+		return $this;
+	}
+	public function getId() {
+		return $this->id;
+	}
+	public function setId($id) {
+		$this->id = $id;
+		return $this;
+	}
+	public function getTransmissionId() {
+		return $this->transmissionId;
+	}
+	public function setTransmissionId($transmissionId) {
+		$this->transmissionId = $transmissionId;
+		return $this;
+	}
+	public function getTorrentName() {
+		return $this->torrentName;
+	}
+	public function setTorrentName($torrentName) {
+		$this->torrentName = $torrentName;
 		return $this;
 	}
 	

@@ -117,4 +117,28 @@ class TorrentFeedController {
 		return ControllerUtils::createJsonResponseForDto($this->serializer, $this->torrentFeedService->getAll());
 	}
 	
+	/**
+	 * Check feeds
+	 * 
+	 * @Route("/checkfeeds")
+	 * @Method("GET")
+	 * 
+	 */
+	public function checkFeedsAction() {
+	
+		try {
+			$this->torrentFeedService->checkFeedsForTorrents();
+			return ControllerUtils::createJsonResponseForArray(null);
+		} catch(\Exception $e)  {
+			$error = array(
+					"error" => "There was an error executing ".$e->getMessage(),
+					"errorCode" => 500);
+				
+			return ControllerUtils::createJsonResponseForArray($error, 500);
+		}
+	}
+	
+	
+	
+	
 }

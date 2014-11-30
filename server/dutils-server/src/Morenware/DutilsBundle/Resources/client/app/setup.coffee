@@ -1,16 +1,20 @@
 app = window.app = angular.module 'dutilsApp', ['ngRoute', 'ngResource']
 
-app.config ['$routeProvider','$httpProvider', ($routeProvider, $httpProvider) ->
+app.config ['$routeProvider','$httpProvider','$interpolateProvider', ($routeProvider, $httpProvider, $interpolateProvider) ->
 
   $httpProvider.defaults.headers.common['Authorization'] = 'Basic YWRtaW46YWRtaW5wYXNz'
+  $interpolateProvider.startSymbol('[[').endSymbol(']]')
 
-  $routeProvider.when('/instances', {
-    controller: 'instanceController',
-    templateUrl: '../client/html/instances.html'
-  })
-  .when('/feeds', {
-    controller: 'feedsController',
-    templateUrl: '../client/html/feeds.html'
-  })
-  .otherwise {redirectTo: '/'}
+  $httpProvider.defaults.transformRequest = (data) ->
+    if !data
+      return data
+    else
+      json = angular.toJson data
+      if data.name?
+        json = "{" + data.name + ": " + JSON.stringify(json) + "}"
+        return JSON.parse(json)
+      else
+        return json
+
+
 ]

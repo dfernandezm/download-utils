@@ -60,9 +60,15 @@ class TorrentService {
 		return $this->repository->findAll();
 	}
 	
-	public function delete($torrentId) {
-		$torrent = $this->find($torrentId);
+	public function delete($torrent) {
 		$this->em->remove($torrent);
 		$this->em->flush();
 	}
+	
+	public function updateDataForTorrents($torrentsFromTransmission) {
+		
+		//TODO:
+		
+	}
+	
 }
