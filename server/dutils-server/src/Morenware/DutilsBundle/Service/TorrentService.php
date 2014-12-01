@@ -68,7 +68,7 @@ class TorrentService {
 	public function updateDataForTorrents($torrentsFromTransmission) {
 		
 		//TODO:
-		
+		$this->logger->debug("TODO: Here we will update information about the torrents being downloaded in transmission");
 	}
 	
 }

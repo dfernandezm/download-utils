@@ -104,7 +104,7 @@ class TorrentFeedService {
 				
 				foreach ($torrents as $torrent) {
 					$this->torrentService->create($torrent);
-					$this->logger->info("Persisted torrent entity ". $torrent->getGuid() ." torrents from feed ".$feed->getDescription());
+					$this->logger->debug("Persisted torrent entity ". $torrent->getGuid() ." torrents from feed ".$feed->getDescription());
 					$this->logger->info("Sending torrent to remote Transmission...");
 					$this->transmissionService->startDownloadInRemoteTransmission($torrent);
 				}	

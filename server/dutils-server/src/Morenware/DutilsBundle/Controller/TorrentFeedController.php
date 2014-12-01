@@ -28,6 +28,9 @@ class TorrentFeedController {
 	/** @DI\Inject("logger") */
 	private $logger;
 	
+	/** @DI\Inject("processmanager.service") */
+	private $processManager;
+	
 	
 	/**
 	 * Get feed by id
@@ -126,16 +129,19 @@ class TorrentFeedController {
 	 */
 	public function checkFeedsAction() {
 	
-		try {
-			$this->torrentFeedService->checkFeedsForTorrents();
-			return ControllerUtils::createJsonResponseForArray(null);
-		} catch(\Exception $e)  {
-			$error = array(
-					"error" => "There was an error executing ".$e->getMessage(),
-					"errorCode" => 500);
+// 		try {
+// 			$this->torrentFeedService->checkFeedsForTorrents();
+// 			return ControllerUtils::createJsonResponseForArray(null);
+// 		} catch(\Exception $e)  {
+// 			$error = array(
+// 					"error" => "There was an error executing ".$e->getMessage(),
+// 					"errorCode" => 500);
 				
-			return ControllerUtils::createJsonResponseForArray($error, 500);
-		}
+// 			return ControllerUtils::createJsonResponseForArray($error, 500);
+// 		}
+
+		$this->processManager->startDownloadsMonitoring();
+		return ControllerUtils::createJsonResponseForArray(null);
 	}
 	
 	

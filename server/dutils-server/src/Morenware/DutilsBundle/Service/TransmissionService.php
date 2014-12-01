@@ -125,8 +125,8 @@ class TransmissionService {
 		    	$status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 		
 		    	$resultAsArray = json_decode($result);
-		    	
-		    	
+		   
+		    	//TODO: handle rest of errors?
 		    	if ($status == '500') {
 		    		$this->logger->warn("There was a failure -- retrying: " . $torrent->getTitle());
 		    		$retryCount++;
@@ -134,7 +134,7 @@ class TransmissionService {
 		    		continue;
 		    	}
 		    	
-		    	
+		    	//TODO: better handling of lowercase
 		    	if (strpos($resultAsArray->result, "Success") !== false || strpos($resultAsArray->result, "success") !== false) {
 		        	$this->logger->debug("Successful call to Transmission -- torrent added: " . $torrent->getTitle());
 		        	
@@ -169,16 +169,13 @@ class TransmissionService {
 		
 		if ($success) {
 			$this->updateTorrentState($torrent,TorrentState::DOWNLOADING);
-			// send message to queue for worker to check when finished -- worker notifies finished torrent -- app updates state, renames, etc...
+			// start monitoring if not already -- wrap up torrent state when finished and rename etc.
 			$this->processManager->startDownloadsMonitoring();
 		} else {
 			$this->updateTorrentState($torrent,TorrentState::FAILED_DOWNLOAD_ATTEMPT);
 			$this->logger->error("Could not download torrent after 5 tries -- giving up -- " .$torrent->getTitle());
 		}
 		
-	    //SESSID=$(curl --silent --anyauth --user $USER:$PASS "http://$HOST:$PORT/transmission/rpc" | sed 's/.*<code>//g;s/<\/code>.*//g')
-	    //curl --silent --anyauth --user $USER:$PASS --header "$SESSID" "http://$HOST:$PORT/transmission/rpc" -d "{\"method\":\"torrent-add\",\"arguments\":{\"paused\":${PAUSED},\"filename\":\"${LINK}\"}}"
-	    
 	    // Throttling -- wait 1 second between sucesive calls
 	    sleep(1);
 	}
@@ -239,12 +236,15 @@ class TransmissionService {
 		return $resultAsArray;
 	}
 	
+	/**
+	 * Invoked from MonitorDownloadsCommand, so this is done in the background??
+	 * 
+	 */
 	public function checkTorrentsStatus() {
 		
 		$requestPayload = array(
-							"method" => "torrent-get",
-							"arguments" => array("fields" => array("id", "name", "totalSize", "percentDone")) 
-				
+			"method" => "torrent-get",
+			"arguments" => array("fields" => array("id", "name", "totalSize", "percentDone")) 
 		);
 		
 		$jsonRequest = json_encode($requestPayload);
@@ -253,7 +253,7 @@ class TransmissionService {
 		
 		$this->logger->debug("Result of torrents query is: ". json_encode($result->arguments->torrents));
 
-		//TODO: update database with results! -- start renaming!!
+		//TODO: update database with results to start renaming afterwards !!
 		$this->torrentService->updateDataForTorrents($result->arguments->torrents);
 	}
 }
