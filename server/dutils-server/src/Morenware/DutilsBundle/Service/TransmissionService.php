@@ -24,6 +24,11 @@ class TransmissionService {
 	/** @DI\Inject("processmanager.service") */
 	public $processManager;
 	
+	const TRANSMISSION_HOST = "raspbmc";
+	const TRANSMISSION_PORT = "9091";
+	const TRANSMISSION_USERNAME = "transmission";
+	const TRANSMISSION_PASSWORD = "ZVCvrasp";
+	
 
    /**
 	* @DI\InjectParams({
@@ -39,10 +44,11 @@ class TransmissionService {
 	public function getSessionIdHeader() {
 
 		if (!isset($this->sessionIdHeader)) {
-			$host = "raspbmc";
-			$port = "9091";
-			$username = "transmission";
-			$password = "ZVCvrasp";
+			
+			$host = self::TRANSMISSION_HOST;
+			$port = self::TRANSMISSION_PASSWORD;
+			$username = self::TRANSMISSION_USERNAME;
+			$password = self::TRANSMISSION_PASSWORD;
 			
 			$credentials = "$username:$password";
 			$endpoint = "http://$host:$port/transmission/rpc";
@@ -54,12 +60,13 @@ class TransmissionService {
 			
 			$curl = curl_init();
 			curl_setopt_array($curl, array(
-			CURLOPT_RETURNTRANSFER => 1,
-			CURLOPT_URL => "$endpoint",
-			CURLOPT_HTTPHEADER => $headers
+				CURLOPT_RETURNTRANSFER => 1,
+				CURLOPT_URL => "$endpoint",
+				CURLOPT_HTTPHEADER => $headers
 			));
 			
-			$result = curl_exec($curl);
+			$result = curl_exec($curl);			
+			
 			$this->logger->debug("The result of invoking transmission for header is: \n $result \n ");
 			$sessionIdHeader = null;
 			
@@ -78,15 +85,14 @@ class TransmissionService {
 	
 	public function startDownloadInRemoteTransmission($torrent) {
 		
-		//$link = "magnet:?xt=urn:btih:02a5ad1a8af7a8b7bff49c8fae39d84a0a25c96a&dn=Predestination+(2014)+1080p&tr=http://exodus.desync.com:6969/announce&tr=udp://tracker.openbittorrent.com:80/announce&tr=udp://tracker.1337x.org:80/announce&tr=udp://exodus.desync.com:6969/announce&tr=udp://tracker.yify-torrents.com/announce";
-	    $link = $torrent->getMagnetLink();
+		$link = $torrent->getMagnetLink();
 		$magnetLink = "$link";
-	    $host = "raspbmc";
-	    $port = "9091";
+	    $host = self::TRANSMISSION_HOST;
+	    $port = self::TRANSMISSION_PASSWORD;
 	    $endpoint = "http://$host:$port/transmission/rpc";
 	    $sessionIdHeader = $this->getSessionIdHeader();
-	    $username = "transmission";
-	    $password = "ZVCvrasp";
+	    $username = self::TRANSMISSION_USERNAME;
+	    $password = self::TRANSMISSION_PASSWORD;
 	    $credentials = "$username:$password";
 	    
 	    //$addTorrent = array( "method" => "torrent-add", "arguments" => array ("paused" => false, "filename" => "$magnetLink"));
@@ -117,7 +123,7 @@ class TransmissionService {
 	    while (!$success && $retryCount < self::TRANSMISSION_RETRY_COUNT) {
 	    	
 	    	try {
-	    		// http://showrss.info/feeds/930.rss
+	    		
 	    		$result = curl_exec($curl);
 	    		
 		    	$this->logger->debug("Result of the call to Transmission is: " . $result);
@@ -211,12 +217,12 @@ class TransmissionService {
 	
 	public function makeRequest($jsonPayload) {
 		
-		$host = "raspbmc";
-		$port = "9091";
+		$host = self::TRANSMISSION_HOST;
+		$port = self::TRANSMISSION_PORT;
 		$endpoint = "http://$host:$port/transmission/rpc";
 		$sessionIdHeader = $this->getSessionIdHeader();
-		$username = "transmission";
-		$password = "ZVCvrasp";
+		$username = self::TRANSMISSION_USERNAME;
+		$password = self::TRANSMISSION_PASSWORD;
 		$credentials = "$username:$password";
 		 	
 		$headers = array(
@@ -231,9 +237,9 @@ class TransmissionService {
 			list($result, $status) = $this->performRpcCall($endpoint, $headers, $jsonPayload);
 		} 
 		
-		$resultAsArray = json_decode($result);
+		$resultAsClass = json_decode($result);
 		
-		return $resultAsArray;
+		return $resultAsClass;
 	}
 	
 	/**
@@ -253,7 +259,6 @@ class TransmissionService {
 		
 		$this->logger->debug("Result of torrents query is: ". json_encode($result->arguments->torrents));
 
-		//TODO: update database with results to start renaming afterwards !!
 		$this->torrentService->updateDataForTorrents($result->arguments->torrents);
 	}
 }
