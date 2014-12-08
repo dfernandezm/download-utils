@@ -83,7 +83,7 @@ class ProcessManager {
 		$this->logger->debug("Preparing script to execute Symfony command...");
 		
 		$appRoot =  $this->kernel->getRootDir();
-		$filePath = $appRoot."/".self::TEMPLATE_COMMAND_SCRIPT_PATH;
+		$filePath = $appRoot . "/" . self::TEMPLATE_COMMAND_SCRIPT_PATH;
 		
 		$this->logger->debug("The template script path is $filePath");
 		
@@ -110,9 +110,12 @@ class ProcessManager {
 	
 	public function stopMonitoring() {
 	
-		if (file_exists("/home/david/scripts/monitor.pid")) {
+		$monitorPidFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/monitor.pid";
+		$monitorTerminatedFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/monitor.terminated";
+		
+		if (file_exists($monitorPidFile)) {
 			$this->logger->info("Flagging stop for monitoring process");
-			fopen("/home/david/scripts/monitor.terminated","w");
+			fopen($monitorTerminatedFile,"w");
 		} else {
 			$this->logger->warn("Looks like there is no monitoring process running");
 		}
@@ -149,12 +152,14 @@ class ProcessManager {
 	
 	public function stopRenamer() {
 	
-		if (file_exists("/home/david/scripts/renamer.pid")) {
+		$renamerPidFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/renamer.pid";
+		$renamerTerminatedFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/renamer.terminated";
+		
+		if (file_exists($renamerPidFile)) {
 			$this->logger->info("Flagging stop for renamer process");
-			fopen("/home/david/scripts/renamer.terminated","w");
+			fopen($renamerTerminatedFile,"w");
 		} else {
 			$this->logger->warn("Looks like there is no renamer process running");
 		}
-	
 	}
 }

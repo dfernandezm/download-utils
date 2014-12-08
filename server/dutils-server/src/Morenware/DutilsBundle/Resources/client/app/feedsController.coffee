@@ -53,5 +53,6 @@ app.controller 'feedsController', ['$scope', 'Feed', '$rootScope', ($scope, Feed
       $scope.feed.description = field.value if field.name is 'Description'
 
   init()
+
   return
 ]

@@ -74,7 +74,16 @@ class Torrent {
 	 */
 	protected $transmissionId;
 	
+	/**
+	 * @ORM\Column(name="origin", type="string", nullable=true)
+	 */
 	protected $origin;
+
+	/**
+	 * @ORM\Column(name="torrent_file_link", type="string", nullable=true)
+	 */
+	protected $torrentFileLink;
+		
 	
 	public function getTitle() {
 		return $this->title;
@@ -165,6 +174,13 @@ class Torrent {
 	}
 	public function setTorrentName($torrentName) {
 		$this->torrentName = $torrentName;
+		return $this;
+	}
+	public function getTorrentFileLink() {
+		return $this->torrentFileLink;
+	}
+	public function setTorrentFileLink($torrentFileLink) {
+		$this->torrentFileLink = $torrentFileLink;
 		return $this;
 	}
 	

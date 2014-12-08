@@ -1,5 +1,6 @@
 .page-header {
 	margin-top: 10px;
+	font-size: 28px;
 }
 
 .torrent-feeds {
@@ -8,4 +9,22 @@
 
 .panel-heading .btn {
     padding: 0 10px 0 10px;
+}
+
+.magnet {
+	background: url("../img/magnet.png") no-repeat;
+	width: 32px;
+	height: 32px;
+	text-indent: -9999px;
+	display: inline-block;
+  	margin: 0 auto;
+}
+
+.download-torrent {
+	background: url("../img/download-file.png") no-repeat;
+	width: 32px;
+	height: 32px;
+	text-indent: -9999px;
+	display: inline-block;
+  	margin: 0 auto;
 }

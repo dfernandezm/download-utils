@@ -4,6 +4,7 @@ app.factory 'apiFactory', ['$http', ($http) ->
   $http.defaults.headers.common['Authorization'] = 'Basic YWRtaW46YWRtaW5wYXNz'
 
   urlBase = "api/instances"
+  searchUrl = "api/search"
   apiFactory = {}
 
   apiFactory.getInstances = ->
@@ -20,6 +21,14 @@ app.factory 'apiFactory', ['$http', ($http) ->
 
   apiFactory.deleteInstance = (id) ->
     return $http.delete(urlBase + "/" + id)
+
+  apiFactory.searchTorrent = (searchQuery) ->
+    req = {
+      method: 'get',
+      url: searchUrl
+      params: { searchQuery : searchQuery }
+    }
+    return $http(req)
 
   return apiFactory
 ]

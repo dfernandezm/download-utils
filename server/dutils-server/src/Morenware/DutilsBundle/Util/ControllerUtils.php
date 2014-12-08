@@ -12,5 +12,10 @@ class ControllerUtils {
 	public static function createJsonResponseForArray($array, $statusCode = 200) {
 		return new JsonResponse($array, $statusCode);
 	}
+	
+	public static function createJsonStringForDto($serializer, $object) {
+		$jsonString = $serializer->serialize($object, 'json');
+		return $jsonString;
+	}
 
 }

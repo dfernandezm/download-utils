@@ -1,9 +1,10 @@
 app = window.app = angular.module 'dutilsApp', ['ngRoute', 'ngResource']
 
-app.config ['$routeProvider','$httpProvider','$interpolateProvider', ($routeProvider, $httpProvider, $interpolateProvider) ->
+app.config ['$routeProvider','$httpProvider','$interpolateProvider', '$compileProvider', ($routeProvider, $httpProvider, $interpolateProvider, $compileProvider) ->
 
   $httpProvider.defaults.headers.common['Authorization'] = 'Basic YWRtaW46YWRtaW5wYXNz'
   $interpolateProvider.startSymbol('[[').endSymbol(']]')
+  $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|magnet):/)
 
   $httpProvider.defaults.transformRequest = (data) ->
     if !data
