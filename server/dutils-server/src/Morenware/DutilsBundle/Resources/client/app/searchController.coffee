@@ -20,10 +20,14 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
     $scope.searchFinished = true
     return
 
-  $scope.initTorrents = (torrents, query) ->
-    if torrents?
-      $scope.torrents = torrents
-      $scope.query = query
+  $scope.initTorrents = (torrentsInfo) ->
+    if torrentsInfo?
+      $scope.torrents = torrentsInfo.torrents
+      $scope.query = torrentsInfo.query
+      $scope.limit = torrentsInfo.limit
+      $scope.offset = torrentsInfo.offset
+      $scope.currentOffset = torrentsInfo.currentOffset
+      $scope.total = torrentsInfo.total
       $scope.searchFinished = true
       return
 

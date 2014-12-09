@@ -43,10 +43,7 @@ class SearchTorrentsController extends Controller {
 		$searchQuery = $request->query->get("searchQuery", null);
 		$ip = $request->get('request')->getClientIp();
 		
-		$this->logger->info('Received query to search: '. $searchQuery . "from IP ". $ip);
-		
-		//TODO: urlencode better
-		$searchQuery = str_replace(" ", "+", $searchQuery);
+		$this->logger->debug('Received query to search: '. $searchQuery . " from IP ". $ip);
 		
 		$torrents = $this->searchService->searchTorrentsInWebsites($searchQuery);
 		

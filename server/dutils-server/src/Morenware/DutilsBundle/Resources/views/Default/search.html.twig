@@ -3,7 +3,7 @@
 {% block body %}
 
 
-<div class="searchTorrentsPage" ng-controller="searchController" ng-init="initTorrents({{ torrents }}, {{ query }})">
+<div class="searchTorrentsPage" ng-controller="searchController" ng-init="initTorrents({{ torrentsInfo }})">
    <div class="row">
 	    <div class="col-lg-12">
 	     <h1 class="page-header">Buscar torrents</h1>
@@ -28,7 +28,8 @@
 	
 	<div class="row search-results" ng-show="searchFinished">
 	    <div class="col-lg-12">    
-	                <h4>Results for: '[[query]]'</h4>
+	                <h4>Resultados para: '[[query]]'</h4>
+	                <h5>[[offset]]-[[currentOffset - 1]] de [[total]]</h5>
                      <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
@@ -40,7 +41,7 @@
                             </thead>
                             <tbody>
                                 <tr ng-repeat="torrent in torrents">
-                                    <td ng-bind="$index+1"></td>
+                                    <td ng-bind="offset+$index"></td>
                                     <td ng-bind="torrent.torrentName"></td>
                                     <td class="col-lg-6">
                                         <a ng-show="torrent.magnetLink" href="[[torrent.magnetLink]]" target="_blank" class="col-lg-3 magnet">Magnet</a>&nbsp;

@@ -660,10 +660,14 @@
 	      $scope.torrents = data;
 	      $scope.searchFinished = true;
 	    };
-	    $scope.initTorrents = function(torrents, query) {
-	      if (torrents != null) {
-	        $scope.torrents = torrents;
-	        $scope.query = query;
+	    $scope.initTorrents = function(torrentsInfo) {
+	      if (torrentsInfo != null) {
+	        $scope.torrents = torrentsInfo.torrents;
+	        $scope.query = torrentsInfo.query;
+	        $scope.limit = torrentsInfo.limit;
+	        $scope.offset = torrentsInfo.offset;
+	        $scope.currentOffset = torrentsInfo.currentOffset;
+	        $scope.total = torrentsInfo.total;
 	        $scope.searchFinished = true;
 	      }
 	    };

@@ -25,12 +25,12 @@ class SearchTorrentsService {
 		$this->logger = $logger;
 	}
 	
-	public function searchTorrentsInWebsites($searchQuery) {
+	public function searchTorrentsInWebsites($searchQuery, $limit = 25, $offset = 0) {
 		
 		//$torrents = $this->searchEliteTorrent($searchQuery);
 		
 		// We need to paginate results here as the search retrieves the whole series in a single page...
-		$torrents = $this->searchDivxTotal($searchQuery);
+		$torrents = $this->searchDivxTotal($searchQuery, $limit, $offset);
 		
 		return $torrents;
 	}
@@ -129,36 +129,41 @@ class SearchTorrentsService {
 	}
 	
 	
-	public function searchDivxTotal($searchQuery) {
+	public function searchDivxTotal($searchQuery, $limit = 25, $offset = 0) {
 		
 		$baseUrl = "http://www.divxtotal.com";
+		
+		$searchQuery = urlencode($searchQuery);
+		
 		$mainUrl = $baseUrl . "/buscar.php?busqueda=" . $searchQuery;
 		$innerPageLinkPattern = '/href="(\/series\/[^\s"]+)/';
 		$episodeNameAndTorrentFilePattern = '/href="(\/torrents_tor[^\s"]+).*>(.*)<\/a>/';
+		$moreThanOnePagePattern = '/href="(buscar\.php\?busqueda=[^"]+)&pagina=([0-9])"/';
 		
-
+		// use this to extract movies
+		$moviesInnerPageLinkPattern = '/href="(peliculas\/torrent\/[0-9]+\/.*\/)/'; 
+		
+		// Number of results
+		$numberOfResultsPattern = '/<h3>(.*)torrents[\s]+encontrados.*<\/h3>/';
+		
+		
 		$resultsPageHtml = file_get_contents($mainUrl);
-		$this->logger->debug("000000000000000000 --- resultsPage \n". $searchQuery);
+	
 		$torrents = array();
 		$torrentNames = array();
+		$total = 0;
+		$currentOffset = $offset;
 		
 		$matches = array();
 		
-//		$arrayTokens = explode("+",$searchQuery);
+		$this->logger->debug("The complete url is $mainUrl to search is ".$searchQuery);
 		
-		//TODO: investigate why aguila roja is here...
-// 		$matchesAll = array();
-// 		preg_match_all($innerPageLinkPattern, $resultsPageHtml, $matchesAll);
-		
-// 		for ($i = 0; $i < count($matchesAll); $i++) {
-			
-// 			foreach($matchesAll[$i] as $match) {
-// 				$this->logger->debug("UUUUUUUUUUUUUUUUUUUUU Aguila roja:: ".$match);
-// 			}
-			
-// 		}
-		
-		
+		list($hasMoreThanOne, $numPages) = $this->hasMoreThanOnePageDivxTotal($resultsPageHtml, $moreThanOnePagePattern);
+
+		if ($hasMoreThanOne) {
+			$this->logger->debug("!! This has $numPages pages of results");
+			//TODO: We have to check if there is any movie to resolve its detail page as TV Shows resolve just with one page only
+		}
 		
 		
 		if (preg_match($innerPageLinkPattern, $resultsPageHtml, $matches)) {
@@ -176,7 +181,12 @@ class SearchTorrentsService {
 				$torrentFiles = $matchesForEpisodes[1];
 				$episodeTitles = $matchesForEpisodes[2];
 		
-				for ($i = 0; $i < count($torrentFiles); $i++) {
+				$total = count($torrentFiles);
+				
+				$this->logger->debug("Total is $total - offset $offset - limit $limit");
+				$limit = $limit >= $total ? $total : $limit;
+				
+				for ($i = $offset; $i < ($offset+$limit); $i++) {
 		
 					$torrentFileLink = $torrentFiles[$i];
 					$episodeTitle = $episodeTitles[$i];
@@ -193,9 +203,22 @@ class SearchTorrentsService {
 					
 					$this->logger->debug("[DivxTotal] Getting Torrent $episodeTitle <==> $torrentFileLink \n");
 				}
+				
+				$currentOffset = $i;
 			}
 		}
 		
-		return $torrents;
+		return array($torrents, $currentOffset, $total);
+	}
+	
+	public function hasMoreThanOnePageDivxTotal($resultsHtml, $moreThanOnePagePattern) {
+		
+		$matches = array();
+		
+		if (preg_match_all($moreThanOnePagePattern, $resultsHtml, $matches)) {
+			return array(true, max($matches[2]));
+		} else {
+			return array(false, 0);
+		}
 	}
 }

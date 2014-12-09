@@ -55,18 +55,35 @@ class DefaultController extends Controller
      */
     public function searchAction(Request $request) {
     	$searchQuery = $request->query->get("searchQuery", null);
+    	$limit = $request->query->get("limit", 25);
+    	$offset = $request->query->get("offset", 0);
     	
     	if ($searchQuery !== null) {
     		
-    		$torrents = $this->searchService->searchTorrentsInWebsites($searchQuery);
+    		$limit = 25;
+    		$offset = 25;
+    		
+    		list($torrents, $currentOffset, $total) = $this->searchService->searchTorrentsInWebsites($searchQuery, $limit, $offset);
     		
     		$torrentsJson = ControllerUtils::createJsonStringForDto($this->serializer, $torrents);
     		
-    		$this->logger->info("0000000000000000000000000000000000000000000000000 The JSON IS ".$torrentsJson. " 00000000 searchQuery: ".$searchQuery);
-    		return $this->render('MorenwareDutilsBundle:Default:search.html.twig', array('torrents' => $torrentsJson, 'query' => "'$searchQuery'"));
     		
+    		$torrentsInfoJson = ControllerUtils::createJsonStringForDto($this->serializer, 
+    				array('torrents' => $torrents, 
+    					  'limit' => $limit,
+    					  'offset' => $offset,		 
+    					  'currentOffset' => $currentOffset, 
+    					  'total' => $total,  
+    					  'query' => $searchQuery
+    				));
+    		
+			
+    		$this->logger->debug("TORRENTS JSON ALL: $torrentsInfoJson");
+    		
+    		return $this->render('MorenwareDutilsBundle:Default:search.html.twig', array('torrentsInfo' => $torrentsInfoJson));
+    						
     	} else {
-    		return $this->render('MorenwareDutilsBundle:Default:search.html.twig', array('torrents' => 'null', 'query' => 'null'));
+    		return $this->render('MorenwareDutilsBundle:Default:search.html.twig', array('torrentsInfo' => 'null'));
     	}
     	
     	
