@@ -13,6 +13,9 @@ use Morenware\DutilsBundle\Entity\Feed;
 class SearchTorrentsService {
 
 	private $logger;
+	
+	/** @DI\Inject("transmission.service") */
+	public $transmissionService;
 
    /**
 	* @DI\InjectParams({
@@ -129,10 +132,11 @@ class SearchTorrentsService {
 	}
 	
 	
-	public function searchDivxTotal($searchQuery, $limit = 25, $offset = 0) {
+	public function searchDivxTotal($searchQuery, $limit = 1000, $offset = 0) {
 		
 		$baseUrl = "http://www.divxtotal.com";
-		
+		$limit = 1000;
+		$offset = 0;
 		$searchQuery = urlencode($searchQuery);
 		
 		$mainUrl = $baseUrl . "/buscar.php?busqueda=" . $searchQuery;
@@ -184,7 +188,7 @@ class SearchTorrentsService {
 				$total = count($torrentFiles);
 				
 				$this->logger->debug("Total is $total - offset $offset - limit $limit");
-				$limit = $limit >= $total ? $total : $limit;
+				$limit = $limit >= $total ? $total-$offset : $limit;
 				
 				for ($i = $offset; $i < ($offset+$limit); $i++) {
 		
@@ -221,4 +225,22 @@ class SearchTorrentsService {
 			return array(false, 0);
 		}
 	}
+	
+	
+   public function downloadTorrentToFileAndStart(Torrent $torrent) {
+   		
+   		$this->logger->debug("Downloading torrent file to  $torrent->getTorrentFileLink() to temporary path");
+   		$tempTorrentsPath = "/home/david/scripts/torrent-temp";
+   		$torrentFilename =  $torrent->getTorrentName();
+   		$torrentFilePath = "$tempTorrentsPath/$torrentFilename";
+   		
+   		$torrent->setFilePath($torrentFilePath);
+   		
+   		file_put_contents($torrentFilePath, file_get_contents($torrent->getTorrentFileLink())); 		
+   		
+   		$this->logger->debug("Downloaded torrent file to $torrentFilePath");
+   		
+   		$this->transmissionService->startDownloadInRemoteTransmission($torrent, true);
+   		
+   }	
 }

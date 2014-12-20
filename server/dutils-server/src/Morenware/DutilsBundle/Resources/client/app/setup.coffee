@@ -12,8 +12,8 @@ app.config ['$routeProvider','$httpProvider','$interpolateProvider', '$compilePr
     else
       json = angular.toJson data
       if data.name?
-        json = "{" + data.name + ": " + JSON.stringify(json) + "}"
-        return JSON.parse(json)
+        json = "{" + "\"" + data.name + "\": " + json + "}"
+        return json
       else
         return json
 

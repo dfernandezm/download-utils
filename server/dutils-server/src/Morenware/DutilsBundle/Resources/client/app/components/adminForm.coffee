@@ -4,20 +4,13 @@ app.directive 'adminForm', ->
   restrict: 'E',
   replace: true,
   transclude: true,
-  scope: false,
-  controller: 'feedsController',
+  scope: {
+    fields: '='
+    submitText: '='
+    formTitle: '=title'
+    submitAction: '&'
+  },
 
   link: (scope, iElement, iAttrs, controller) ->
-    fieldNames = iAttrs.fields.split ','
-    fields = []
-
-    for fieldName in fieldNames
-      field = {
-        name: _str.capitalize fieldName
-        placeholder: fieldName
-        value: null
-      }
-      fields.push field
-
-    scope.fields = fields
+    filledFields = []
     return

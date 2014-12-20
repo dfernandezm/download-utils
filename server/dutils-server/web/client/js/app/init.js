@@ -71,6 +71,8 @@
 	
 	__webpack_require__(/*! ./components/adminForm.coffee */ 13);
 	
+	__webpack_require__(/*! ./components/adminTable.coffee */ 14);
+	
 	__webpack_require__(/*! ./searchController.coffee */ 12);
 
 
@@ -411,8 +413,8 @@
 	      } else {
 	        json = angular.toJson(data);
 	        if (data.name != null) {
-	          json = "{" + data.name + ": " + JSON.stringify(json) + "}";
-	          return JSON.parse(json);
+	          json = "{" + "\"" + data.name + "\": " + json + "}";
+	          return json;
 	        } else {
 	          return json;
 	        }
@@ -564,67 +566,75 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	app.controller('feedsController', [
-	  '$scope', 'Feed', '$rootScope', function($scope, Feed, $rootScope) {
-	    var collect, init, save, update;
+	  '$scope', 'Feed', function($scope, Feed) {
+	    var collectValues, init, save, update;
 	    init = function() {
 	      $scope.feeds = Feed.getAll();
-	      $scope.showForm = false;
+	      $scope.showFeedsForm = false;
 	      $scope.submitText = "Add";
-	      $scope.formTitle = "Feeds Form";
-	      $scope.showForm = false;
+	      $scope.formTitle = "Add new feed";
+	      $scope.actionToPerform = "add";
+	      $scope.feedsFields = [
+	        {
+	          label: "Url",
+	          name: "url",
+	          value: null
+	        }, {
+	          label: "Description",
+	          name: "description",
+	          value: null
+	        }
+	      ];
 	    };
 	    $scope.action = function() {
-	      collect();
-	      update();
+	      collectValues();
+	      if ($scope.actionToPerform === "add") {
+	        save();
+	      } else {
+	        update();
+	      }
 	    };
 	    save = function() {
-	      $scope.feed.$save(function(f) {
-	        console.log("Feed saved " + f);
+	      $scope.feed.$save(function(feed) {
+	        console.log("Feed saved " + feed);
 	        init();
 	      });
 	    };
 	    update = function() {
-	      $scope.feed.$update(function(f) {
-	        console.log("Updated " + f);
+	      $scope.formTitle = "Updating...";
+	      $scope.feed.$update(function(feed) {
+	        console.log("Updated " + feed);
+	        $scope.feed = null;
+	        $scope.showFeedsForm = false;
 	      });
 	    };
 	    $scope.newFeed = function() {
-	      $scope.showForm = true;
+	      $scope.submitText = "Add";
+	      $scope.formTitle = "Add new feed";
+	      $scope.actionToPerform = "add";
+	      $scope.showFeedsForm = true;
 	      $scope.feed = new Feed();
-	    };
-	    $scope.getSelectedFeed = function() {
-	      return $scope.feed;
 	    };
 	    $scope.editFeed = function(feed) {
 	      var field, _i, _len, _ref;
-	      $scope.showForm = true;
-	      $scope.feed = feed;
+	      $scope.formTitle = "Update feed";
 	      $scope.submitText = "Update";
-	      _ref = $scope.fields;
+	      $scope.actionToPerform = "update";
+	      $scope.showFeedsForm = true;
+	      $scope.feed = feed;
+	      _ref = $scope.feedsFields;
 	      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
 	        field = _ref[_i];
-	        if (field.name === 'Url') {
-	          field.value = feed.url;
-	        }
-	        if (field.name === 'Description') {
-	          field.value = feed.description;
-	        }
+	        field.value = feed[field.name];
 	      }
 	    };
-	    collect = function() {
+	    collectValues = function() {
 	      var field, _i, _len, _ref, _results;
-	      _ref = $scope.fields;
+	      _ref = $scope.feedsFields;
 	      _results = [];
 	      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
 	        field = _ref[_i];
-	        if (field.name === 'Url') {
-	          $scope.feed.url = field.value;
-	        }
-	        if (field.name === 'Description') {
-	          _results.push($scope.feed.description = field.value);
-	        } else {
-	          _results.push(void 0);
-	        }
+	        _results.push($scope.feed[field.name] = field.value);
 	      }
 	      return _results;
 	    };
@@ -689,7 +699,7 @@
 
 	var template;
 	
-	template = __webpack_require__(/*! ./adminForm.html */ 14);
+	template = __webpack_require__(/*! ./adminForm.html */ 16);
 	
 	app.directive('adminForm', function() {
 	  return {
@@ -697,22 +707,15 @@
 	    restrict: 'E',
 	    replace: true,
 	    transclude: true,
-	    scope: false,
-	    controller: 'feedsController',
+	    scope: {
+	      fields: '=',
+	      submitText: '=',
+	      formTitle: '=title',
+	      submitAction: '&'
+	    },
 	    link: function(scope, iElement, iAttrs, controller) {
-	      var field, fieldName, fieldNames, fields, _i, _len;
-	      fieldNames = iAttrs.fields.split(',');
-	      fields = [];
-	      for (_i = 0, _len = fieldNames.length; _i < _len; _i++) {
-	        fieldName = fieldNames[_i];
-	        field = {
-	          name: _str.capitalize(fieldName),
-	          placeholder: fieldName,
-	          value: null
-	        };
-	        fields.push(field);
-	      }
-	      scope.fields = fields;
+	      var filledFields;
+	      filledFields = [];
 	    }
 	  };
 	});
@@ -720,12 +723,37 @@
 
 /***/ },
 /* 14 */
-/*!***********************************************************************************!*\
-  !*** ./src/Morenware/DutilsBundle/Resources/client/app/components/adminForm.html ***!
-  \***********************************************************************************/
+/*!**************************************************************************************!*\
+  !*** ./src/Morenware/DutilsBundle/Resources/client/app/components/adminTable.coffee ***!
+  \**************************************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = "\n  <div class=\"col-lg-12\">\n    <h3>{{formTitle}}</h3>\n    <div ng-repeat=\"field in fields\" class=\"row\">\n      <div class=\"form-group col-lg-4\">\n        <label for=\"{{field.name}}\" class=\"control-label\">{{field.name}}</label>\n        <input type=\"text\" ng-model=\"field.value\" class=\"form-control\" id=\"{{field.name}}\" placeholder=\"{{field.placeholder}}\"/>\n      </div>\n    </div>\n    <div class=\"row\">\n      <div class=\"form-group\">\n        <button class=\"btn\" ng-click=\"action()\">{{submitText}}</button>\n      </div>\n    </div>\n\n</div>\n"
+	var template;
+	
+	template = __webpack_require__(/*! ./adminTable.html */ 17);
+	
+	app.directive('adminTable', function() {
+	  return {
+	    template: template,
+	    restrict: 'E',
+	    replace: true,
+	    transclude: true,
+	    scope: {
+	      items: '=',
+	      fields: '=',
+	      updateAction: '&'
+	    },
+	    controller: function($scope, $element, $attrs, $injector) {},
+	    link: function(scope, iElement, iAttrs, controller) {
+	      scope.isUpdateActionDefined = iAttrs.updateAction != null;
+	      scope.isDeleteActionDefined = iAttrs.deleteAction != null;
+	      scope.select = function(item) {
+	        scope.selected = item;
+	      };
+	    }
+	  };
+	});
+
 
 /***/ },
 /* 15 */
@@ -737,6 +765,24 @@
 	/* WEBPACK VAR INJECTION */(function(__webpack_amd_options__) {module.exports = __webpack_amd_options__;
 	
 	/* WEBPACK VAR INJECTION */}.call(exports, {}))
+
+/***/ },
+/* 16 */
+/*!***********************************************************************************!*\
+  !*** ./src/Morenware/DutilsBundle/Resources/client/app/components/adminForm.html ***!
+  \***********************************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "\n  <div class=\"col-lg-12\">\n    <h3>[[formTitle]]</h3>\n    <div ng-repeat=\"field in fields\" class=\"row\">\n      <div class=\"form-group col-lg-4\">\n        <label for=\"{{field.name}}\" class=\"control-label\">{{field.label}}</label>\n        <input type=\"text\" ng-model=\"field.value\" class=\"form-control\" id=\"{{field.name}}\" placeholder=\"{{field.placeholder}}\"/>\n      </div>\n    </div>\n    <div class=\"row\">\n      <div class=\"form-group\">\n        <button class=\"btn\" ng-click=\"submitAction()\">[[submitText]]</button>\n      </div>\n    </div>\n\n</div>\n"
+
+/***/ },
+/* 17 */
+/*!************************************************************************************!*\
+  !*** ./src/Morenware/DutilsBundle/Resources/client/app/components/adminTable.html ***!
+  \************************************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<div class=\"table-responsive\">\n    <table class=\"table table-striped\">\n        <thead>\n            <tr>\n                <th>#</th>\n                <th ng-repeat=\"field in fields\" ng-bind=\"field.label\"></th>\n                <th>Actions</th>\n            </tr>\n        </thead>\n        <tbody>\n            <tr ng-repeat=\"item in items\" ng-class=\"{highlight: item==selected}\">\n                <td ng-bind=\"$index+1\"></td>\n                <td ng-repeat=\"field in fields\" ng-bind=\"item[field.name]\"></td>\n                <td>\n                    <!-- expression ngClick: we delegate in the parent scope the updateAction by passing in the current item as 'item', which becomes an scoped value in the parent scope of this directive. Therefore, 'item' will be available in the parent scope to manipulate -->\n                    <a ng-if=\"isUpdateActionDefined\" href=\"#\" ng-click=\"updateAction({item: item})\"><span class=\"glyphicon glyphicon-pencil\"></span>&nbsp;</a>\n                    <a href=\"isDeleteActionDefined\"><span class=\"glyphicon glyphicon-remove\"></span></a>\n                </td>\n            </tr>\n        </tbody>\n    </table>\n</div>"
 
 /***/ }
 /******/ ])

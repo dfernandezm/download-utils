@@ -83,7 +83,7 @@ class TransmissionService {
 		
 	}
 	
-	public function startDownloadInRemoteTransmission($torrent) {
+	public function startDownloadInRemoteTransmission($torrent, $isFromFile = false) {
 		
 		$link = $torrent->getMagnetLink();
 		$magnetLink = "$link";
@@ -94,11 +94,14 @@ class TransmissionService {
 	    $username = self::TRANSMISSION_USERNAME;
 	    $password = self::TRANSMISSION_PASSWORD;
 	    $credentials = "$username:$password";
-	    
-	    //$addTorrent = array( "method" => "torrent-add", "arguments" => array ("paused" => false, "filename" => "$magnetLink"));
-	    //json_encode
 	
-	    $addTorrentJson = "{\"method\":\"torrent-add\",\"arguments\":{\"paused\":false,\"filename\":\"$magnetLink\"} }";
+	    $filenameParameter = $magnetLink;
+	    
+		if ($isFromFile) {
+			$filenameParameter = $torrent->getFilePath();
+		}    
+	    
+	    $addTorrentJson = "{\"method\":\"torrent-add\",\"arguments\":{\"paused\":false,\"filename\":\"$filenameParameter\"} }";
 	
 	    $headers = array(
 	            'Content-Type: application/json',

@@ -102,4 +102,19 @@ class SearchTorrentsController extends Controller {
 // 		}
 	}
 	
+	/**
+	 * Create instance.
+	 *
+	 * @Route("/torrent/download")
+	 * @Method("POST")
+	 *
+     * @ParamConverter("torrent", class="Entity\Torrent", options={"json_property" = "torrent"})
+	 *
+	 */
+	public function downloadTorrentAction(Torrent $torrent) {
+		$this->searchService->downloadTorrentToFileAndStart($torrent);
+		return ControllerUtils::createJsonResponseForArray(null);
+	}
+		
+		
 }

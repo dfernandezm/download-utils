@@ -1,56 +1,74 @@
-app.controller 'feedsController', ['$scope', 'Feed', '$rootScope', ($scope, Feed, $rootScope) ->
+app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
 
   init = ->
     $scope.feeds = Feed.getAll()
-    $scope.showForm = false
+    $scope.showFeedsForm = false
     $scope.submitText = "Add"
-    $scope.formTitle = "Feeds Form"
-    $scope.showForm = false
+    $scope.formTitle = "Add new feed"
+    $scope.actionToPerform = "add"
+
+    $scope.feedsFields = [
+      {
+        label: "Url",
+        name: "url",
+        value: null
+      },
+      {
+        label: "Description",
+        name: "description",
+        value: null
+      }
+    ]
+
     return
 
   $scope.action = ->
-    collect()
-    update()
+    collectValues()
+    if $scope.actionToPerform is "add" then save() else update()
     return
 
   save = ->
-    $scope.feed.$save((f) ->
-      console.log("Feed saved " + f)
+    $scope.feed.$save((feed) ->
+      console.log("Feed saved " + feed)
       init()
       return
     )
     return
 
   update = ->
-    $scope.feed.$update((f) ->
-        console.log("Updated " + f)
+    $scope.formTitle = "Updating..."
+    $scope.feed.$update((feed) ->
+        console.log("Updated " + feed)
+        $scope.feed = null
+        $scope.showFeedsForm = false
         return
     )
     return
 
   $scope.newFeed = ->
-    $scope.showForm = true
+    $scope.submitText = "Add"
+    $scope.formTitle = "Add new feed"
+    $scope.actionToPerform = "add"
+    $scope.showFeedsForm = true
     $scope.feed = new Feed()
     return
 
-  $scope.getSelectedFeed = ->
-    return $scope.feed
-
+  # Called from HTML to show the form to update one feed
   $scope.editFeed = (feed) ->
-    $scope.showForm = true
-    $scope.feed = feed
+    $scope.formTitle = "Update feed"
     $scope.submitText = "Update"
+    $scope.actionToPerform = "update"
+    $scope.showFeedsForm = true
+    $scope.feed = feed
 
-    for field in $scope.fields
-      field.value = feed.url if field.name is 'Url'
-      field.value = feed.description if field.name is 'Description'
+    for field in $scope.feedsFields
+      field.value = feed[field.name]
 
     return
 
-  collect = ->
-    for field in $scope.fields
-      $scope.feed.url = field.value if field.name is 'Url'
-      $scope.feed.description = field.value if field.name is 'Description'
+  collectValues = ->
+    for field in $scope.feedsFields
+      $scope.feed[field.name] = field.value
 
   init()
 
