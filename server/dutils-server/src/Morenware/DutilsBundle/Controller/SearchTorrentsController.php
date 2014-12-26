@@ -79,8 +79,6 @@ class SearchTorrentsController extends Controller {
 			$response->setContent(readfile($fileLink));
 			
 		}
-		
-		
 	}
 	
 	/**
@@ -94,12 +92,7 @@ class SearchTorrentsController extends Controller {
 	 */
 	public function addTorrentAction(Torrent $torrent) {
 			
-// 		if (!$instance->getId()) {
-// 			$this->instanceService->persist($instance);
-// 			return ControllerUtils::createJsonResponseForDto($this->serializer, $instance, 201);
-// 		} else {
-// 			return ControllerUtils::createJsonResponseForArray(array("error"=>"ID found, use PUT to update", "errorCode" => 405), 405);
-// 		}
+
 	}
 	
 	/**

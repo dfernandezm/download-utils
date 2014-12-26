@@ -567,9 +567,13 @@
 
 	app.controller('feedsController', [
 	  '$scope', 'Feed', function($scope, Feed) {
-	    var collectValues, init, save, update;
+	    var collectValues, deleteFeed, init, save, update;
 	    init = function() {
-	      $scope.feeds = Feed.getAll();
+	      $scope.loading = true;
+	      $scope.feeds = Feed.getAll(function(data) {
+	        $scope.loading = false;
+	        return console.log("Feeds loaded");
+	      });
 	      $scope.showFeedsForm = false;
 	      $scope.submitText = "Add";
 	      $scope.formTitle = "Add new feed";
@@ -578,10 +582,17 @@
 	        {
 	          label: "Url",
 	          name: "url",
+	          type: "text",
 	          value: null
 	        }, {
 	          label: "Description",
 	          name: "description",
+	          type: "text",
+	          value: null
+	        }, {
+	          label: "Active",
+	          name: "active",
+	          type: "boolean",
 	          value: null
 	        }
 	      ];
@@ -606,6 +617,11 @@
 	        console.log("Updated " + feed);
 	        $scope.feed = null;
 	        $scope.showFeedsForm = false;
+	      });
+	    };
+	    deleteFeed = function() {
+	      return $scope.feed.$delete(function(feed) {
+	        return console.log("Feed deleted!");
 	      });
 	    };
 	    $scope.newFeed = function() {
@@ -773,7 +789,7 @@
   \***********************************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = "\n  <div class=\"col-lg-12\">\n    <h3>[[formTitle]]</h3>\n    <div ng-repeat=\"field in fields\" class=\"row\">\n      <div class=\"form-group col-lg-4\">\n        <label for=\"{{field.name}}\" class=\"control-label\">{{field.label}}</label>\n        <input type=\"text\" ng-model=\"field.value\" class=\"form-control\" id=\"{{field.name}}\" placeholder=\"{{field.placeholder}}\"/>\n      </div>\n    </div>\n    <div class=\"row\">\n      <div class=\"form-group\">\n        <button class=\"btn\" ng-click=\"submitAction()\">[[submitText]]</button>\n      </div>\n    </div>\n\n</div>\n"
+	module.exports = "\n  <div class=\"col-lg-12\">\n    <h3>[[formTitle]]</h3>\n    <div ng-repeat=\"field in fields\" class=\"row\">\n\n      <div class=\"form-group col-lg-4\">\n\n      <div ng-switch on=\"field.type\">\n        <div ng-switch-when=\"text\">\n          <label for=\"{{field.name}}\" class=\"control-label\">{{field.label}}</label>\n          <input type=\"text\" ng-model=\"field.value\" class=\"form-control\" id=\"{{field.name}}\" placeholder=\"{{field.placeholder}}\"/>\n        </div>\n        <div ng-switch-when=\"boolean\">\n          <div class=\"checkbox\">\n            <label for=\"{{field.name}}\">\n              <input type=\"checkbox\" ng-model=\"field.value\" id=\"{{field.name}}\" placeholder=\"{{field.placeholder}}\"/> {{field.label}}\n            </label>\n          </div>\n        </div>\n      </div>\n\n      </div>\n    </div>\n    <div class=\"row\">\n      <div class=\"form-group\">\n        <button class=\"btn\" ng-click=\"submitAction()\">[[submitText]]</button>\n      </div>\n    </div>\n\n</div>\n"
 
 /***/ },
 /* 17 */
@@ -782,7 +798,7 @@
   \************************************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = "<div class=\"table-responsive\">\n    <table class=\"table table-striped\">\n        <thead>\n            <tr>\n                <th>#</th>\n                <th ng-repeat=\"field in fields\" ng-bind=\"field.label\"></th>\n                <th>Actions</th>\n            </tr>\n        </thead>\n        <tbody>\n            <tr ng-repeat=\"item in items\" ng-class=\"{highlight: item==selected}\">\n                <td ng-bind=\"$index+1\"></td>\n                <td ng-repeat=\"field in fields\" ng-bind=\"item[field.name]\"></td>\n                <td>\n                    <!-- expression ngClick: we delegate in the parent scope the updateAction by passing in the current item as 'item', which becomes an scoped value in the parent scope of this directive. Therefore, 'item' will be available in the parent scope to manipulate -->\n                    <a ng-if=\"isUpdateActionDefined\" href=\"#\" ng-click=\"updateAction({item: item})\"><span class=\"glyphicon glyphicon-pencil\"></span>&nbsp;</a>\n                    <a href=\"isDeleteActionDefined\"><span class=\"glyphicon glyphicon-remove\"></span></a>\n                </td>\n            </tr>\n        </tbody>\n    </table>\n</div>"
+	module.exports = "<div class=\"table-responsive\">\n    <table class=\"table table-striped\">\n        <thead>\n            <tr>\n                <th>#</th>\n                <th ng-repeat=\"field in fields\" ng-bind=\"field.label\"></th>\n                <th>Actions</th>\n            </tr>\n        </thead>\n        <tbody>\n            <tr ng-repeat=\"item in items\" ng-class=\"{highlight: item==selected}\">\n                <td ng-bind=\"$index+1\"></td>\n                <td ng-repeat=\"field in fields\">\n                     <div ng-switch on=\"field.type\">\n                        <div ng-switch-when=\"text\" ng-bind=\"item[field.name]\">\n                        </div>\n                        <div ng-switch-when=\"boolean\">\n                            <a href=\"#\" class=\"table-boolean glyphicon\"\n                             ng-class=\"item[field.name] ? 'glyphicon-ok' : 'glyphicon-remove'\"></a>\n                        </div>\n                     </div>\n                </td>\n                <td>\n                    <!-- expression inside the ngClick: we delegate in the parent scope the updateAction by passing in the current item as 'item', which becomes an scoped value in the parent scope of this directive. Therefore, 'item' will be available in the parent scope to manipulate - Use of '&' in the directive to achieve this -->\n                    <a ng-if=\"isUpdateActionDefined\" href=\"#\" ng-click=\"updateAction({item: item})\"><span class=\"glyphicon glyphicon-pencil\"></span>&nbsp;</a>\n                    <!-- TODO: delete action -->\n                    <a ng-if=\"isDeleteActionDefined\"><span class=\"glyphicon glyphicon-remove\"></span></a>\n                </td>\n            </tr>\n        </tbody>\n    </table>\n</div>"
 
 /***/ }
 /******/ ])

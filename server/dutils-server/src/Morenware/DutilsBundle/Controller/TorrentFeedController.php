@@ -94,12 +94,10 @@ class TorrentFeedController {
 	}
 	
 	/**
-	 * Delete feed.
+	 * Deletes the feed with the given id.
 	 *
 	 * @Route("/feeds/{id}")
 	 * @Method("DELETE")
-	 *
-	 * @ParamConverter("feed", class="Entity\Feed", options={"json_property" = "feed"})
 	 *
 	 */
 	public function deleteFeedAction($feedId) {
@@ -121,27 +119,28 @@ class TorrentFeedController {
 	}
 	
 	/**
-	 * Check feeds
+	 * Check the active feeds for new torrents. If torrents are found they are created in the system pending to download and
+	 * queued in Transmission.
 	 * 
-	 * @Route("/checkfeeds")
+	 * @Route("/feeds/check")
 	 * @Method("GET")
 	 * 
 	 */
 	public function checkFeedsAction() {
 	
-// 		try {
-// 			$this->torrentFeedService->checkFeedsForTorrents();
-// 			return ControllerUtils::createJsonResponseForArray(null);
-// 		} catch(\Exception $e)  {
-// 			$error = array(
-// 					"error" => "There was an error executing ".$e->getMessage(),
-// 					"errorCode" => 500);
+		try {
+			$this->torrentFeedService->checkFeedsForTorrents();
+			return ControllerUtils::createJsonResponseForArray(null);
+		} catch(\Exception $e)  {
+			$error = array(
+					"error" => "There was an error checking feeds ".$e->getMessage(),
+					"errorCode" => 500);
 				
-// 			return ControllerUtils::createJsonResponseForArray($error, 500);
-// 		}
+			return ControllerUtils::createJsonResponseForArray($error, 500);
+		}
 
-		$this->processManager->startDownloadsMonitoring();
-		return ControllerUtils::createJsonResponseForArray(null);
+// 		$this->processManager->startDownloadsMonitoring();
+// 		return ControllerUtils::createJsonResponseForArray(null);
 	}
 	
 	

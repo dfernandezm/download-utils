@@ -38,6 +38,12 @@ class Feed {
 	 */
 	private $lastDownloadDate;
 	
+	/**
+	 * @ORM\Column(name="active", type="boolean", nullable=true)
+	 */
+	private $active;
+	
+	
 	public function getId() {
 		return $this->id;
 	}
@@ -73,6 +79,14 @@ class Feed {
 		$this->lastDownloadDate = $lastDownloadDate;
 		return $this;
 	}
+	public function getActive() {
+		return $this->active;
+	}
+	public function setActive($active) {
+		$this->active = $active;
+		return $this;
+	}
+	
 	
 	
 }

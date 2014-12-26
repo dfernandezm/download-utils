@@ -8,13 +8,12 @@ app.directive 'adminTable', ->
     items: '='
     fields: '=' # Maybe One way value
 
-    # Pass in a function (Angular expression) which will be evaluated in the parent scope (see template)
-    # With this we decouple the actual action to update (so we can put it in any controller) from this instance of table
+    # Pass in a function (Angular expression) which will be evaluated in the parent scope of this directive (see template)
+    # With this we decouple the actual action to update away from the directive itself, so we can re-use it in any controller
     updateAction: '&'
   },
   controller: ($scope, $element, $attrs, $injector) ->
     # Here, behaviour common for all tables
-    # Move this code to link!!
     return
   link: (scope, iElement, iAttrs, controller) ->
     # specific to this table

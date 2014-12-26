@@ -1,7 +1,12 @@
+# TODO: add error callbacks
 app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
 
   init = ->
-    $scope.feeds = Feed.getAll()
+    $scope.loading = true
+    $scope.feeds = Feed.getAll((data) ->
+      $scope.loading = false
+      console.log("Feeds loaded")
+    )
     $scope.showFeedsForm = false
     $scope.submitText = "Add"
     $scope.formTitle = "Add new feed"
@@ -11,11 +16,19 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
       {
         label: "Url",
         name: "url",
+        type: "text",
         value: null
       },
       {
         label: "Description",
         name: "description",
+        type: "text",
+        value: null
+      },
+      {
+        label: "Active",
+        name: "active",
+        type: "boolean",
         value: null
       }
     ]
@@ -44,6 +57,11 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
         return
     )
     return
+
+  deleteFeed = ->
+    $scope.feed.$delete((feed) ->
+      console.log("Feed deleted!")
+    )
 
   $scope.newFeed = ->
     $scope.submitText = "Add"
