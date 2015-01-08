@@ -62,6 +62,10 @@ class TorrentFeedService {
 	
 	public function merge($feed) {
 		$this->em->merge($feed);
+	}
+	
+	public function update($feed) {
+		$this->em->merge($feed);
 		$this->em->flush();
 	}
 	
@@ -92,24 +96,27 @@ class TorrentFeedService {
 		
 		foreach ($feeds as $feed) {
 			
-			// Check each feed in a separate transaction
-			$this->em->transactional(function($em) use ($feed) {
+			if ($feed->getActive()) {
 				
-				try {
-					$torrents = $this->parseFeedContentToTorrents($feed);
-				} catch(\Exception $e) {
-					$this->logger->warn("We assume there is an error in the feed -- continue ". $e->getMessage());
-					return;
-				}
+				$this->logger->info("Reading active feed ".$feed->getDescription());
+				// Check each feed in a separate transaction
+				$this->em->transactional(function($em) use ($feed) {
 				
-				foreach ($torrents as $torrent) {
-					$this->torrentService->create($torrent);
-					$this->logger->debug("Persisted torrent entity ". $torrent->getGuid() ." torrents from feed ".$feed->getDescription());
-					$this->logger->info("Sending torrent to remote Transmission...");
-					$this->transmissionService->startDownloadInRemoteTransmission($torrent);
-				}	
+					try {
+						$torrents = $this->parseFeedContentToTorrents($feed);
+					} catch(\Exception $e) {
+						$this->logger->warn("We assume there is an error in the feed -- continue with next feed". $e->getMessage());
+						continue;
+					}
+				
+					foreach ($torrents as $torrent) {
+						$this->torrentService->create($torrent);
+						$this->logger->info("Sending torrent ". $torrent->getGuid() ." torrents from feed ".$feed->getDescription() . " to Transmission for download");
+						$this->transmissionService->startDownloadInRemoteTransmission($torrent);
+					}	
 			
-			});
+				});
+			}
 		}
 		
 	}
@@ -117,7 +124,7 @@ class TorrentFeedService {
 	
 	public function parseFeedContentToTorrents($feed) {
 		
-		$this->logger->info("Parsing feed ".$feed->getUrl());
+		$this->logger->info("Parsing feed with URL ".$feed->getUrl());
 		
 		$lastDownloadDate = $feed->getLastDownloadDate();
 		
@@ -130,7 +137,7 @@ class TorrentFeedService {
 		$titles = array();
 		$torrents = array();
 	
-		// Regardless of existing torrents or not, we are checking the feed, so set the lastCheckedDate to now
+		// Regardless of existence of torrents to download or not, we are checking the feed, so we set the lastCheckedDate to now
 		$feed->setLastCheckedDate(new \DateTime());
 		
 		foreach ($readItems as $item) {
@@ -145,6 +152,8 @@ class TorrentFeedService {
 			$torrent->setGuid(GuidGenerator::generate());
 		
 			$torrentTitle = $torrent->getTitle();
+			
+			//TODO: Take into account 1080p
 			$currentIsHD = strpos($torrentTitle, '720p') !== false;
 			$titleNoQuality = str_replace("720p", "", $torrentTitle);
 			$titleToSearch = trim(strtolower(str_replace(" ", "", $titleNoQuality))); 			
@@ -172,6 +181,7 @@ class TorrentFeedService {
 			$feed->setLastDownloadDate(new \DateTime());
 		} 
 		
+		//TODO: only update if the Transmission Download started correctly -- wrap into transactional block
 		$this->merge($feed);
 		
 		return $torrents;

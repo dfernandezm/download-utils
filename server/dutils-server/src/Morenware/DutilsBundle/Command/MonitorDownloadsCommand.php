@@ -78,7 +78,7 @@ class MonitorDownloadsCommand extends Command {
 		}
 		
 		unlink($pidFile);
-		//unlink(str_replace(".pid",".sh", $pidFile));
+		unlink($terminatedFile);
 	}
 	
 	

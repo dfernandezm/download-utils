@@ -28,9 +28,13 @@ class TorrentFeedController {
 	/** @DI\Inject("logger") */
 	private $logger;
 	
-	/** @DI\Inject("processmanager.service") */
-	private $processManager;
+	/** @DI\Inject("transmission.service") */
+	public $transmissionService;
 	
+	/** @DI\Inject("processmanager.service") */
+	public $processManager;
+	
+
 	
 	/**
 	 * Get feed by id
@@ -86,7 +90,7 @@ class TorrentFeedController {
 			
 		if ($id) {
 			$feed->setId($id);
-			$this->torrentFeedService->merge($feed);
+			$this->torrentFeedService->update($feed);
 			return ControllerUtils::createJsonResponseForDto($this->serializer, $feed, 200);
 		} else {
 			return $this->createFeedPostAction($feed);
@@ -94,7 +98,7 @@ class TorrentFeedController {
 	}
 	
 	/**
-	 * Deletes the feed with the given id.
+	 * Delete feed with the given id.
 	 *
 	 * @Route("/feeds/{id}")
 	 * @Method("DELETE")
@@ -122,7 +126,7 @@ class TorrentFeedController {
 	 * Check the active feeds for new torrents. If torrents are found they are created in the system pending to download and
 	 * queued in Transmission.
 	 * 
-	 * @Route("/feeds/check")
+	 * @Route("/feedscheck")
 	 * @Method("GET")
 	 * 
 	 */
@@ -139,11 +143,55 @@ class TorrentFeedController {
 			return ControllerUtils::createJsonResponseForArray($error, 500);
 		}
 
-// 		$this->processManager->startDownloadsMonitoring();
-// 		return ControllerUtils::createJsonResponseForArray(null);
 	}
 	
+	/**
+	 * TODO: Move to another API endpoint
+	 * 
+	 * Check status of downloading torrents
+	 *
+	 * @Route("/torrents/check")
+	 * @Method("GET")
+	 *
+	 */
+	public function checkTorrentsAction() {
 	
+		try {
+			$this->transmissionService->checkTorrentsStatus();
+			return ControllerUtils::createJsonResponseForArray(null);
+		} catch(\Exception $e)  {
+			$error = array(
+					"error" => "There was an error checking torrents ".$e->getMessage(),
+					"errorCode" => 500);
+	
+			return ControllerUtils::createJsonResponseForArray($error, 500);
+		}
+	
+	}
+	
+	/**
+	 * TODO: Move to another API endpoint
+	 *
+	 * Check status of downloading torrents every 10 seconds
+	 *
+	 * @Route("/torrents/checkdaemon")
+	 * @Method("GET")
+	 *
+	 */
+	public function checkTorrentsContinuouslyAction() {
+	
+		try {
+			$this->processManager->startDownloadsMonitoring();
+			return ControllerUtils::createJsonResponseForArray(null);
+		} catch(\Exception $e)  {
+			$error = array(
+					"error" => "There was an error checking torrents ".$e->getMessage(),
+					"errorCode" => 500);
+	
+			return ControllerUtils::createJsonResponseForArray($error, 500);
+		}
+	
+	}
 	
 	
 }

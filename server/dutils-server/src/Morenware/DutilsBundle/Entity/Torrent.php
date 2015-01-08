@@ -39,7 +39,7 @@ class Torrent {
 	protected $hash;
 	
 	/**
-	 * @ORM\Column(name="magnet_link", type="string", length=300)
+	 * @ORM\Column(name="magnet_link", type="string", length=300, nullable=true)
 	 */
 	protected $magnetLink;
 	
@@ -83,6 +83,13 @@ class Torrent {
 	 * @ORM\Column(name="torrent_file_link", type="string", nullable=true)
 	 */
 	protected $torrentFileLink;
+	
+	/**
+	 * @ORM\Column(name="percent_done", type="float", nullable=true)
+	 */
+	protected $percentDone;
+	
+	
 		
 	
 	public function getTitle() {
@@ -183,5 +190,13 @@ class Torrent {
 		$this->torrentFileLink = $torrentFileLink;
 		return $this;
 	}
+	public function getPercentDone() {
+		return $this->percentDone;
+	}
+	public function setPercentDone($percentDone) {
+		$this->percentDone = $percentDone;
+		return $this;
+	}
+	
 	
 }
