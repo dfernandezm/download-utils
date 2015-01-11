@@ -62,12 +62,12 @@ class MonitorDownloadsCommand extends Command {
 		$handle = fopen($pidFile, "w");
 		fwrite($handle, $pid);
 		
-		$output->writeln("Monitor process started with GUID $guid and PID $pid");
+		$output->writeln("[MONITOR-DOWNLOADS] Monitor process started with GUID $guid and PID $pid");
+		$this->logger->debug("[MONITOR-DOWNLOADS] Monitor process started with GUID $guid and PID $pid");
 		
 		while(!file_exists($terminatedFile)) {
 			$this->transmissionService->checkTorrentsStatus();
-			$this->logger->debug("Checking status of torrents...");
-			//$output->writeln("Checking status of torrents...");
+			$this->logger->debug("[MONITOR-DOWNLOADS] Checking status of torrents...");
 			sleep(10);
 		}
 		

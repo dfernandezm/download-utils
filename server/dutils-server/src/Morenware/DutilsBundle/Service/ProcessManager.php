@@ -104,6 +104,7 @@ class ProcessManager {
 		
 		$this->logger->debug("The script being written is in path $scriptFilePath");
 		file_put_contents($scriptFilePath, $scriptContent);
+		chmod($scriptFilePath, 0755);
 
 		return $scriptFilePath;
 	}

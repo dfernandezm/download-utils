@@ -21,6 +21,7 @@ class TransmissionService {
 	/** @DI\Inject("torrent.service") */
 	public $torrentService;
 	
+
 	/** @DI\Inject("processmanager.service") */
 	public $processManager;
 	
@@ -28,6 +29,8 @@ class TransmissionService {
 	const TRANSMISSION_PORT = "9091";
 	const TRANSMISSION_USERNAME = "transmission";
 	const TRANSMISSION_PASSWORD = "ZVCvrasp";
+	
+	const BASE_TORRENTS_PATH = "/home/david/scripts/downloads";
 	
 
    /**
@@ -42,7 +45,8 @@ class TransmissionService {
 	}
 	
 	public function getSessionIdHeader() {
-
+		//TODO: use memcached here!
+		
 		if (!isset($this->sessionIdHeader)) {
 			
 			$host = self::TRANSMISSION_HOST;
@@ -77,6 +81,7 @@ class TransmissionService {
 				$sessionIdHeader = $matches[2];
 				$this->logger->debug("The session id header is ". $sessionIdHeader);
 				$this->sessionIdHeader = $sessionIdHeader;
+				
 			}
 			
 			curl_close($curl);
@@ -89,6 +94,9 @@ class TransmissionService {
 	//TODO: Add support for starting multiple downloads at the same time, like the upload feature in the WebInterface
 	// of Transmission - Check RPC api or WebInterface code
 	public function startDownloadInRemoteTransmission($torrent, $isFromFile = false) {
+		
+		// Ensure transmission has the right configuration (cache this to not call every time)
+		$this->configureTransmission();
 		
 		$link = $torrent->getMagnetLink();
 		$magnetLink = "$link";
@@ -105,7 +113,7 @@ class TransmissionService {
 		if ($isFromFile) {
 			$filenameParameter = $torrent->getFilePath();
 		}    
-	    
+		
 	    $addTorrentJson = "{\"method\":\"torrent-add\",\"arguments\":{\"paused\":false,\"filename\":\"$filenameParameter\"} }";
 	
 	    $headers = array(
@@ -153,18 +161,22 @@ class TransmissionService {
 		    		continue;
 		    	}
 		    	
-		    	//TODO: better handling of lowercase
+		    	//TODO: better handling of lowercase, BETTER HANDLING OF DUPLICATE
 		    	if (strpos($resultAsArray->result, "Success") !== false || strpos($resultAsArray->result, "success") !== false) {
 		        	$this->logger->debug("Successful call to Transmission -- torrent added: " . $torrent->getTitle());
 		        	
 		        	$torrentInfo = $resultAsArray->arguments->torrentadded;
-		        	$nameAdded = $torrentInfo->name;
+		        	$nameAdded = str_replace('+', '.', $torrentInfo->name);
+		        	$nameAdded = str_replace(' ', '.', $torrentInfo->name);
 		        	$transmissionId = $torrentInfo->id;
 		        	$hash = $torrentInfo->hashString;
 
 		        	$torrent->setHash($hash);
 		        	$torrent->setTransmissionId($transmissionId);
 		        	$torrent->setTorrentName($nameAdded);
+		        	
+		        	// Relocate based on hash
+		        	$this->relocateTorrent($transmissionId, $nameAdded, $hash);
 		        	
 		    	} else if (strpos($resultAsArray->result, "duplicate") !== false) {	
 		    		$this->logger->debug("Duplicated torrent: " . $torrent->getTitle() . " not adding "); 
@@ -178,6 +190,7 @@ class TransmissionService {
 		    	}
 		
 		    	$success = true;
+		    	
 		    	curl_close($curl);
 		    	
 	    	} catch (\Exception $e) {
@@ -279,7 +292,7 @@ class TransmissionService {
 		// Percent done is a number between 0 and 1
 		$requestPayload = array(
 			"method" => "torrent-get",
-			"arguments" => array("fields" => array("id", "name", "totalSize", "percentDone")) 
+			"arguments" => array("fields" => array("id", "name", "totalSize", "percentDone", "hashString")) 
 		);
 		
 		$jsonRequest = json_encode($requestPayload);
@@ -313,4 +326,103 @@ class TransmissionService {
 	public function onDownloadCompleted() {
 		//TODO:
 	}
+	
+	
+	public function relocateTorrent($torrentTransmissionId, $torrentName, $torrentHash) {
+		
+		$newLocation = $this->getTorrentSubfolderPath($torrentName, $torrentHash);
+		
+		$this->logger->debug("Relocating torrent with id $torrentTransmissionId into subfolder $newLocation ");
+		
+		$requestPayload = array(
+				"method" => "torrent-set-location",
+				"arguments" => array("ids" => array($torrentTransmissionId), "location" => $newLocation, "move" => true)		
+		);
+		
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		
+		$this->logger->debug("The payload to send to transmission API is $jsonRequest");
+		
+		$result = $this->makeRequest($jsonRequest);
+		
+		$this->logger->debug("Result of call is: ". json_encode($result));
+		
+		// Give appropriate permission to the path
+		// chmod($newLocation, 0777);
+	}
+	
+	/**
+	 * Sets some global session properties in Transmission
+	 * 
+	 *  - Sets the download-dir to a known path (one with the right permission)
+	 *  - Sets the "script-torrent-done-filename" and "script-torrent-done-enabled" values to a script which starts renaming command
+	 * 
+	 */
+	//TODO: cache somewhere that this has been done properly to not keep doing it every time
+	public function configureTransmission() {
+	
+		$this->logger->info("[TRANSMISSION-CONFIGURE-SESSION] Setting up transmission session settings");
+		
+		// This will prepare one script to execute the renaming in the scripts temporary area
+		$scriptToStartRenaming = $this->processManager->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS);
+		
+		$requestPayload = array(
+				"method" => "session-set",
+				"arguments" => array("download-dir" => self::BASE_TORRENTS_PATH, 
+						             "script-torrent-done-enabled" => true,
+									 "script-torrent-done-filename" => "$scriptToStartRenaming")
+		);
+	
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		
+		$this->logger->debug("[TRANSMISSION-CONFIGURE-SESSION] The payload to send to transmission API is $jsonRequest");
+		
+		$result = $this->makeRequest($jsonRequest);
+		
+		$this->logger->debug("[TRANSMISSION-CONFIGURE-SESSION] The result to set Session settings in Transmission is: ". json_encode($result));
+		
+		
+	}
+	
+	//TODO: cache this with memcached, session or DB
+	public function getSessionInfo() {
+		
+		$this->logger->info("[TRANSMISSION-CONFIGURE] Getting transmission session properties");
+		
+		$requestPayload = array(
+				"method" => "session-get",
+				"arguments" => array("download-dir")
+		);
+		
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		
+		$this->logger->debug("The payload to send to transmission API is $jsonRequest");
+		
+		$result = $this->makeRequest($jsonRequest);
+		$this->logger->debug("Result of call is: ". json_encode($result));
+		$resultAsAssociativeArray =  json_decode(json_encode($result, JSON_UNESCAPED_SLASHES), true, JSON_UNESCAPED_SLASHES);
+		return $resultAsAssociativeArray;
+	}
+	
+	
+	public function getSessionProperty($sessionProperty) {
+		
+		$this->logger->info("[TRANSMISSION-CONFIGURE] Requesting value of property $sessionProperty");
+		
+		$sessionProperties = $this->getSessionInfo();
+		$requestedPropertyPropertyValue = $sessionProperties["arguments"][$sessionProperty]; 
+		
+		$this->logger->info("[TRANSMISSION-CONFIGURE] The value for property $sessionProperty is $requestedPropertyPropertyValue");
+		
+		return $requestedPropertyPropertyValue;
+	}
+	
+	public function getTorrentSubfolderPath($torrentName, $torrentHash) {
+		$newPath = $this->getSessionProperty("download-dir") . "/" . $torrentName . "_" . $torrentHash;
+		return $newPath;
+	}
+
+	
+	
+	
 }

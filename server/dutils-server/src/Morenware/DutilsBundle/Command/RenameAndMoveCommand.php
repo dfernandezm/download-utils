@@ -26,10 +26,12 @@ class RenameAndMoveCommand extends Command {
 	
 	/** @DI\Inject("kernel") */
 	public $kernel;
-
 	
+	/** @DI\Inject("torrent.service") */
+	public $torrentService;
+
 	// The script which actually performs a full rename of the main folder
-	const RENAME_SCRIPT = "scripts/rename-filebot.sh";
+	const RENAME_SCRIPT_PATH = "scripts/rename-filebot.sh";
 	
 	/**
 	 * @DI\InjectParams({
@@ -58,7 +60,8 @@ class RenameAndMoveCommand extends Command {
 	protected function execute(InputInterface $input, OutputInterface $output) {
 		
 		$logger = $this->logger;
-		$logger->info("Executing renamer command");
+		
+		$logger->info("[RENAMING] Initializing renamer process");
 		
 		$terminatedFile = "/home/david/scripts/renamer.terminated";
 		$pid = getmypid();
@@ -66,7 +69,7 @@ class RenameAndMoveCommand extends Command {
 		
 		// Check race condition, only one rename at a time
 		if (file_exists($pidFile)) {
-			$logger->debug("There is already one renamer process running -- exiting");
+			$logger->debug("[RENAMING] There is already one renamer process running -- exiting");
 			return;
 		}
 		
@@ -74,63 +77,72 @@ class RenameAndMoveCommand extends Command {
 		fwrite($handle, $pid);
 		
 		// Perform substitutions in the template renamer script
-		$scriptToExecute = $this->prepareRenameScriptToExecute();	
+		list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($pid, "raspbmc");	
 		
-		$output->writeln("Renamer process started with PID $pid");
-		$logger->info("Renamer command started with PID $pid");
+		$output->writeln("[RENAMING] Renamer process started with PID $pid");
+		$logger->info("[RENAMING] Renamer process started with PID $pid");
 		
-	
 		if (!file_exists($terminatedFile)) {
 
-			$logger->debug("The script to execute is: \n".$scriptToExecute);
+			$logger->debug("[RENAMING] The script to execute is $scriptToExecute");
 			
 			$waitCallback = function ($type, $buffer, $process) use ($logger, $terminatedFile) {
 					
- 				$logger->debug("Monitoring process execution...");
- 				$logger->debug("Output: ".$buffer);
+ 				$logger->debug("[RENAMING] Monitoring process execution. Output is \n $buffer");
  				
  				if (file_exists($terminatedFile)) {
- 					$logger->info("Terminated renamer worker on demand");
+ 					$logger->info("[RENAMING] Terminated renamer worker on demand");
  					$process->stop();
  				}
  			};
 
  			// By opening a new shell we avoid the execution permission
 			$commandLineExec = "sh " . $scriptToExecute;
- 			$this->processManager->startProcessAsynchronously($commandLineExec, $waitCallback);
+			
+			// We provide a callback, so the process is not asynchronous in this case, blocks until completed
+ 			$this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
 
- 			$logger->debug("Finishing renamer");
+ 			$logger->debug("[RENAMING] Renamer with PID $pid finished processing");
  			
+		} else {
+			$logger->debug("Terminated file found -- terminating");
+			$output->writeln("Terminated file found -- terminating");
+			unlink($terminatedFile);
 		}
 				
 		unlink($pidFile);
-		unlink($terminatedFile);
-		unlink($scriptToExecute);
+		
+		//Read the log to detect torrent names (match by name) and update state
+		$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
 
 	}
 	
-	public function prepareRenameScriptToExecute() {
+	public function prepareRenameScriptToExecute($processPid, $xbmcHost = null) {
 		
 		$appRoot =  $this->kernel->getRootDir();
-		$filePath = $appRoot."/".self::RENAME_SCRIPT;
+		$filePath = $appRoot."/".self::RENAME_SCRIPT_PATH;
 		
 		$this->logger->debug("The renamer template script path is $filePath");
 		
 		$scriptContent = file_get_contents($filePath);
-		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", "/home/david/scripts/downloads", $scriptContent);
-		$scriptContent = str_replace("%BASE_DOWNLOADS_PATH%", "/mediacenter/torrents", $scriptContent);
-		$scriptContent = str_replace("%GMAIL_USER%", "dfmorenza", $scriptContent);
-		$scriptContent = str_replace("%GMAIL_PASSWORD%", "ZVCv8syN", $scriptContent);
-		$scriptContent = str_replace("%XBMC_HOSTNAME%", "raspbmc", $scriptContent);
 		
-		$scriptFilePath = "/home/david/scripts/rename-filebot.sh";
+		$renamerLogFilePath = "/home/david/scripts/rename_$processPid.log"; 
+		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
+		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", "/mediacentertest", $scriptContent);
+		$scriptContent = str_replace("%BASE_DOWNLOADS_PATH%", "/home/david/scripts/downloads", $scriptContent);
+		
+		if ($xbmcHost != null) {
+			$scriptContent = str_replace("%XBMC_HOSTNAME%", $xbmcHost, $scriptContent);
+		}
+		
+		$scriptFilePath = "/home/david/scripts/rename-filebot_$processPid.sh";
 		
 		file_put_contents($scriptFilePath, $scriptContent);
 		
-		return $scriptFilePath;
+		return array($scriptFilePath, $renamerLogFilePath);
 	}
 	
-	
+	//Utility to delete files like /path/to/somename*
 	public function deleteFileUsingWildCard($pathWithWildcard) {
 		array_map('unlink', glob($pathWithWildcard));
 	}

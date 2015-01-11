@@ -181,7 +181,7 @@ class TorrentFeedService {
 			$feed->setLastDownloadDate(new \DateTime());
 		} 
 		
-		//TODO: only update if the Transmission Download started correctly -- wrap into transactional block
+		//TODO: only update if the Transmission Download started correctly
 		$this->merge($feed);
 		
 		return $torrents;

@@ -34,6 +34,8 @@ class TorrentFeedController {
 	/** @DI\Inject("processmanager.service") */
 	public $processManager;
 	
+	/** @DI\Inject("torrent.service") */
+	public $torrentService;
 
 	
 	/**
@@ -148,15 +150,18 @@ class TorrentFeedController {
 	/**
 	 * TODO: Move to another API endpoint
 	 * 
-	 * Check status of downloading torrents
+	 * Check status of downloading torrents, updating DB with fetched data
 	 *
 	 * @Route("/torrents/check")
 	 * @Method("GET")
 	 *
 	 */
-	public function checkTorrentsAction() {
+	public function checkTorrentsAction(Request $request) {
 	
 		try {
+			
+			$session = $request->getSession();
+			
 			$this->transmissionService->checkTorrentsStatus();
 			return ControllerUtils::createJsonResponseForArray(null);
 		} catch(\Exception $e)  {
@@ -180,17 +185,23 @@ class TorrentFeedController {
 	 */
 	public function checkTorrentsContinuouslyAction() {
 	
-		try {
-			$this->processManager->startDownloadsMonitoring();
-			return ControllerUtils::createJsonResponseForArray(null);
-		} catch(\Exception $e)  {
-			$error = array(
-					"error" => "There was an error checking torrents ".$e->getMessage(),
-					"errorCode" => 500);
+// 		try {
+// 			$this->processManager->startDownloadsMonitoring();
+// 			return ControllerUtils::createJsonResponseForArray(null);
+// 		} catch(\Exception $e)  {
+// 			$error = array(
+// 					"error" => "There was an error checking torrents ".$e->getMessage(),
+// 					"errorCode" => 500);
 	
-			return ControllerUtils::createJsonResponseForArray($error, 500);
-		}
+// 			return ControllerUtils::createJsonResponseForArray($error, 500);
+// 		}
 	
+// 		$this->torrentService->processTorrentsAfterRenaming("/home/david/scripts/rename_14765.log");
+
+		$torrentId = 9;
+		//$this->transmissionService->renameDownloadingTorrent($torrentId);
+		$this->transmissionService->getSessionProperty("download-dir");
+		return ControllerUtils::createJsonResponseForArray(null);
 	}
 	
 	
