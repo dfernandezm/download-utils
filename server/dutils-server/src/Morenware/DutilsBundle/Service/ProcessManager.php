@@ -35,7 +35,7 @@ class ProcessManager {
 	//TODO: refactor to use generic method startSymfonyCommandAsynchronously
 	public function startDownloadsMonitoring() {
 		if (!$this->isMonitorDownloadsRunning()) {
-			$processToExecute = "sh ".$this->prepareScriptToExecuteSymfonyCommand(CommandType::MONITOR_DOWNLOADS);
+			$processToExecute = "sh " . $this->prepareScriptToExecuteSymfonyCommand(CommandType::MONITOR_DOWNLOADS, true);
 			$this->logger->info("Starting process to monitor downloads in Transmission: $processToExecute");
 			$process = new Process($processToExecute);
 			$process->setTimeout($this->getOverallTimeout());
@@ -58,7 +58,7 @@ class ProcessManager {
 		
 		switch($command) {
 			case CommandType::RENAME_DOWNLOADS:
-				$scriptToExecute = $this->prepareScriptToExecuteCommand(CommandType::RENAME_DOWNLOADS);
+				$scriptToExecute = $this->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS);
 				$processToExecute = "sh " . $scriptToExecute;
 				$this->logger->info("Starting Symfony command asynchronously: ". $processToExecute);
 				$process = new Process($processToExecute);
@@ -78,9 +78,9 @@ class ProcessManager {
 		return file_exists("/home/david/scripts/monitor.pid");
 	}
 	
-	public function prepareScriptToExecuteSymfonyCommand($command) {
+	public function prepareScriptToExecuteSymfonyCommand($command, $executableByAll = false) {
 		
-		$this->logger->debug("Preparing script to execute Symfony command...");
+		$this->logger->debug("Preparing script to execute Symfony command $command");
 		
 		$appRoot =  $this->kernel->getRootDir();
 		$filePath = $appRoot . "/" . self::TEMPLATE_COMMAND_SCRIPT_PATH;
@@ -104,7 +104,12 @@ class ProcessManager {
 		
 		$this->logger->debug("The script being written is in path $scriptFilePath");
 		file_put_contents($scriptFilePath, $scriptContent);
-		chmod($scriptFilePath, 0755);
+		
+		if ($executableByAll) {
+			$this->logger->debug("Writing script $scriptFilePath with 0755 permission - umask 022");
+			chmod($scriptFilePath, 0755);
+			//umask(0022);
+		}
 
 		return $scriptFilePath;
 	}

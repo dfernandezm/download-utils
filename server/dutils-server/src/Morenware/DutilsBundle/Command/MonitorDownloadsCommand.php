@@ -24,7 +24,7 @@ class MonitorDownloadsCommand extends Command {
 	
 	/**
 	 * @DI\InjectParams({
-	 *     "logger"           = @DI\Inject("logger")
+	 *     "logger" = @DI\Inject("logger")
 	 * })
 	 *
 	 */
@@ -56,6 +56,7 @@ class MonitorDownloadsCommand extends Command {
 		
 		// Check race condition, only one monitoring process at a time
 		if (file_exists($pidFile)) {
+			$this->logger->debug("[MONITOR-DOWNLOADS] PID file already exists, there must be already one monitor process running -- exiting");
 			return;
 		}
 		
@@ -66,15 +67,16 @@ class MonitorDownloadsCommand extends Command {
 		$this->logger->debug("[MONITOR-DOWNLOADS] Monitor process started with GUID $guid and PID $pid");
 		
 		while(!file_exists($terminatedFile)) {
+			$this->logger->debug("[MONITOR-DOWNLOADS] Checking status of torrents in Transmission");
 			$this->transmissionService->checkTorrentsStatus();
-			$this->logger->debug("[MONITOR-DOWNLOADS] Checking status of torrents...");
+			$this->logger->debug("[MONITOR-DOWNLOADS] Waiting 10 seconds before the next torrent check...");
 			sleep(10);
 		}
 		
 		if (file_exists($terminatedFile)) {
-			$this->logger->info("Terminated monitoring worker with GUID $guid on demand");
+			$this->logger->info("Terminated monitoring worker with GUID $guid and PID $pid on demand");
 		} else {
-			$this->logger->warn("Terminated monitoring worker with GUID $guid due to unknown reason!");
+			$this->logger->warn("Terminated monitoring worker with GUID $guid and PID $pid due to unknown reason!");
 		}
 		
 		unlink($pidFile);

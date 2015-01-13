@@ -185,23 +185,24 @@ class TorrentFeedController {
 	 */
 	public function checkTorrentsContinuouslyAction() {
 	
-// 		try {
-// 			$this->processManager->startDownloadsMonitoring();
-// 			return ControllerUtils::createJsonResponseForArray(null);
-// 		} catch(\Exception $e)  {
-// 			$error = array(
-// 					"error" => "There was an error checking torrents ".$e->getMessage(),
-// 					"errorCode" => 500);
+		try {
+			$this->processManager->startDownloadsMonitoring();
+			return ControllerUtils::createJsonResponseForArray(null);
+		} catch(\Exception $e)  {
+			$error = array(
+					"error" => "There was an error checking torrents ".$e->getMessage(),
+					"errorCode" => 500);
 	
-// 			return ControllerUtils::createJsonResponseForArray($error, 500);
-// 		}
+			return ControllerUtils::createJsonResponseForArray($error, 500);
+		}
 	
 // 		$this->torrentService->processTorrentsAfterRenaming("/home/david/scripts/rename_14765.log");
 
 		$torrentId = 9;
 		//$this->transmissionService->renameDownloadingTorrent($torrentId);
-		$this->transmissionService->getSessionProperty("download-dir");
-		return ControllerUtils::createJsonResponseForArray(null);
+		
+// 		$this->transmissionService->getSessionProperty("download-dir");
+// 		return ControllerUtils::createJsonResponseForArray(null);
 	}
 	
 	

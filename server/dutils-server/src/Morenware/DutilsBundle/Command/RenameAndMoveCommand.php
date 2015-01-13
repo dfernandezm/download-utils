@@ -113,6 +113,7 @@ class RenameAndMoveCommand extends Command {
 		unlink($pidFile);
 		
 		//Read the log to detect torrent names (match by name) and update state
+		//TODO: Check exit status!!
 		$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
 
 	}
@@ -138,6 +139,9 @@ class RenameAndMoveCommand extends Command {
 		$scriptFilePath = "/home/david/scripts/rename-filebot_$processPid.sh";
 		
 		file_put_contents($scriptFilePath, $scriptContent);
+		
+		$this->logger->debug("Writing script $scriptFilePath with 0755 permission - umask 022");
+		chmod($scriptFilePath, 0755);
 		
 		return array($scriptFilePath, $renamerLogFilePath);
 	}

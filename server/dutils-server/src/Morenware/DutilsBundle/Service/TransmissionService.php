@@ -161,8 +161,8 @@ class TransmissionService {
 		    		continue;
 		    	}
 		    	
-		    	//TODO: better handling of lowercase, BETTER HANDLING OF DUPLICATE
-		    	if (strpos($resultAsArray->result, "Success") !== false || strpos($resultAsArray->result, "success") !== false) {
+		    	//TODO: better handling of lowercase,
+		    	if (strpos($resultAsArray->result, "uccess") !== false) {
 		        	$this->logger->debug("Successful call to Transmission -- torrent added: " . $torrent->getTitle());
 		        	
 		        	$torrentInfo = $resultAsArray->arguments->torrentadded;
@@ -176,7 +176,7 @@ class TransmissionService {
 		        	$torrent->setTorrentName($nameAdded);
 		        	
 		        	// Relocate based on hash
-		        	$this->relocateTorrent($transmissionId, $nameAdded, $hash);
+		        	$this->relocateTorrent($nameAdded, $hash);
 		        	
 		    	} else if (strpos($resultAsArray->result, "duplicate") !== false) {	
 		    		$this->logger->debug("Duplicated torrent: " . $torrent->getTitle() . " not adding "); 
@@ -201,17 +201,7 @@ class TransmissionService {
 		
 		if ($success) {
 			$this->updateTorrentState($torrent,TorrentState::DOWNLOADING);
-			// start monitoring if not already 
-			//TODO: wrap up torrent state when finished -- rename and move, cleanup
-			
 			$this->processManager->startDownloadsMonitoring();
-			
-			// There could be two ways of doing this:
-			// 1.- Modify the script that Transmission executes after torrent completion to call an API endpoint here which 
-			//     will launch Filebot AMC script to rename everything as needed
-			// 2.- Poll for updates on the percent complete, when it reaches 100%, launch the rename script
-			
-			
 		} else {
 			$this->updateTorrentState($torrent,TorrentState::FAILED_DOWNLOAD_ATTEMPT);
 			$this->logger->error("Could not download torrent after 5 tries -- giving up -- " .$torrent->getTitle());
@@ -328,15 +318,15 @@ class TransmissionService {
 	}
 	
 	
-	public function relocateTorrent($torrentTransmissionId, $torrentName, $torrentHash) {
+	public function relocateTorrent($torrentName, $torrentHash) {
 		
 		$newLocation = $this->getTorrentSubfolderPath($torrentName, $torrentHash);
 		
-		$this->logger->debug("Relocating torrent with id $torrentTransmissionId into subfolder $newLocation ");
+		$this->logger->debug("Relocating torrent with $torrentName into subfolder $newLocation ");
 		
 		$requestPayload = array(
 				"method" => "torrent-set-location",
-				"arguments" => array("ids" => array($torrentTransmissionId), "location" => $newLocation, "move" => true)		
+				"arguments" => array("ids" => array($torrentHash), "location" => $newLocation, "move" => true)		
 		);
 		
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
@@ -347,6 +337,7 @@ class TransmissionService {
 		
 		$this->logger->debug("Result of call is: ". json_encode($result));
 		
+		$this->logger->debug("Torrent RELOCATED");
 		// Give appropriate permission to the path
 		// chmod($newLocation, 0777);
 	}
@@ -363,8 +354,8 @@ class TransmissionService {
 	
 		$this->logger->info("[TRANSMISSION-CONFIGURE-SESSION] Setting up transmission session settings");
 		
-		// This will prepare one script to execute the renaming in the scripts temporary area
-		$scriptToStartRenaming = $this->processManager->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS);
+		// This will prepare one script to execute the renaming in the scripts temporary area with execution permission for all
+		$scriptToStartRenaming = $this->processManager->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS, true);
 		
 		$requestPayload = array(
 				"method" => "session-set",
@@ -381,7 +372,7 @@ class TransmissionService {
 		
 		$this->logger->debug("[TRANSMISSION-CONFIGURE-SESSION] The result to set Session settings in Transmission is: ". json_encode($result));
 		
-		
+		$this->logger->debug("[TRANSMISSION-CONFIGURE-SESSION] Transmission Session properties are configured");
 	}
 	
 	//TODO: cache this with memcached, session or DB

@@ -83,16 +83,14 @@ class TorrentService {
 		$this->em->flush();
 	}
 	
-	public function findTorrentByTransmissionId($transmissionId) {
-		return $this->getRepository()->findOneBy(array('transmissionId' => $transmissionId));
-	}
-	
 	public function findTorrentByHash($torrentHash) {
 		return $this->getRepository()->findOneBy(array('hash' => $torrentHash));
 	}
 	
 	
 	public function updateDataForTorrents($torrentsResponse) {
+		$countTorrents = count($torrentsResponse);
+		$this->logger->info("Updating data for  $countTorrents torrents");
 		
 		foreach ($torrentsResponse as $torrentResponse) {
 			
@@ -103,13 +101,12 @@ class TorrentService {
 			
 			$this->logger->debug("Checking if a torrent with transmission id  $transmissionId and hash $torrentHash is already added");
 			
-			$existingTorrent = $this->findTorrentByTransmissionId($transmissionId);
-			
+			$existingTorrent = $this->findTorrentByHash($torrentHash);
 			
 			if ($existingTorrent != null) {
 				
 				$torrentState = $existingTorrent->getState();
-				$this->logger->debug("Torrent id $transmissionId found in DB, updating values -- percent is $percentDone, name is $torrentName, state is $torrentState");
+				$this->logger->debug("Torrent id $transmissionId with hash $torrentHash found in DB, updating values -- percent is $percentDone, name is $torrentName, state is $torrentState");
 				
 				$existingTorrent->setPercentDone($percentDone);
 				$existingTorrent->setHash($torrentHash);
@@ -126,23 +123,39 @@ class TorrentService {
 				$this->merge($existingTorrent);
 				
 			} else {
-				$this->logger->debug("Torrent id $transmissionId not found in DB, creating and relocating now");
+				$this->logger->debug("Torrent id $transmissionId with hash $torrentHash not found in DB, creating and relocating now");
 				
 				// Relocate the torrent to the known subfolder as we are creating it now
-				$this->transmissionService->relocateTorrent($transmissionId, $torrentName, $torrentHash);
+				$this->transmissionService->configureTransmission();
+				$this->transmissionService->relocateTorrent($torrentName, $torrentHash);
 				
 				$torrent = new Torrent();
 				$torrent->setTransmissionId($transmissionId);
 				$torrent->setGuid(GuidGenerator::generate());
 				$torrent->setTorrentName($torrentName);
-				$torrent->setState(TorrentState::DOWNLOADING);
+			    
+				$this->logger->debug("Checking state....");
+			    if ($percentDone > 0 && $percentDone < 100) {
+			    	$this->logger->debug("Set as DOWNLOADING...");
+					$torrent->setState(TorrentState::DOWNLOADING);
+				} else if ($percentDone == 100) {
+					$this->logger->debug("Set as COMPLETED...");
+					$torrent->setState(TorrentState::DOWNLOAD_COMPLETED);
+				}
+				
 				$torrent->setTitle($torrentName);
 				$torrent->setHash($torrentHash);
+				
+				$this->logger->debug("Title and hash...");
 				
 				// TODO: try to discover if it is movie or tv show using filebot here??
 				$torrent->setContentType(TorrentContentType::TV_SHOW);
 				$torrent->setPercentDone($percentDone);
+				$this->logger->debug("Before creating...");
 				$this->create($torrent);
+				$this->logger->debug("After creating...");
+				
+				
 			}	
 		}
 	}
@@ -184,7 +197,7 @@ class TorrentService {
 				
 				// Get the hash from the original path, it will be something like /path/to/torrentName_hash/torrentfolder/file.mkv|avi|etc
 				// The hash is always 40 characters as it is SHA1
-				$hashRegex = "/_([\w]{40})\//";
+				$hashRegex = "/_([\w]{40})/";
 				
 				$matchesHash = array();
 				
