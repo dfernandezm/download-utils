@@ -295,29 +295,6 @@ class TransmissionService {
 		$this->torrentService->updateDataForTorrents($result->arguments->torrents);
 	}
 	
-	/**
-	 * Each time Transmission finishes downloading something, executes a script which will end up calling this method.
-	 * From here Filebot could be launched asynchronously to start the renaming process.
-	 * 
-	 * Other option is the polling every x time for completion of a torrent and then react -- less efficient.
-	 * 
-	 * The script in Transmission would act as callback doing a push notification (but general, we can't identify the torrents
-	 * which were finished), maybe we can then pull information of all torrents and tidy up the DB <- sounds reasonable
-	 * 
-	 * The idea is:
-	 * 
-	 * - Send downloads to Transmission
-	 * - Set up an script in Transmission to notify this App about finished downloads through a specific Endpoint in the API
-	 * - That endpoint will then query the Transmission API for torrents status, recognize the ones that have been put into
-	 *   DOWNLOADING, tidy up their state in DB and start renaming. Check finished ones -> percentDone or anything else?¿?
-	 * - This saves a lot of unnecessary polling for potentially a lot of torrents
-	 * 
-	 */
-	public function onDownloadCompleted() {
-		//TODO:
-	}
-	
-	
 	public function relocateTorrent($torrentName, $torrentHash) {
 		
 		$newLocation = $this->getTorrentSubfolderPath($torrentName, $torrentHash);

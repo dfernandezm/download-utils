@@ -102,8 +102,10 @@ class ProcessManager {
 			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH."/rename.sh";
 		}
 		
-		$this->logger->debug("The script being written is in path $scriptFilePath");
+		$user = get_current_user();
+		$this->logger->debug("About to write script in Temp area as user $user");
 		file_put_contents($scriptFilePath, $scriptContent);
+		$this->logger->debug("The script is in path $scriptFilePath");
 		
 		if ($executableByAll) {
 			$this->logger->debug("Writing script $scriptFilePath with 0755 permission - umask 022");

@@ -126,8 +126,13 @@ class TorrentService {
 				$this->logger->debug("Torrent id $transmissionId with hash $torrentHash not found in DB, creating and relocating now");
 				
 				// Relocate the torrent to the known subfolder as we are creating it now
-				$this->transmissionService->configureTransmission();
-				$this->transmissionService->relocateTorrent($torrentName, $torrentHash);
+				
+				try {
+					$this->transmissionService->configureTransmission();
+					$this->transmissionService->relocateTorrent($torrentName, $torrentHash);
+				} catch (\Exception $e) {
+					$this->logger->error("Error configuring transmission / relocating torrent -- " . $e->getMessage());
+				}
 				
 				$torrent = new Torrent();
 				$torrent->setTransmissionId($transmissionId);
