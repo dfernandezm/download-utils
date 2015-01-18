@@ -10,5 +10,14 @@ module.exports = {
     ]
   },
   bail: true,
-  cache: true
+  cache: true,
+  entry: {
+    init: './src/Morenware/DutilsBundle/Resources/client/app/init.coffee'
+  },
+  output: {
+    path: './web/client/js/app',
+    filename: 'init.js'
+  }
+
+
 };

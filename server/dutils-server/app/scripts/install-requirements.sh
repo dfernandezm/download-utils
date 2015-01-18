@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# ========== Dev dependencies ========================
+# install npm and nodejs
+
+npm install
+npm install --global gulp
+npm install --save-dev gulp
+
+
+
 # ================= Filebot - requires Java 1.8 =====================================================
 
 FILEBOT_HOME=/opt/software/filebot
