@@ -1,1 +1,6 @@
 *.iml
+/node_modules/
+/vendor/
+/lib/
+*.lock
+/bin/
