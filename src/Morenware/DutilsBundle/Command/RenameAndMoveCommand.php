@@ -29,13 +29,24 @@ class RenameAndMoveCommand extends Command {
 	
 	/** @DI\Inject("torrent.service") */
 	public $torrentService;
+	
+	/** @DI\Inject("settings.service") */
+	public $settingsService;
 
-	// The script which actually performs a full rename of the main folder
+	// The script which actually performs a full rename of the downloads main folder
 	const RENAME_SCRIPT_PATH = "scripts/rename-filebot.sh";
+	
+	// File whose presence indicates flags the process for termination
+	const TERMINATED_FILE_NAME = "renamer.terminated";
+	
+	// File containing the PID of the renamer process. Its presence indicates that one and only
+	// one is currently running
+	const PID_FILE_NAME = "renamer.pid";
+	
 	
 	/**
 	 * @DI\InjectParams({
-	 *     "logger"           = @DI\Inject("logger")
+	 *     "logger" = @DI\Inject("logger")
 	 * })
 	 *
 	 */
@@ -63,21 +74,29 @@ class RenameAndMoveCommand extends Command {
 		
 		$logger->info("[RENAMING] Initializing renamer process");
 		
-		$terminatedFile = "/home/david/scripts/renamer.terminated";
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		
+		$processingTempPath = $mediacenterSettings->getProcessingTempPath();
+		
+		$logger->debug("[RENAMING] Read config from DB, processing temp path is $processingTempPath");
+		
+		$terminatedFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::TERMINATED_FILE_NAME;
+		
 		$pid = getmypid();
-		$pidFile = "/home/david/scripts/renamer.pid";
+		$pidFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::PID_FILE_NAME;
 		
 		// Check race condition, only one rename at a time
 		if (file_exists($pidFile)) {
-			$logger->debug("[RENAMING] There is already one renamer process running -- exiting");
+			$logger->info("[RENAMING] There is already one renamer process running -- exiting");
 			return;
 		}
 		
+		// Write pid file
 		$handle = fopen($pidFile, "w");
 		fwrite($handle, $pid);
 		
 		// Perform substitutions in the template renamer script
-		list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($pid, "raspbmc");	
+		list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($mediacenterSettings, $pid, $mediacenterSettings->getXbmcHostOrIp());	
 		
 		$output->writeln("[RENAMING] Renamer process started with PID $pid");
 		$logger->info("[RENAMING] Renamer process started with PID $pid");
@@ -86,10 +105,10 @@ class RenameAndMoveCommand extends Command {
 
 			$logger->debug("[RENAMING] The script to execute is $scriptToExecute");
 			
+			// Define callback function to monitor real time output of the process
 			$waitCallback = function ($type, $buffer, $process) use ($logger, $terminatedFile) {
 					
- 				$logger->debug("[RENAMING] Monitoring process execution. Output is \n $buffer");
- 				
+ 				$logger->debug("[RENAMING] Monitoring process \n $buffer");
  				if (file_exists($terminatedFile)) {
  					$logger->info("[RENAMING] Terminated renamer worker on demand");
  					$process->stop();
@@ -99,45 +118,45 @@ class RenameAndMoveCommand extends Command {
  			// By opening a new shell we avoid the execution permission
 			$commandLineExec = "sh " . $scriptToExecute;
 			
-			// We provide a callback, so the process is not asynchronous in this case, blocks until completed
+			// We provide a callback, so the process is not asynchronous in this particular case, it blocks until completed or timeout
  			$this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
 
  			$logger->debug("[RENAMING] Renamer with PID $pid finished processing");
  			
 		} else {
-			$logger->debug("Terminated file found -- terminating");
-			$output->writeln("Terminated file found -- terminating");
+			$logger->debug("[RENAMING] .terminated file found -- terminating execution");
+			$output->writeln("[RENAMING] .terminated file found -- terminating execution");
 			unlink($terminatedFile);
 		}
 				
 		unlink($pidFile);
 		
-		//Read the log to detect torrent names (match by name) and update state
+		//Read the log to detect torrent names (match by name) and update state in DB
 		//TODO: Check exit status!!
 		$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
 
 	}
 	
-	public function prepareRenameScriptToExecute($processPid, $xbmcHost = null) {
+	
+	public function prepareRenameScriptToExecute($mediacenterSettings, $processPid, $xbmcHost = null) {
 		
 		$appRoot =  $this->kernel->getRootDir();
-		$filePath = $appRoot."/".self::RENAME_SCRIPT_PATH;
+		$filePath = $appRoot . "/" . self::RENAME_SCRIPT_PATH;
 		
-		$this->logger->debug("The renamer template script path is $filePath");
+		$this->logger->debug("[RENAMING] The renamer template script path is $filePath");
 		
 		$scriptContent = file_get_contents($filePath);
 		
-		$renamerLogFilePath = "/home/david/scripts/rename_$processPid.log"; 
+		$renamerLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename_$processPid.log"; 
 		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
-		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", "/mediacentertest", $scriptContent);
-		$scriptContent = str_replace("%BASE_DOWNLOADS_PATH%", "/home/david/scripts/downloads", $scriptContent);
+		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", $mediacenterSettings->getBaseLibraryPath(), $scriptContent);
+		$scriptContent = str_replace("%BASE_DOWNLOADS_PATH%", $mediacenterSettings->getBaseDownloadsPath(), $scriptContent);
 		
 		if ($xbmcHost != null) {
 			$scriptContent = str_replace("%XBMC_HOSTNAME%", $xbmcHost, $scriptContent);
 		}
 		
-		$scriptFilePath = "/home/david/scripts/rename-filebot_$processPid.sh";
-		
+		$scriptFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename-filebot_$processPid.sh";
 		file_put_contents($scriptFilePath, $scriptContent);
 		
 		$this->logger->debug("Writing script $scriptFilePath with 0755 permission - umask 022");
@@ -146,10 +165,8 @@ class RenameAndMoveCommand extends Command {
 		return array($scriptFilePath, $renamerLogFilePath);
 	}
 	
-	//Utility to delete files like /path/to/somename*
+	// Utility to delete files like /path/to/somename*
 	public function deleteFileUsingWildCard($pathWithWildcard) {
 		array_map('unlink', glob($pathWithWildcard));
 	}
-	
-	
 }

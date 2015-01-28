@@ -112,7 +112,7 @@ class TorrentFeedService {
 					foreach ($torrents as $torrent) {
 						$this->torrentService->create($torrent);
 						$this->logger->info("Sending torrent ". $torrent->getGuid() ." torrents from feed ".$feed->getDescription() . " to Transmission for download");
-						$this->transmissionService->startDownloadInRemoteTransmission($torrent);
+						$this->transmissionService->startDownload($torrent);
 					}	
 			
 				});

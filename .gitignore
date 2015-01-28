@@ -4,3 +4,5 @@
 /lib/
 *.lock
 /bin/
+/app/cache/
+/app/logs/

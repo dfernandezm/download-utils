@@ -240,7 +240,7 @@ class SearchTorrentsService {
    		
    		$this->logger->debug("Downloaded torrent file to $torrentFilePath");
    		
-   		$this->transmissionService->startDownloadInRemoteTransmission($torrent, true);
+   		$this->transmissionService->startDownload($torrent, true);
    		
    }	
 }

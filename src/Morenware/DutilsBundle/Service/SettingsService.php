@@ -36,15 +36,15 @@ class SettingsService {
 	}
 	
 	public function getRepository($entityClass) {
-		return $this->em->getRepository($this->$entityClass);
+		return $this->em->getRepository($entityClass);
 	}
 	
 	public function getTransmissionRepository() {
-	 return $this->getRepository($this->transmissionSettingClass);
+	 return $this->getRepository($this->transmissionSettingsClass);
 	}
 	
 	public function getMediacenterRepository() {
-		return $this->getRepository($this->mediacenterSettingClass);
+		return $this->getRepository($this->mediacenterSettingsClass);
 	}
 	
 	public function create($entity) {
