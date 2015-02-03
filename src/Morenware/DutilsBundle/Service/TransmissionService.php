@@ -21,19 +21,11 @@ class TransmissionService {
 	/** @DI\Inject("torrent.service") */
 	public $torrentService;
 	
-
 	/** @DI\Inject("processmanager.service") */
 	public $processManager;
 	
-	
 	/** @DI\Inject("settings.service") */
 	public $settingsService;
-	
-	
-	const TRANSMISSION_HOST = "localhost";
-	const TRANSMISSION_PORT = "9091";
-	const TRANSMISSION_USERNAME = "transmission";
-	const TRANSMISSION_PASSWORD = "ZVCvrasp";
 	
 	const BASE_TORRENTS_PATH = "/home/david/scripts/downloads";
 	
