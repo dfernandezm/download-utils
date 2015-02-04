@@ -113,7 +113,8 @@ class TorrentService {
 				
 				$this->logger->debug("The Percent done is $percentDone and status is $torrentState ");
 					
-				if ($percentDone != null && $percentDone > 0 && $percentDone < 100) {
+				if ($percentDone != null && $percentDone > 0 && $percentDone < 100 && 
+					$existingTorrent->getState() != TorrentState::DOWNLOAD_COMPLETED && $existingTorrent->getState() != TorrentState::COMPLETED) {
 					$existingTorrent->setState(TorrentState::DOWNLOADING);
 				} else if ($percentDone == 100 && $torrentState == TorrentState::DOWNLOADING) {
 					$this->logger->debug("Torrent name $torrentName download is completed");
@@ -216,6 +217,9 @@ class TorrentService {
 							
 						$torrent->setState(TorrentState::COMPLETED);
 						$this->update($torrent);
+						$this->logger->debug("[RENAMING] Completing processing for torrent with $hash");
+						
+						// Further linking with Tv show or Movie profile / preferences
 							
 					} else {
 						$this->logger->warn("[RENAMING] Could not find torrent in DB with hash $hash");

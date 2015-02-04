@@ -296,7 +296,7 @@ class TransmissionService {
 	 * 
 	 */
 	//TODO: cache somewhere that this has been done properly to not keep doing it every time
-	private function configureTransmission() {
+	public function configureTransmission() {
 	
 		$this->logger->info("[TRANSMISSION-CONFIGURE-SESSION] Setting up transmission session settings");
 		
