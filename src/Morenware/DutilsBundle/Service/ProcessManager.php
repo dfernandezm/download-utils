@@ -24,12 +24,13 @@ class ProcessManager {
 	const RENAME_COMMAND_NAME = "dutils:rename";
 	
 	public function getOverallTimeout() {
-		// No more than 30 minutes running
-		return 30 * 60 * 60;
+		// No more than 2 hours running
+		return 2 * 60 * 60;
 	}
 	
 	public function getIdleTimeout() {
-		return 2 * 60 * 60;
+		// No more than 2 minutes idle
+		return 2 * 60;
 	}
 	
 	//TODO: refactor to use generic method startSymfonyCommandAsynchronously
@@ -40,7 +41,8 @@ class ProcessManager {
 			$process = new Process($processToExecute);
 			$process->setTimeout($this->getOverallTimeout());
 			$process->setIdleTimeout($this->getIdleTimeout());
-			$process->start();	
+			$process->start();
+			return $process;	
 		} else {
 			$this->logger->debug("There is already one monitoring process running");
 		}
@@ -54,23 +56,30 @@ class ProcessManager {
 	 */
 	public function startSymfonyCommandAsynchronously($command) {
 		
-		$process = null;
+		try {
+			
+			$process = null;
 		
-		switch($command) {
-			case CommandType::RENAME_DOWNLOADS:
-				$scriptToExecute = $this->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS);
-				$processToExecute = "sh " . $scriptToExecute;
-				$this->logger->info("Starting Symfony command asynchronously: ". $processToExecute);
-				$process = new Process($processToExecute);
-				$process->setTimeout($this->getOverallTimeout());
-				$process->setIdleTimeout($this->getIdleTimeout());
-				$process->start();
-				break;
-			default:
-				$this->logger->warn("Unknown command provided -- fix code");
+			switch($command) {
+				case CommandType::RENAME_DOWNLOADS:
+					$scriptToExecute = $this->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS);
+					$processToExecute = "sh " . $scriptToExecute;
+					$this->logger->info("Starting Symfony command asynchronously: ". $processToExecute);
+					$process = new Process($processToExecute);
+					$process->setTimeout($this->getOverallTimeout());
+					$process->setIdleTimeout($this->getIdleTimeout());
+					$process->start();
+					break;
+				default:
+					$this->logger->warn("Unknown command provided -- fix code");
+			}
+		
+			return $process;
+			
+		} catch(\Exception $e) {
+			$this->logger->error("Error starting process for Symfony command $command", $e->getMessage());
+			throw e;
 		}
-		
-		return $process;
 	}
 	
 	

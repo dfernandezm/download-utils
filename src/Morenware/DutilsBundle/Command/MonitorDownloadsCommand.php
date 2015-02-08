@@ -10,6 +10,8 @@ use JMS\DiExtraBundle\Annotation as DI;
 use JMS\DiExtraBundle\Annotation\Service;
 use JMS\DiExtraBundle\Annotation\Tag;
 use Morenware\DutilsBundle\Util\GuidGenerator;
+use Morenware\DutilsBundle\Entity\MediaCenterSettings;
+use Assetic\Exception\Exception;
 
 /** 
  * @Service("monitordownload.service") 
@@ -22,9 +24,12 @@ class MonitorDownloadsCommand extends Command {
 	/** @DI\Inject("transmission.service") */
 	public $transmissionService;
 	
+	/** @DI\Inject("settings.service") */
+	public $settingsService;
+	
 	/**
 	 * @DI\InjectParams({
-	 *     "logger" = @DI\Inject("logger")
+	 *     "logger" = @DI\Inject("monolog.logger.monitor")
 	 * })
 	 *
 	 */
@@ -48,43 +53,50 @@ class MonitorDownloadsCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
 
-		$guid = GuidGenerator::generate();
-		
-		$terminatedFile = "/home/david/scripts/monitor.terminated";
-		$pid = getmypid();
-		$pidFile = "/home/david/scripts/monitor.pid";
-		
-		// Check race condition, only one monitoring process at a time
-		if (file_exists($pidFile)) {
-			$this->logger->debug("[MONITOR-DOWNLOADS] PID file already exists, there must be already one monitor process running -- exiting");
-			return;
+		try {
+			
+			$guid = GuidGenerator::generate();
+			
+			$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+			
+			$terminatedFile = $mediacenterSettings->getProcessingTempPath() . "/monitor.terminated";
+			$pid = getmypid();
+			$pidFile = $mediacenterSettings->getProcessingTempPath() . "/monitor.pid";
+			
+			// Check race condition, only one monitoring process at a time
+			if (file_exists($pidFile)) {
+				$this->logger->debug("[MONITOR-DOWNLOADS] PID file already exists, there must be already one monitor process running -- exiting");
+				return;
+			}
+			
+			// Write pidfile
+			$handle = fopen($pidFile, "w");
+			fwrite($handle, $pid);
+			fclose($handle);
+			
+			$this->logger->info("[MONITOR-DOWNLOADS] Monitor process started with GUID $guid and PID $pid");
+			
+			while(!file_exists($terminatedFile)) {
+				$this->printMemoryUsage();	
+				$this->transmissionService->checkTorrentsStatus();
+				sleep(10);
+			}
+			
+			if (file_exists($terminatedFile)) {
+				$this->logger->info("Terminated monitoring worker with GUID $guid and PID $pid on demand");
+			} else {
+				$this->logger->warn("Terminated monitoring worker with GUID $guid and PID $pid due to unknown reason!");
+			}
+			
+		} catch(\Exception $e) {
+			$this->logger->error("Error occurred executing monitor process with GUID $guid and PID $pid", $e->getMessage());
+		} finally {
+			unlink($pidFile);
+			unlink($terminatedFile);
 		}
-		
-		$handle = fopen($pidFile, "w");
-		fwrite($handle, $pid);
-		
-		$output->writeln("[MONITOR-DOWNLOADS] Monitor process started with GUID $guid and PID $pid");
-		$this->logger->debug("[MONITOR-DOWNLOADS] Monitor process started with GUID $guid and PID $pid");
-		
-		while(!file_exists($terminatedFile)) {
-			$this->logger->debug("[MONITOR-DOWNLOADS] Checking status of torrents in Transmission");
-			$this->transmissionService->checkTorrentsStatus();
-			$this->logger->debug("[MONITOR-DOWNLOADS] Waiting 10 seconds before the next torrent check...");
-			sleep(10);
-		}
-		
-		if (file_exists($terminatedFile)) {
-			$this->logger->info("Terminated monitoring worker with GUID $guid and PID $pid on demand");
-		} else {
-			$this->logger->warn("Terminated monitoring worker with GUID $guid and PID $pid due to unknown reason!");
-		}
-		
-		unlink($pidFile);
-		unlink($terminatedFile);
 	}
 	
-	
-	
-	
-	
+	public function printMemoryUsage(){
+		$this->logger->debug(sprintf('Memory usage: (current) %dKB / (max) %dKB', round(memory_get_usage(true) / 1024), memory_get_peak_usage(true) / 1024));
+	}
 }

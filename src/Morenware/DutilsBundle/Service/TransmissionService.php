@@ -14,6 +14,8 @@ class TransmissionService {
 
 	private $logger;
 	
+	private $transmissionLogger;
+	
 	private $sessionIdHeader;
 	
 	const TRANSMISSION_RETRY_COUNT = 5;
@@ -32,13 +34,15 @@ class TransmissionService {
 
    /**
 	* @DI\InjectParams({
-	*     "logger"  = @DI\Inject("logger")
+	*     "logger"  = @DI\Inject("logger"),
+	*     "transmissionLogger" = @DI\Inject("monolog.logger.transmission")
 	* })
 	*
 	*/
-	public function __construct($logger) {
+	public function __construct($logger, $transmissionLogger) {
 
 		$this->logger = $logger;
+		$this->transmissionLogger = $transmissionLogger;
 	}
 	
 	//TODO: Add support for starting multiple downloads at the same time, like the upload feature in the WebInterface
@@ -121,10 +125,12 @@ class TransmissionService {
 		);
 	
 		$jsonRequest = json_encode($requestPayload);
+		
 		$result = $this->executeTransmissionApiCall($jsonRequest);
 	
-		$this->logger->debug("Result of torrents query is: ". json_encode($result->arguments->torrents));
+		$this->transmissionLogger->debug("[TRANSMISSION-API-CALL] Result of torrents query is: ". json_encode($result->arguments->torrents));
 		$this->torrentService->updateDataForTorrents($result->arguments->torrents);
+		$this->torrentService->clearDoctrine();
 	}
 	
 	
@@ -137,20 +143,64 @@ class TransmissionService {
 		$endpoint = "http://$host:$port/transmission/rpc";
 		$username = $transmissionSettings->getUsername();
 		$password = $transmissionSettings->getPassword();
-		$sessionIdHeader = $this->getSessionIdHeader($transmissionSettings);
 		$credentials = "$username:$password";
-		 	
-		$headers = array(
-				'Content-Type: application/json',
-				$sessionIdHeader,
-				"Authorization: Basic " . base64_encode($credentials)
-		);
 		
-		$this->logger->debug("[TRANSMISSION-API-CALL] Calling transmission API endpoint: ". $endpoint);
+		// Execute call with retry
 		
-		$result = $this->performRpcCall($endpoint, $headers, $jsonPayload); 
+		$success = false;
+		$retryCount = 0;
+		$exception = null;
+		$lastResult = null;
+			
+		while (!$success && $retryCount < self::TRANSMISSION_RETRY_COUNT) {
 		
-		$resultAsClass = json_decode($result);	
+			try {
+		
+				$sessionIdHeader = $this->getSessionIdHeader($transmissionSettings); 	
+				$headers = array(
+						'Content-Type: application/json',
+						$sessionIdHeader,
+						"Authorization: Basic " . base64_encode($credentials)
+				);
+				
+				$this->transmissionLogger->debug("[TRANSMISSION-API-CALL] Calling transmission API endpoint with ID Header $sessionIdHeader ". $endpoint);
+				$result = $this->performRpcCall($endpoint, $headers, $jsonPayload); 
+				$resultAsClass = json_decode($result);
+				
+				$success = true;
+				$this->transmissionLogger->debug("[TRANSMISSION-API-CALL] Successful call");
+		
+			} catch (\Exception $e) {
+				
+				if ($e->getCode() == 409) {
+					$this->transmissionLogger->warn("[TRANSMISSION-API-CALL] Detected conflict, force renewing of Session ID: ". $e->getMessage());
+					$this->forceTransmissionSessionIdRenewal();
+				} else {
+					$this->transmissionLogger->warn("[TRANSMISSION-API-CALL] Exception calling transmission API exception -- retrying: " . $e->getMessage());
+					$retryCount++;
+					$exception = $e;
+				}
+				 
+				sleep(1);
+			}
+		}
+		
+		if (!$success) {
+		
+			$message = "Error trying to call Transmission API after 5 tries -- giving up: ";
+				
+			if ($exception != null ) {
+				// to main logger as well
+				$this->logger->error($message . $exception->getMessage());
+				$this->transmissionLogger->error($message . $exception->getMessage());
+				throw $exception;
+			} else {
+				$this->logger->error($message . $lastResult);
+				$this->transmissionLogger->error($message . $lastResult);
+				throw new \Exception($message . $lastResult, 500, null);
+			}
+		}
+		
 		return $resultAsClass;
 	}
 	
@@ -167,63 +217,37 @@ class TransmissionService {
 			CURLOPT_POSTFIELDS => $jsonPayload
 		));
 	
-		$success = false;
-		$retryCount = 0;
-		$exception = null;
-			
-		while (!$success && $retryCount < self::TRANSMISSION_RETRY_COUNT) {
-				
-			try {
-	
-				$result = curl_exec($curl);
-				$this->logger->debug("[TRANSMISSION-API-CALL] Result of the call to Transmission is: " . $result);
-				$status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-				
-				$containsSuccess = strpos($result, "uccess");
-				$statusCode = intval($status);
-				
-				
-				if ($statusCode !== 200 || $containsSuccess === false) {
-					
-					if (strpos($result, "duplicate") !== false) {
-						$this->logger->debug("[TRANSMISSION-API-CALL] Trying to add duplicate torrent, skipping");
-					} else {
-		    			$this->logger->warn("[TRANSMISSION-API-CALL] Error calling API, status $status -- retrying: " . $result);
-		    			$retryCount++;
-		    			sleep(1);
-		    			continue;
-					}
-		    	}
-				
-				$success = true;
-				$this->logger->debug("[TRANSMISSION-API-CALL] Successful call");
-	
-			} catch (\Exception $e) {
-				$this->logger->warn("[TRANSMISSION-API-CALL] Exception calling transmission API exception -- retrying: " . $e->getMessage());
-				$retryCount++;
-				$exception = $e;
-				sleep(1);
-			}
-		}
-	
-		curl_close($curl);
+		$result = curl_exec($curl);
+		$this->transmissionLogger->debug("[TRANSMISSION-API-CALL] Result of the call to Transmission is: " . $result);
+		$status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 		
-		if ($success) {
-			// if ($status == 409) {
-				// if conflict, retry with header
-				//$result = $this->performRpcCall($endpoint, $headers, $jsonPayload);
-			//}
-		} else {
-			$this->logger->error("Error trying to call Transmission API after 5 tries -- giving up ". $exception->getMessage());
-			throw $exception;
-		}
+		$containsSuccess = strpos($result, "uccess");
+		$statusCode = intval($status);
+		
+		if ($statusCode !== 200 || $containsSuccess === false) {
+			
+			if (strpos($result, "duplicate") !== false) {
+				$this->transmissionLogger->debug("[TRANSMISSION-API-CALL] Trying to add duplicate torrent, skipping");
+			} else {
+				$message = "[TRANSMISSION-API-CALL] Error calling API, status $status" . $result;
+    			$this->transmissionLogger->warn($message);
+    			curl_close($curl);
+    			throw new \Exception($message, $statusCode, null);
+			}
+    	}
+				
+		curl_close($curl);
 			
 		return $result;
 	}
 	
-	public function getSessionIdHeader($transmissionSettings) {
+	private function forceTransmissionSessionIdRenewal() {
+		unset($this->sessionIdHeader);
+	}
+
+	public function getSessionIdHeader($transmissionSettings, $forceRenewal = false) {
 		//TODO: use memcached here!
-		if (!isset($this->sessionIdHeader)) {
+		if (!isset($this->sessionIdHeader) || $forceRenewal) {
 				
 			$host = $transmissionSettings->getIpOrHost();
 			$port = $transmissionSettings->getPort();
@@ -231,8 +255,6 @@ class TransmissionService {
 			$password = $transmissionSettings->getPassword();		
 			$credentials = "$username:$password";
 			$endpoint = "http://$host:$port/transmission/rpc";
-			
-			$this->logger->debug("The endpoint for invoking transmission for header is: \n $endpoint \n ");
 			
 			$headers = array(
 					'Content-Type: application/json',
@@ -249,7 +271,7 @@ class TransmissionService {
 				
 			$result = curl_exec($curl);
 				
-			$this->logger->debug("The result of invoking transmission for header is: \n $result \n ");
+			$this->transmissionLogger->debug("[TRANSMISSION-SESSIONID] The result of invoking transmission for header is: \n $result \n ");
 			
 			$sessionIdHeader = null;		
 			$matches = array();
@@ -257,7 +279,7 @@ class TransmissionService {
 			if (preg_match('/^(.*<code>)(.*)(<\/code>.*)$/', $result, $matches)) {
 				// 0-> everything, 1 -> first (), 2 -> second ()
 				$sessionIdHeader = $matches[2];
-				$this->logger->debug("The session id header is ". $sessionIdHeader);
+				$this->transmissionLogger->debug("[TRANSMISSION-SESSIONID] The session id header is ". $sessionIdHeader);
 				$this->sessionIdHeader = $sessionIdHeader;
 			}
 				
@@ -270,10 +292,11 @@ class TransmissionService {
 	
 	
 	public function relocateTorrent($torrentName, $torrentHash) {
-		
+		$this->logger->debug("Executing torrent relocation for $torrentName");
 		$newLocation = $this->getTorrentSubfolderPath($torrentName, $torrentHash);
 		
 		$this->logger->debug("Relocating torrent with $torrentName into subfolder $newLocation ");
+		$this->transmissionLogger->debug("Relocating torrent with $torrentName into subfolder $newLocation ");
 		
 		$requestPayload = array(
 				"method" => "torrent-set-location",
@@ -281,11 +304,13 @@ class TransmissionService {
 		);
 		
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
-		$this->logger->debug("The payload to send to transmission API is $jsonRequest");
+		$this->transmissionLogger->debug("The payload to send to transmission API is $jsonRequest");
 		
 		$result = $this->executeTransmissionApiCall($jsonRequest);
-		$this->logger->debug("Result of call is: ". json_encode($result));
-		$this->logger->debug("Torrent successfully RELOCATED in $newLocation");
+		$this->transmissionLogger->debug("Result of call is: ". json_encode($result));
+		
+		$this->logger->debug("Torrent $torrentName successfully RELOCATED in $newLocation");
+		$this->transmissionLogger->debug("Torrent $torrentName successfully RELOCATED in $newLocation");
 	}
 	
 	/**
@@ -298,7 +323,7 @@ class TransmissionService {
 	//TODO: cache somewhere that this has been done properly to not keep doing it every time
 	public function configureTransmission() {
 	
-		$this->logger->info("[TRANSMISSION-CONFIGURE-SESSION] Setting up transmission session settings");
+		$this->transmissionLogger->info("[TRANSMISSION-CONFIGURE-SESSION] Setting up transmission session settings");
 		
 		// This will prepare one script to execute the renaming in the scripts temporary area with execution permission for all
 		$scriptToStartRenaming = $this->processManager->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS, true);
@@ -312,17 +337,17 @@ class TransmissionService {
 	
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
 		
-		$this->logger->debug("[TRANSMISSION-CONFIGURE-SESSION] The payload to send to transmission API is $jsonRequest");
+		$this->transmissionLogger->debug("[TRANSMISSION-CONFIGURE-SESSION] The payload to send to transmission API is $jsonRequest");
 		
 		$result = $this->executeTransmissionApiCall($jsonRequest);
 		
-		$this->logger->debug("[TRANSMISSION-CONFIGURE-SESSION] The result to set Session settings in Transmission is: ". json_encode($result));
-		$this->logger->debug("[TRANSMISSION-CONFIGURE-SESSION] Transmission Session properties are configured");
+		$this->transmissionLogger->debug("[TRANSMISSION-CONFIGURE-SESSION] The result to set Session settings in Transmission is: ". json_encode($result));
+		$this->transmissionLogger->debug("[TRANSMISSION-CONFIGURE-SESSION] Transmission Session properties are configured");
 	}
 
 	private function getSessionInfo() {
 		
-		$this->logger->info("[TRANSMISSION-CONFIGURE] Getting transmission session properties");
+		$this->transmissionLogger->info("[TRANSMISSION-CONFIGURE] Getting transmission session properties");
 		
 		$requestPayload = array(
 				"method" => "session-get",
@@ -331,10 +356,10 @@ class TransmissionService {
 		
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
 		
-		$this->logger->debug("The payload to send to transmission API is $jsonRequest");
+		$this->transmissionLogger->debug("The payload to send to transmission API is $jsonRequest");
 		
 		$result = $this->executeTransmissionApiCall($jsonRequest);
-		$this->logger->debug("Result of call is: ". json_encode($result));
+		$this->transmissionLogger->debug("Result of call is: ". json_encode($result));
 		$resultAsAssociativeArray =  json_decode(json_encode($result, JSON_UNESCAPED_SLASHES), true, JSON_UNESCAPED_SLASHES);
 		return $resultAsAssociativeArray;
 	}
@@ -345,14 +370,10 @@ class TransmissionService {
 	}
 	
 	private function getSessionProperty($sessionProperty) {
-		$this->logger->info("[TRANSMISSION-CONFIGURE] Requesting value of property $sessionProperty");
+		$this->transmissionLogger->info("[TRANSMISSION-CONFIGURE] Requesting value of property $sessionProperty");
 		$sessionProperties = $this->getSessionInfo();
 		$requestedPropertyPropertyValue = $sessionProperties["arguments"][$sessionProperty];
-		$this->logger->info("[TRANSMISSION-CONFIGURE] The value for property $sessionProperty is $requestedPropertyPropertyValue");
+		$this->transmissionLogger->info("[TRANSMISSION-CONFIGURE] The value for property $sessionProperty is $requestedPropertyPropertyValue");
 		return $requestedPropertyPropertyValue;
 	}
-
-	
-	
-	
 }

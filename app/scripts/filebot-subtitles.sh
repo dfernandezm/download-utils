@@ -1,6 +1,7 @@
 #!/bin/sh
 
+FILEBOT_EXEC=filebot
 PATH=%MEDIA_PATH%
-LANGUAGE=%SUBTITLES_LANGUAGE%
+LANGUAGES=%SUBTITLES_LANGUAGE%
 
-filebot -r -get-subtitles $PATH --lang $LANGUAGE --output srt --encoding utf8 -non-strict
+$FILEBOT_EXEC -r -get-subtitles $PATH --lang $LANGUAGES --output srt --encoding utf8 -non-strict

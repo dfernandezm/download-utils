@@ -129,5 +129,31 @@ leezy_pheanstalk:
       primary:
         server: localhost
         default: true
+        
+monolog:
+  channels: ["monitor", "renamer", "transmission"]
+  handlers:
+    main:
+      type: stream
+      path: "%kernel.logs_dir%/%kernel.environment%.log"
+      level: "info"
+      channels: ["!doctrine", "!monitor", "!transmission", "!renamer"]
+    doctrine:
+      type: stream
+      path: "%kernel.logs_dir%/doctrine.log"
+      channels: [doctrine]
+    monitor:
+      type: stream
+      path: "%kernel.logs_dir%/monitor.log"
+      channels: [monitor]
+    transmission:
+      type: stream
+      path: "%kernel.logs_dir%/transmission.log"
+      channels: [transmission]
+    renamer:
+      type: stream
+      path: "%kernel.logs_dir%/renamer.log"
+      channels: [renamer]
+  
             
         

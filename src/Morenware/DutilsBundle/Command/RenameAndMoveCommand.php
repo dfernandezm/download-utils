@@ -21,6 +21,8 @@ class RenameAndMoveCommand extends Command {
 	
 	private $logger;
 	
+	private $renamerLogger;
+	
 	/** @DI\Inject("processmanager.service") */
 	public $processManager;
 	
@@ -46,13 +48,15 @@ class RenameAndMoveCommand extends Command {
 	
 	/**
 	 * @DI\InjectParams({
-	 *     "logger" = @DI\Inject("logger")
+	 *     "logger" = @DI\Inject("logger"),
+	 *     "renamerLogger" =  @DI\Inject("monolog.logger.renamer")
 	 * })
 	 *
 	 */
-	public function __construct($logger) {
+	public function __construct($logger, $renamerLogger) {
 	
 		$this->logger = $logger;
+		$this->renamerLogger = $renamerLogger;
 		parent::__construct();
 	}
 	
@@ -70,87 +74,92 @@ class RenameAndMoveCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
 		
-		$logger = $this->logger;
-		
-		$logger->info("[RENAMING] Initializing renamer process");
-		
-		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
-		
-		$processingTempPath = $mediacenterSettings->getProcessingTempPath();
-		
-		$logger->debug("[RENAMING] Read config from DB, processing temp path is $processingTempPath");
-		
-		$terminatedFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::TERMINATED_FILE_NAME;
-		
-		$pid = getmypid();
-		$pidFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::PID_FILE_NAME;
-		
-		// Check race condition, only one rename at a time
-		if (file_exists($pidFile)) {
-			$logger->info("[RENAMING] There is already one renamer process running -- exiting");
-			return;
-		}
-		
-		// Write pid file
-		$handle = fopen($pidFile, "w");
-		fwrite($handle, $pid);
-		
-		// Perform substitutions in the template renamer script
-		list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($mediacenterSettings, $pid, $mediacenterSettings->getXbmcHostOrIp());	
-		
-		$output->writeln("[RENAMING] Renamer process started with PID $pid");
-		$logger->info("[RENAMING] Renamer process started with PID $pid");
-		
-		if (!file_exists($terminatedFile)) {
-
-			$logger->debug("[RENAMING] The script to execute is $scriptToExecute");
+		try {
 			
-			// Define callback function to monitor real time output of the process
-			$waitCallback = function ($type, $buffer, $process) use ($logger, $terminatedFile) {
+			$logger = $this->logger;
+			$pid = getmypid();
+			$logger->info("[RENAMING] Starting Renamer process with PID $pid");
+			$output->writeln("[RENAMING] Renamer process started with PID $pid");
+			
+			$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+			$processingTempPath = $mediacenterSettings->getProcessingTempPath();
+		
+			$this->renamerLogger->debug("[RENAMING] Read config from DB, processing temp path is $processingTempPath");
+		
+			$terminatedFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::TERMINATED_FILE_NAME;
+			$pidFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::PID_FILE_NAME;
+		
+			// Check race condition, only one rename at a time
+			if (file_exists($pidFile)) {
+				$logger->info("[RENAMING] There is already one renamer process running -- exiting");
+				return;
+			}
+		
+			// Write pid file
+			$handle = fopen($pidFile, "w");
+			fwrite($handle, $pid);
+		
+			// Perform substitutions in the template renamer script
+			list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($mediacenterSettings, $pid, $mediacenterSettings->getXbmcHostOrIp());	
+		
+			if (!file_exists($terminatedFile)) {
+
+				$this->renamerLogger->debug("[RENAMING] The script to execute is $scriptToExecute");
+				$renamerLogger = $this->renamerLogger;
+				
+				// Define callback function to monitor real time output of the process
+				$waitCallback = function ($type, $buffer, $process) use ($renamerLogger, $terminatedFile) {
 					
- 				$logger->debug("[RENAMING] Monitoring process \n $buffer");
- 				if (file_exists($terminatedFile)) {
- 					$logger->info("[RENAMING] Terminated renamer worker on demand");
- 					$process->stop();
- 				}
- 			};
+ 					$renamerLogger->debug("[RENAMING] $buffer");
+ 					
+ 					if (file_exists($terminatedFile)) {
+ 						$renamerLogger->debug("[RENAMING] Terminated renamer worker on demand");
+ 						$process->stop();
+ 					}
+ 				};
 
- 			// By opening a new shell we avoid the execution permission
-			$commandLineExec = "sh " . $scriptToExecute;
+ 				// By opening a new shell we avoid the execution permission
+				$commandLineExec = "sh " . $scriptToExecute;
 			
-			// We provide a callback, so the process is not asynchronous in this particular case, it blocks until completed or timeout
- 			$this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
+				// We provide a callback, so the process is not asynchronous in this particular case, it blocks until completed or timeout
+ 				$this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
 
- 			$logger->debug("[RENAMING] Renamer with PID $pid finished processing");
- 			
-		} else {
-			$logger->debug("[RENAMING] .terminated file found -- terminating execution");
-			$output->writeln("[RENAMING] .terminated file found -- terminating execution");
+ 				$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing");
+ 				
+ 				//TODO: Check exit status!!
+ 				$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
+ 				
+			} else {
+				$renamerLogger->debug("[RENAMING] .terminated file found -- terminating execution");
+				$output->writeln("[RENAMING] .terminated file found -- terminating execution");
+			}
+			
+			gc_collect_cycles();
+		
+		} catch (\Exception $e) {
+			$this->logger->error("Error executing Renamer process with PID $pid", $e->getMessage());		
+		} finally {
+			
+			unlink($pidFile);
 			unlink($terminatedFile);
 		}
-				
-		unlink($pidFile);
-		
-		//Read the log to detect torrent names (match by name) and update state in DB
-		//TODO: Check exit status!!
-		$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
-
 	}
-	
 	
 	public function prepareRenameScriptToExecute($mediacenterSettings, $processPid, $xbmcHost = null) {
 		
-		$appRoot =  $this->kernel->getRootDir();
+		$appRoot = $this->kernel->getRootDir();
 		$filePath = $appRoot . "/" . self::RENAME_SCRIPT_PATH;
 		
-		$this->logger->debug("[RENAMING] The renamer template script path is $filePath");
+		$this->renamerLogger->debug("[RENAMING] The renamer template script path is $filePath");
 		
 		$scriptContent = file_get_contents($filePath);
 		
-		$renamerLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename_$processPid.log"; 
+		$renamerLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename_$processPid"; 
 		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
 		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", $mediacenterSettings->getBaseLibraryPath(), $scriptContent);
 		$scriptContent = str_replace("%BASE_DOWNLOADS_PATH%", $mediacenterSettings->getBaseDownloadsPath(), $scriptContent);
+		$scriptContent = str_replace("%PREFERRED_SUBS_LANG%", "en", $scriptContent);
+		$scriptContent = str_replace("%ADDITIONAL_SUBS_LANG%", "es", $scriptContent);
 		
 		if ($xbmcHost != null) {
 			$scriptContent = str_replace("%XBMC_HOSTNAME%", $xbmcHost, $scriptContent);
@@ -158,11 +167,8 @@ class RenameAndMoveCommand extends Command {
 		
 		$scriptFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename-filebot_$processPid.sh";
 		file_put_contents($scriptFilePath, $scriptContent);
-		
-		$this->logger->debug("Writing script $scriptFilePath with 0755 permission - umask 022");
-		chmod($scriptFilePath, 0755);
-		
-		return array($scriptFilePath, $renamerLogFilePath);
+				
+		return array($scriptFilePath, $renamerLogFilePath . ".log");
 	}
 	
 	// Utility to delete files like /path/to/somename*
