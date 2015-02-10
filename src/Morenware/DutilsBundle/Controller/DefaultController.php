@@ -47,7 +47,7 @@ class DefaultController extends Controller
     }
     
     /**
-     * Search torrents.
+     * Search torrents page, server page shown from initial call
      *
      * @Route("/search")
      * @Method("GET")

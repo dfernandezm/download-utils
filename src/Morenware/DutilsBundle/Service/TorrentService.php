@@ -93,6 +93,14 @@ class TorrentService {
 		return $this->getRepository()->findOneBy(array('hash' => $torrentHash));
 	}
 	
+	public function findTorrentByMagnetLink($magnetLink) {
+		return $this->getRepository()->findOneBy(array('magnetLink' => $magnetLink));
+	}
+	
+	public function findTorrentByFilePath($torrentFilePath) {
+		return $this->getRepository()->findOneBy(array('filePath' => $torrentFilePath));
+	}
+	
 	public function clearDoctrine() {
 		$this->em->flush();
 		$this->em->clear();
@@ -250,5 +258,45 @@ class TorrentService {
 	 */
 	public function startRenamerIfNotAlready() {
 		$this->processManager->startSymfonyCommandAsynchronously(CommandType::RENAME_DOWNLOADS);
+	}
+	
+	public function startDownloadFromMagnetLink($magnetLink, $origin = null) {
+	
+		$this->logger->debug("Starting download from link $magnetLink");	
+		$torrent = $this->findTorrentByMagnetLink($magnetLink);
+	
+		if ($torrent != null) {
+			return $this->startDownload($torrent);
+		} else {
+			$torrent = new Torrent();
+			$torrent->setMagnetLink($magnetLink);
+			$torrent->setGuid(GuidGenerator::generate());
+			$torrent->setTitle("Unknown");
+				
+			if ($origin != null) {
+				$torrent->setOrigin($origin);
+			}
+				
+			return $this->transmissionService->startDownload($torrent);
+		}
+	}
+	
+	public function startDownloadFromTorrentFile($torrentFilePath, $origin = null) {
+		$torrent = $this->findTorrentByFilePath($torrentFilePath);
+	
+		if ($torrent != null) {
+			return $this->transmissionService->startDownload($torrent);
+		} else {
+			$torrent = new Torrent();
+			$torrent->setMagnetLink($torrentFilePath);
+			$torrent->setGuid(GuidGenerator::generate());
+			$torrent->setTitle("Unknown");
+	
+			if ($origin != null) {
+				$torrent->setOrigin($origin);
+			}
+	
+			return $this->transmissionService->startDownload($torrent);
+		}
 	}
 }

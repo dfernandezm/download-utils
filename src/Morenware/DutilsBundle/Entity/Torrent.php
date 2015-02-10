@@ -16,81 +16,79 @@ class Torrent {
 	 * @ORM\Id
 	 * @ORM\GeneratedValue(strategy="AUTO")
 	 */
-	protected $id;
+	private $id;
 	
 	/**
 	 * @ORM\Column(type="string", length=100)
 	 */
-	protected $guid;
+	private $guid;
 	
 	/**
 	 * @ORM\Column(type="string", length=100)
 	 */
-	protected $title;
+	private $title;
 	
 	/**
 	 * @ORM\Column(type="string", length=200, nullable=true)
 	 */
-	protected $torrentName;
+	private $torrentName;
 	
 	/**
 	 * @ORM\Column(type="string", length=100, nullable=true)
 	 */
-	protected $hash;
+	private $hash;
 	
 	/**
 	 * @ORM\Column(name="magnet_link", type="string", length=300, nullable=true)
 	 */
-	protected $magnetLink;
+	private $magnetLink;
 	
 	/** 
 	 * @ORM\Column(type="datetime", nullable=true) 
 	 * 
 	 */
-	protected $date;
+	private $date;
 	
 	/**
 	 * @ORM\Column(type="string", length=300, nullable=true)
 	 */
-	protected $asset;
+	private $asset;
 	
 	/**
 	 * @ORM\Column(type="string", length=300, nullable=true)
 	 */
-	protected $state;
+	private $state;
 	
 	/**
 	 * @ORM\Column(name="content_type", type="string", length=300, nullable=true)
 	 */
-	protected $contentType;
+	private $contentType;
 	
 	/**
 	 * @ORM\Column(name="file_path", type="string", length=300, nullable=true)
 	 */
-	protected $filePath;
+	private $filePath;
 	
 	/**
 	 * @ORM\Column(name="transmission_id", type="integer", nullable=true)
 	 */
-	protected $transmissionId;
+	private $transmissionId;
 	
 	/**
 	 * @ORM\Column(name="origin", type="string", nullable=true)
 	 */
-	protected $origin;
+	private $origin;
 
 	/**
 	 * @ORM\Column(name="torrent_file_link", type="string", nullable=true)
 	 */
-	protected $torrentFileLink;
+	private $torrentFileLink;
 	
 	/**
 	 * @ORM\Column(name="percent_done", type="float", nullable=true)
 	 */
-	protected $percentDone;
+	private $percentDone;
 	
-	
-		
 	
 	public function getTitle() {
 		return $this->title;

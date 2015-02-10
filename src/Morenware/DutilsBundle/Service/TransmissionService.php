@@ -8,6 +8,8 @@ use Morenware\DutilsBundle\Entity\TorrentOrigin;
 use Morenware\DutilsBundle\Entity\TorrentContentType;
 use Morenware\DutilsBundle\Entity\TorrentState;
 use Morenware\DutilsBundle\Entity\Feed;
+use Morenware\DutilsBundle\Util\GuidGenerator;
+use Symfony\Component\Validator\Constraints\Length;
 
 /** @Service("transmission.service") */
 class TransmissionService {
@@ -37,7 +39,6 @@ class TransmissionService {
 	*     "logger"  = @DI\Inject("logger"),
 	*     "transmissionLogger" = @DI\Inject("monolog.logger.transmission")
 	* })
-	*
 	*/
 	public function __construct($logger, $transmissionLogger) {
 
@@ -45,12 +46,13 @@ class TransmissionService {
 		$this->transmissionLogger = $transmissionLogger;
 	}
 	
+	
 	//TODO: Add support for starting multiple downloads at the same time, like the upload feature in the WebInterface
 	// of Transmission - Check RPC api or WebInterface code
-	public function startDownload($torrent, $isFromFile = false) {
+	public function startDownload($torrent, $isFromFile = false, $force = false) {
 		
 		// Ensure transmission has the right configuration (cache this to not call every time)
-		$this->configureTransmission();
+		// $this->configureTransmission();
 		$link = $torrent->getMagnetLink();
 		$magnetLink = "$link";
 	  
@@ -58,7 +60,13 @@ class TransmissionService {
 	    
 		if ($isFromFile) {
 			$filenameParameter = $torrent->getFilePath();
-		}    
+		}
+		
+		if ($filenameParameter == null || strlen($filenameParameter) == 0) {
+			$message = "Provided torrent magnet link or file is null or blank: $filenameParameter";
+			$this->transmissionLogger->error($message);
+			throw new \Exception($message, 400, null);
+		}
 		
 	    $addTorrentJson = "{\"method\":\"torrent-add\",\"arguments\":{\"paused\":false,\"filename\":\"$filenameParameter\"} }";
 	
@@ -88,6 +96,10 @@ class TransmissionService {
 	    		$torrent->setHash($hash);
 	    		$torrent->setTransmissionId($transmissionId);
 	    		$torrent->setTorrentName($nameAdded);
+	    		
+	    		if ($torrent->getTitle() == "Unknown") {
+	    			$torrent->setTitle($nameAdded);
+	    		}
 	    		 
 	    		// Relocate based on hash
 	    		$this->relocateTorrent($nameAdded, $hash);
@@ -100,6 +112,8 @@ class TransmissionService {
 	    	$this->logger->error("[START-DOWNLOAD] Could not start downloading torrent, marking torrent as FAILED_DOWNLOAD -- " .$torrent->getTitle() . " - " . $e->getMessage());
 	    	$this->updateTorrentState($torrent,TorrentState::FAILED_DOWNLOAD_ATTEMPT);
 	    }
+	    
+	    return $torrent;
 	}
 	
 	public function updateTorrentState($torrent, $torrentState) {
