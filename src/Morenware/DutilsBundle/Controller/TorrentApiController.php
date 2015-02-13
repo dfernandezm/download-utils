@@ -37,8 +37,40 @@ class TorrentApiController {
 	public $torrentService;
 
 	
+	
 	/**
-	 * Start download of the torrent reprensented for the specified magnet link or torrent file URI
+	 * Fetch a torrent with the given hash or guid
+	 * 
+	 * @Route("/torrents/{hashOrGuid}")
+     * @Method("GET")
+	 * 
+	 * @param unknown $hashOrGuid
+	 */
+	public function getTorrentAction($hashOrGuid) {
+		
+		try {
+
+			$torrent = $this->torrentService->findTorrentByGuid($hashOrGuid);
+			
+			if ($torrent == null) {
+				$torrent = $this->torrentService->findTorrentByHash($hashOrGuid);
+			}
+			
+			if ($torrent != null) {
+				return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent);
+			} else {
+				return $this->generateErrorResponse("TORRENT_NOT_FOUND", 404);
+			}
+			
+		} catch (\Exception $e)  {
+			$this->logger->error("Error trying to get torrent " .$e->getTraceAsString());
+			return $this->generateErrorResponse($e->getMessage(), 500);
+		}
+	} 
+	
+	
+	/**
+	 * Start download of the torrent represented for the specified magnet link or torrent file URI
 	 *
      * @Route("/torrents")
      * @Method("POST")
@@ -64,6 +96,58 @@ class TorrentApiController {
 			return $this->generateErrorResponse($e->getMessage(), 400);
 		}
 	}
+	
+	
+	
+	/**
+	 *
+	 * Check status of torrents currently in Transmission and update their state in database. Checked torrents
+	 * are retrieved in the response
+	 *
+	 * @Route("/torrents/status")
+	 * @Method("PUT")
+	 *
+	 */
+	//TODO: add state parameter to exclude some states and some sorting; Add dateAdded, dateStarted, dateFinished to Torrent
+	public function torrentsStatusAction(Request $request) {
+		try {	
+			$updatedTorrents = $this->transmissionService->checkTorrentsStatus();
+			return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $updatedTorrents, 200, "torrents");
+		} catch(\Exception $e)  {
+			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
+		}
+	}
+	
+	/**
+	 *
+	 * Delete torrent from transmission and database
+	 *
+	 * @Route("/torrents/{hashOrGuid}")
+	 * @Method("DELETE")
+	 *
+	 */
+	public function deleteTorrentAction($hashOrGuid) {
+		try {
+			
+			$torrent = $this->torrentService->findTorrentByGuid($hashOrGuid);
+				
+			if ($torrent == null) {
+				$torrent = $this->torrentService->findTorrentByHash($hashOrGuid);
+			}
+				
+			if ($torrent != null) {
+				$this->torrentService->deleteTorrent($hashOrGuid, true);
+				return ControllerUtils::createJsonResponseForArray(null);
+			} else {
+				return $this->generateErrorResponse("TORRENT_NOT_FOUND", 404);
+			}
+			
+		} catch(\Exception $e)  {
+			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
+		}
+	}
+	
+	
 	
 	
 	private function generateErrorResponse($message, $errorCode) {

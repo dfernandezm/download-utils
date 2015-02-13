@@ -86,9 +86,8 @@ class TorrentService {
 		return $this->repository->findAll();
 	}
 	
-	public function delete($torrent) {
+	private function delete($torrent) {
 		$this->em->remove($torrent);
-		$this->em->flush();
 	}
 	
 	public function findTorrentByHash($torrentHash) {
@@ -107,6 +106,25 @@ class TorrentService {
 		return $this->getRepository()->findBy(array('state' => $torrentState));
 	}
 	
+	public function findTorrentByGuid($guid) {
+		return $this->getRepository()->findOneBy(array('guid' => $guid));
+	}
+	
+	public function deleteTorrent($torrent, $deleteInTransmission = false) {
+		
+		if (!$deleteInTransmission) {
+			$this->delete($torrent);
+			$this->em->flush();
+		} else {
+			
+			$this->em->transactional(function($em) use ($torrent) {
+				$this->transmissionService->deleteTorrent($torrent);
+				$this->delete($torrent);		
+			});	
+		}	
+
+	}
+	
 	public function clearDoctrine() {
 		$this->em->flush();
 		$this->em->clear();
@@ -116,6 +134,8 @@ class TorrentService {
 	public function updateDataForTorrents($torrentsResponse) {
 		$countTorrents = count($torrentsResponse);
 		$finishedTorrents = array();
+		
+		$updatedTorrents = array();
 		
 		// General logger
 		$this->logger->info("Updating data for $countTorrents torrents");
@@ -161,6 +181,8 @@ class TorrentService {
 				}
 				
 				$this->merge($existingTorrent);
+				
+				$updatedTorrents[] = $existingTorrent;
 				
 			} else {
 				
@@ -214,6 +236,8 @@ class TorrentService {
 				if ($finished) {
 					$finishedTorrents[] = $existingTorrent;
 				}
+				
+				$updatedTorrents[] = $torrent;
 			}
 		}
 		
@@ -222,6 +246,10 @@ class TorrentService {
 		} else {
 			$this->monitorLogger->debug("[MONITOR] Finished torrents update -- No torrents to rename");
 		}
+		
+		$this->monitorLogger->debug("[MONITOR] Finished torrents update");
+		
+		return $updatedTorrents;
 	}
 
 	

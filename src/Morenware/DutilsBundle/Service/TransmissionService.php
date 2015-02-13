@@ -31,9 +31,7 @@ class TransmissionService {
 	/** @DI\Inject("settings.service") */
 	public $settingsService;
 	
-	const BASE_TORRENTS_PATH = "/home/david/scripts/downloads";
-	
-
+    
    /**
 	* @DI\InjectParams({
 	*     "logger"  = @DI\Inject("logger"),
@@ -144,8 +142,10 @@ class TransmissionService {
 		$result = $this->executeTransmissionApiCall($jsonRequest);
 	
 		$this->transmissionLogger->debug("[TRANSMISSION-API-CALL] Result of torrents query is: ". json_encode($result->arguments->torrents));
-		$this->torrentService->updateDataForTorrents($result->arguments->torrents);
+
+		$updatedTorrents = $this->torrentService->updateDataForTorrents($result->arguments->torrents);
 		
+		return $updatedTorrents;
 	}
 	
 	
@@ -329,6 +329,21 @@ class TransmissionService {
 		
 		return $newLocation;
 	}
+	
+	/**
+	 * 
+	 * Delete torrent and data in Transmission. Update DB to DELETED state
+	 * This will allow to re-add the torrent and download it again.
+	 * 
+	 * @param unknown $torrent
+	 */
+	public function deleteTorrent($torrentHash) {
+		
+		//TODO:
+		
+	}
+	
+	
 	
 	/**
 	 * Sets some global session properties in Transmission

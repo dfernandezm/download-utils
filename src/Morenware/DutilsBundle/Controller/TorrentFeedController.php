@@ -125,13 +125,15 @@ class TorrentFeedController {
 	}
 	
 	/**
-	 * Check the active feeds for new torrents. If torrents are found they are created in the system pending to download and
-	 * queued in Transmission.
+	 * Check the active feeds for new torrents. If torrents are found they are created in the system pending to download. 
+	 * The created torrents are retrieved in the response
 	 * 
-	 * @Route("/feedscheck")
+	 * @Route("/feeds/check")
 	 * @Method("GET")
 	 * 
 	 */
+	
+	//TODO:
 	public function checkFeedsAction() {
 	
 		try {
@@ -145,31 +147,6 @@ class TorrentFeedController {
 			return ControllerUtils::createJsonResponseForArray($error, 500);
 		}
 
-	}
-	
-	/**
-	 * TODO: Move to another API endpoint
-	 * 
-	 * Check status of downloading torrents, updating DB with fetched data
-	 *
-	 * @Route("/torrents/check")
-	 * @Method("GET")
-	 *
-	 */
-	public function checkTorrentsAction(Request $request) {
-	
-		try {
-			
-			$this->transmissionService->checkTorrentsStatus();
-			return ControllerUtils::createJsonResponseForArray(null);
-		} catch(\Exception $e)  {
-			$error = array(
-					"error" => "There was an error checking torrents ".$e->getMessage(),
-					"errorCode" => 500);
-	
-			return ControllerUtils::createJsonResponseForArray($error, 500);
-		}
-	
 	}
 	
 	/**
