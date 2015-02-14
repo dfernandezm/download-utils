@@ -362,6 +362,8 @@ class TransmissionService {
 		
 		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
 		
+		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
+		
 		$requestPayload = array(
 				"method" => "session-set",
 				"arguments" => array("download-dir" => $baseDownloadsPath, 
