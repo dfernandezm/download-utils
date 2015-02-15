@@ -25,8 +25,12 @@ security:
         login:
             pattern:  ^/demo/secured/login$
             security: false
+        
+        notify:
+            pattern: ^/api/notify/.*$
+            security: false
 
         secured_area:
-            pattern:    ^/api
+            pattern: ^/api/.*$
             http_basic:
                 realm: "You should have a user name and password"

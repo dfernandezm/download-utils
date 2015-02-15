@@ -102,9 +102,10 @@ class TransmissionService {
 	    		}
 	    		 
 	    		// Relocate based on hash
-	    		$this->relocateTorrent($nameAdded, $hash);
+	    		$newLocation = $this->relocateTorrent($nameAdded, $hash);
+	    		$torrent->setFilePath($newLocation);
 	    		
-	    		$this->updateTorrentState($torrent,TorrentState::DOWNLOADING);
+	    		$this->updateTorrentState($torrent, TorrentState::DOWNLOADING);
 	    		$this->processManager->startDownloadsMonitoring();
 	    	}
 	    	
@@ -135,7 +136,7 @@ class TransmissionService {
 		// Percent done is a number between 0 and 1
 		$requestPayload = array(
 				"method" => "torrent-get",
-				"arguments" => array("fields" => array("id", "name", "totalSize", "percentDone", "hashString"))
+				"arguments" => array("fields" => array("id", "name", "totalSize", "percentDone", "hashString", "torrentFile", "magnetLink", "rateDownload"))
 		);
 	
 		$jsonRequest = json_encode($requestPayload);
@@ -144,7 +145,7 @@ class TransmissionService {
 	
 		$this->transmissionLogger->debug("[TRANSMISSION-API-CALL] Result of torrents query is: ". json_encode($result->arguments->torrents));
 		$this->torrentService->updateDataForTorrents($result->arguments->torrents);
-		$this->torrentService->clearDoctrine();
+		
 	}
 	
 	
@@ -325,6 +326,8 @@ class TransmissionService {
 		
 		$this->logger->debug("Torrent $torrentName successfully RELOCATED in $newLocation");
 		$this->transmissionLogger->debug("Torrent $torrentName successfully RELOCATED in $newLocation");
+		
+		return $newLocation;
 	}
 	
 	/**
@@ -339,14 +342,16 @@ class TransmissionService {
 	
 		$this->transmissionLogger->info("[TRANSMISSION-CONFIGURE-SESSION] Setting up transmission session settings");
 		
-		// This will prepare one script to execute the renaming in the scripts temporary area with execution permission for all
-		$scriptToStartRenaming = $this->processManager->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS, true);
+		// This will prepare one script to execute a push notification from transmission when a download finishes
+		$notificationScript = $this->processManager->prepareScriptToExecuteSymfonyCommand(CommandType::NOTIFY, true);
+		
+		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
 		
 		$requestPayload = array(
 				"method" => "session-set",
-				"arguments" => array("download-dir" => self::BASE_TORRENTS_PATH, 
+				"arguments" => array("download-dir" => $baseDownloadsPath, 
 						             "script-torrent-done-enabled" => true,
-									 "script-torrent-done-filename" => "$scriptToStartRenaming")
+									 "script-torrent-done-filename" => "$notificationScript")
 		);
 	
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);

@@ -36,7 +36,7 @@ class RenameAndMoveCommand extends Command {
 	public $settingsService;
 
 	// The script which actually performs a full rename of the downloads main folder
-	const RENAME_SCRIPT_PATH = "scripts/rename-filebot.sh";
+	const RENAME_SCRIPT_PATH = "scripts/multiple-rename-filebot.sh";
 	
 	// File whose presence indicates flags the process for termination
 	const TERMINATED_FILE_NAME = "renamer.terminated";
@@ -110,7 +110,7 @@ class RenameAndMoveCommand extends Command {
 				// Define callback function to monitor real time output of the process
 				$waitCallback = function ($type, $buffer, $process) use ($renamerLogger, $terminatedFile) {
 					
- 					$renamerLogger->debug("[RENAMING] $buffer");
+ 					$renamerLogger->debug("[RENAMING] ==> $buffer");
  					
  					if (file_exists($terminatedFile)) {
  						$renamerLogger->debug("[RENAMING] Terminated renamer worker on demand");
@@ -121,12 +121,31 @@ class RenameAndMoveCommand extends Command {
  				// By opening a new shell we avoid the execution permission
 				$commandLineExec = "sh " . $scriptToExecute;
 			
-				// We provide a callback, so the process is not asynchronous in this particular case, it blocks until completed or timeout
- 				$this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
-
- 				$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing");
+				try {
+					// We provide a callback, so the process is not asynchronous in this particular case, it blocks until completed or timeout
+ 					$process = $this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
+						
+ 					$exitCode = $process->getExitCode();
+ 					$exitCodeText = $process->getExitCodeText();
+ 					
+ 					$renamerLogger->error("[RENAMING] Renamer process exitCode is $exitCodeText ==> $exitCode");
+ 					
+ 					if ($exitCode == null) {
+ 						$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid hasn't seem to be terminated, aborting");
+ 						$this->logger->error("[RENAMING] Error executing renamer process with PID $pid hasn't seem to be terminated, aborting");
+ 						throw new \Exception("[RENAMING] Error executing renaming process PID $pid", $exitCode, null);
+ 					} else if ($exitCode != 0) {
+ 						$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid ");
+ 						throw new \Exception("[RENAMING] Error executing renaming process PID $pid", $exitCode, null);
+ 					}
+ 					
+				} catch (\Exception $e) {
+					$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid: " . $e->getMessage() . " " . $e->getTraceAsString());
+					$this->logger->error("[RENAMING] Error executing renamer process with PID $pid: " . $e->getMessage() . " " . $e->getTraceAsString());
+				}
+				
+ 				$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- starting further checks...");
  				
- 				//TODO: Check exit status!!
  				$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
  				
 			} else {
@@ -137,7 +156,7 @@ class RenameAndMoveCommand extends Command {
 			gc_collect_cycles();
 		
 		} catch (\Exception $e) {
-			$this->logger->error("Error executing Renamer process with PID $pid", $e->getMessage());		
+			$this->logger->error("Error executing Renamer process with PID $pid -- " . $e->getMessage() . " -- " . $e->getTraceAsString());		
 		} finally {
 			
 			unlink($pidFile);
@@ -155,11 +174,14 @@ class RenameAndMoveCommand extends Command {
 		$scriptContent = file_get_contents($filePath);
 		
 		$renamerLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename_$processPid"; 
+		$baseDownloadsPath = $mediacenterSettings->getBaseDownloadsPath();
+		$libraryBasePath = $mediacenterSettings->getBaseLibraryPath();
+
+		$inputPathAsBashArray = $this->torrentService->getTorrentsCompletedDownloadsPathsAsBashArray($baseDownloadsPath);
+		
 		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
-		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", $mediacenterSettings->getBaseLibraryPath(), $scriptContent);
-		$scriptContent = str_replace("%BASE_DOWNLOADS_PATH%", $mediacenterSettings->getBaseDownloadsPath(), $scriptContent);
-		$scriptContent = str_replace("%PREFERRED_SUBS_LANG%", "en", $scriptContent);
-		$scriptContent = str_replace("%ADDITIONAL_SUBS_LANG%", "es", $scriptContent);
+		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathAsBashArray, $scriptContent);
+		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", $libraryBasePath, $scriptContent);
 		
 		if ($xbmcHost != null) {
 			$scriptContent = str_replace("%XBMC_HOSTNAME%", $xbmcHost, $scriptContent);
@@ -170,6 +192,8 @@ class RenameAndMoveCommand extends Command {
 				
 		return array($scriptFilePath, $renamerLogFilePath . ".log");
 	}
+	
+	
 	
 	// Utility to delete files like /path/to/somename*
 	public function deleteFileUsingWildCard($pathWithWildcard) {

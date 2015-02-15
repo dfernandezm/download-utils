@@ -28,6 +28,8 @@ class TorrentService {
 	/** @DI\Inject("transmission.service") */
 	public $transmissionService;
 	
+	private $transmissionConfigured = false;
+	
 	
    /**
 	* @DI\InjectParams({
@@ -101,13 +103,19 @@ class TorrentService {
 		return $this->getRepository()->findOneBy(array('filePath' => $torrentFilePath));
 	}
 	
+	public function findTorrentsByState($torrentState) {
+		return $this->getRepository()->findBy(array('state' => $torrentState));
+	}
+	
 	public function clearDoctrine() {
 		$this->em->flush();
 		$this->em->clear();
+		
 	}
 	
 	public function updateDataForTorrents($torrentsResponse) {
 		$countTorrents = count($torrentsResponse);
+		$finishedTorrents = array();
 		
 		// General logger
 		$this->logger->info("Updating data for  $countTorrents torrents");
@@ -128,33 +136,52 @@ class TorrentService {
 				$existingTorrent->setPercentDone($percentDone);
 				$existingTorrent->setHash($torrentHash);
 
+				if ($torrentState == TorrentState::DOWNLOADING) {
+					$this->monitorLogger->debug("Torrent $torrentName state is $torrentState, percentage $percentDone");
+				}
+				
 				if ($percentDone != null && $percentDone > 0 && $percentDone < 100 && 
-					$existingTorrent->getState() != TorrentState::DOWNLOAD_COMPLETED && $existingTorrent->getState() != TorrentState::COMPLETED) {
+					$torrentState != TorrentState::DOWNLOADING &&
+					$torrentState != TorrentState::DOWNLOAD_COMPLETED && 
+					$torrentState != TorrentState::COMPLETED) {
+						
 					$existingTorrent->setState(TorrentState::DOWNLOADING);
 					$this->monitorLogger->debug("Torrent $torrentName found in DB, setting as DOWNLOADING, state was $torrentState, percent $percentDone");	
 				} else if ($percentDone == 100 && $torrentState == TorrentState::DOWNLOADING) {
 					$existingTorrent->setState(TorrentState::DOWNLOAD_COMPLETED);
 					$this->monitorLogger->info("[MONITOR] Torrent $torrentName finished downloading, percent $percentDone, starting renaming process");
 					$this->logger->info("[MONITOR] Torrent $torrentName finished downloading, starting renaming process");
-					$this->startRenamerIfNotAlready();
+					$finishedTorrents[] = $existingTorrent;
 				}
 				
 				$this->merge($existingTorrent);
 				
 			} else {
+				
+				$finished = false;
+				
 				$this->monitorLogger->debug("Torrent $torrentName with hash $torrentHash not found in DB, creating and relocating now");
 				
 				// Relocate the torrent to the known subfolder as we are creating it now
+				$newLocation = null;
 				
 				try {
-					$this->transmissionService->configureTransmission();
-					$this->transmissionService->relocateTorrent($torrentName, $torrentHash);
+					
+					if (!$this->transmissionConfigured) {
+						$this->transmissionService->configureTransmission();
+						$this->transmissionConfigured = true;	
+					}
+					
+					$newLocation = $this->transmissionService->relocateTorrent($torrentName, $torrentHash);
+				
 				} catch (\Exception $e) {
 					$this->logger->error("Error configuring transmission / relocating torrent -- " . $e->getMessage());
 					$this->monitorLogger->debug("Error configuring transmission / relocating torrent -- " . $e->getMessage());
+					return;
 				}
 				
 				$torrent = new Torrent();
+				$torrent->setFilePath($newLocation);
 				$torrent->setTransmissionId($transmissionId);
 				$torrent->setGuid(GuidGenerator::generate());
 				$torrent->setTorrentName($torrentName);
@@ -166,7 +193,7 @@ class TorrentService {
 					$torrent->setState(TorrentState::DOWNLOAD_COMPLETED);
 					$this->monitorLogger->info("[MONITOR] Torrent $torrentName finished downloading, percent $percentDone, starting renaming process");
 					$this->logger->info("[MONITOR] Torrent $torrentName finished downloading, starting renaming process");
-					$this->startRenamerIfNotAlready();
+					$finished = true;
 				}
 				
 				$torrent->setTitle($torrentName);
@@ -177,10 +204,19 @@ class TorrentService {
 				$torrent->setPercentDone($percentDone);
 				
 				$this->create($torrent);
+				
+				if ($finished) {
+					$finishedTorrents[] = $existingTorrent;
+				}
 			}
 		}
 		
-		$this->monitorLogger->debug("[MONITOR] Finished torrents update");
+		if (count($finishedTorrents) > 0) {
+			$this->monitorLogger->debug("[MONITOR] Finished torrents update -- There are torrents to rename");
+			$this->startRenamerIfNotAlready();
+		} else {
+			$this->monitorLogger->debug("[MONITOR] Finished torrents update");
+		}
 	}
 	
 	//TODO: we can use a subfolder (known) for each torrent when adding it and it would be easier to do this!
@@ -193,7 +229,7 @@ class TorrentService {
 	 */
 	public function processTorrentsAfterRenaming($renamerLogFilePath) {
 		
-		$this->logger->info("[RENAMING] Starting state update of torrents after renaming using renamer log file $renamerLogFilePath");
+		$this->logger->info("[RENAMING] Starting state update of torrents / subtitle fetching after renaming using renamer log file $renamerLogFilePath");
 		
 		$pathMovedPattern = '/\[MOVE\]\s+Rename\s+(.*)to\s+\[(.*)\]/';
 		$logContent = file_get_contents($renamerLogFilePath);
@@ -230,16 +266,29 @@ class TorrentService {
 					
 					$torrent = $this->findTorrentByHash($hash);
 					
-					if ($torrent != null && $torrent->getState() !== TorrentState::COMPLETED) {
+					if ($torrent != null && 
+						$torrent->getState() == TorrentState::RENAMING &&
+						$torrent->getState() !== TorrentState::RENAMING_COMPLETED && 
+						$torrent->getState() !== TorrentState::COMPLETED) {
 							
-						$torrent->setState(TorrentState::COMPLETED);
-						$this->update($torrent);
 						$torrentName = $torrent->getTorrentName();
-						$this->renamerLogger->debug("[RENAMING] Completing processing for torrent $torrentName with hash $hash");
 						
-						//TODO: Further linking with Asset id, 
-						//$contentName = (get tv show title from new path (convention?)
-							
+						//TODO: We could start here subtitles and move to complete
+						$requireSubtitles = true;
+						
+						if ($requireSubtitles) {
+							$torrent->setState(TorrentState::RENAMING_COMPLETED);
+							$torrent->setRenamedPath($newPath);
+							$this->update($torrent);
+							$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
+							$this->startSubtitleFetchIfNotAlready();
+						} else {
+							$torrent->setState(TorrentState::COMPLETED);
+							$this->update($torrent);
+							$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
+							$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName");
+						}
+						
 					} else {
 						$this->renamerLogger->warn("[RENAMING] Could not find torrent in DB with hash $hash");
 					}
@@ -259,6 +308,11 @@ class TorrentService {
 	public function startRenamerIfNotAlready() {
 		$this->processManager->startSymfonyCommandAsynchronously(CommandType::RENAME_DOWNLOADS);
 	}
+	
+	public function startSubtitleFetchIfNotAlready() {
+		$this->processManager->startSymfonyCommandAsynchronously(CommandType::FETCH_SUBTITLES);
+	}
+	
 	
 	public function startDownloadFromMagnetLink($magnetLink, $origin = null) {
 	
@@ -299,4 +353,71 @@ class TorrentService {
 			return $this->transmissionService->startDownload($torrent);
 		}
 	}
+	
+	public function getTorrentsCompletedDownloadsPathsAsBashArray($baseDownloadsPath) {
+		
+		$completedDownloadsTorrents = $this->findTorrentsByState(TorrentState::DOWNLOAD_COMPLETED);
+		
+		if (count($completedDownloadsTorrents) > 0) {
+			
+			$torrentsPathsAsBashArray = "(";
+			
+			foreach ($completedDownloadsTorrents as $torrent) {
+			   $torrentsPathsAsBashArray = $torrentsPathsAsBashArray . "\"" . $torrent->getFilePath() . "\" ";
+			   $torrent->setState(TorrentState::RENAMING);
+			   $this->merge($torrent);
+			}
+
+			$torrentsPathsAsBashArray = $torrentsPathsAsBashArray . ")";
+			
+			$this->monitorLogger->debug("The bash array created is: " . $torrentsPathsAsBashArray);
+			
+			return $torrentsPathsAsBashArray;
+		} else {
+			$this->monitorLogger->debug("[MONITOR] No torrents to process for state ");
+		}
+	
+	    return null;
+	}
+	
+	// For fetching subtitles in destination
+	public function getTorrentsRenamedPathsAsBashArray($baseLibraryPath) {
+	
+		$renamedTorrents = $this->findTorrentsByState(TorrentState::RENAMING_COMPLETED);
+	
+		if (count($renamedTorrents) > 0) {
+				
+			$torrentsRenamedPathsAsBashArray = "(";
+				
+			foreach ($renamedTorrents as $torrent) {
+				$torrentsRenamedPathsAsBashArray = $torrentsRenamedPathsAsBashArray . "\"" . $torrent->getRenamedPath() . "\" ";
+				$torrent->setState(TorrentState::FETCHING_SUBTITLES);
+				$this->merge($torrent);
+			}
+	
+			$torrentsRenamedPathsAsBashArray = $torrentsRenamedPathsAsBashArray . ")";
+				
+			$this->monitorLogger->debug("The bash array created is: " . $torrentsRenamedPathsAsBashArray);
+				
+			return $torrentsRenamedPathsAsBashArray;
+		} else {
+			$this->monitorLogger->debug("[MONITOR] No torrents to process for state RENAMING_COMPLETED");
+		}
+	
+		return null;
+	}
+	
+	public function finishProcessingAfterFetchingSubs() {
+		$subtitledTorrents = $this->findTorrentsByState(TorrentState::FETCHING_SUBTITLES);
+		
+		foreach ($subtitledTorrents as $torrent) {
+			$torrent->setState(TorrentState::COMPLETED);
+			$this->merge($torrent);
+			$torrentName = $torrent->getTorrentName();
+			$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName after fetching subtitles");
+		}
+
+		$this->monitorLogger->info("[WORKFLOW-FINISHED] Processing of torrents finished");
+	}
+	
 }

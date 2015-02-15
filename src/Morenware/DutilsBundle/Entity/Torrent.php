@@ -64,6 +64,8 @@ class Torrent {
 	 */
 	private $contentType;
 	
+	
+    // Path where this torrent is being downloaded	
 	/**
 	 * @ORM\Column(name="file_path", type="string", length=300, nullable=true)
 	 */
@@ -88,6 +90,13 @@ class Torrent {
 	 * @ORM\Column(name="percent_done", type="float", nullable=true)
 	 */
 	private $percentDone;
+	
+	
+	// Path of this torrent file/s once it is finished/renamed in the destination library
+	/**
+	 * @ORM\Column(name="renamed_path", type="string", length=300, nullable=true)
+	 */
+	private $renamedPath;
 	
 	
 	public function getTitle() {
@@ -195,6 +204,11 @@ class Torrent {
 		$this->percentDone = $percentDone;
 		return $this;
 	}
-	
-	
+	public function getRenamedPath() {
+		return $this->renamedPath;
+	}
+	public function setRenamedPath($renamedPath) {
+		$this->renamedPath = $renamedPath;
+		return $this;
+	}
 }

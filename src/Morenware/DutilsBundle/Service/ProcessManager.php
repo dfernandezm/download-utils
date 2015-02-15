@@ -19,6 +19,7 @@ class ProcessManager {
 	public $kernel;
 	
 	const TEMP_AREA_SCRIPT_EXECUTION_PATH = "/home/david/scripts";
+	const TEMPLATE_NOTIFY_SCRIPT_PATH = "scripts/notify.sh";
 	const TEMPLATE_COMMAND_SCRIPT_PATH = "scripts/executeCommand.sh";
 	const MONITOR_DOWNLOADS_COMMAND_NAME = "dutils:monitorDownloads";
 	const RENAME_COMMAND_NAME = "dutils:rename";
@@ -30,7 +31,7 @@ class ProcessManager {
 	
 	public function getIdleTimeout() {
 		// No more than 2 minutes idle
-		return 2 * 60;
+		return 10 * 60;
 	}
 	
 	//TODO: refactor to use generic method startSymfonyCommandAsynchronously
@@ -70,6 +71,17 @@ class ProcessManager {
 					$process->setIdleTimeout($this->getIdleTimeout());
 					$process->start();
 					break;
+				case CommandType::NOTIFY:
+					//TODO: wrap in a command to invoke locally maybe better? and use a call to invoke remotely...
+					$notifyCall = "http://local-dutils/api/notify/finished";
+					$scriptToExecute = $this->prepareScriptToExecuteNotifyCall($notifyCall);
+					$processToExecute = "sh " . $scriptToExecute;
+					$this->logger->info("Executing notification to $notifyCall asynchronously");
+					$process = new Process($processToExecute);
+					$process->setTimeout($this->getOverallTimeout());
+					$process->setIdleTimeout($this->getIdleTimeout());
+					$process->start();
+					break;
 				default:
 					$this->logger->warn("Unknown command provided -- fix code");
 			}
@@ -77,14 +89,38 @@ class ProcessManager {
 			return $process;
 			
 		} catch(\Exception $e) {
-			$this->logger->error("Error starting process for Symfony command $command", $e->getMessage());
-			throw e;
+			$this->logger->error("Error starting process for Symfony command $command: " . $e->getMessage() . " == " . $e->getTraceAsString());
+			throw $e;
 		}
 	}
 	
 	
 	public function isMonitorDownloadsRunning() {
 		return file_exists("/home/david/scripts/monitor.pid");
+	}
+	
+	
+	private function prepareScriptToExecuteNotifyCall($notifyCallUrl) {
+		
+		$this->logger->debug("Preparing script to notify");
+		
+		$appRoot =  $this->kernel->getRootDir();
+		
+		$filePath = $appRoot . "/" . self::TEMPLATE_NOTIFY_SCRIPT_PATH;
+		
+		$this->logger->debug("The template script path is $filePath");
+		
+		$scriptContent = file_get_contents($filePath);
+
+		$scriptContent = str_replace("%NOTIFY_URL%", $notifyCallUrl, $scriptContent);
+		
+		$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH."/notify.sh";
+		
+		file_put_contents($scriptFilePath, $scriptContent);
+		
+		$this->logger->debug("The script is in path $scriptFilePath");
+		
+		return $scriptFilePath;
 	}
 	
 	public function prepareScriptToExecuteSymfonyCommand($command, $executableByAll = false) {
@@ -105,21 +141,21 @@ class ProcessManager {
 		
 		if ($command == CommandType::MONITOR_DOWNLOADS) {
 			$scriptContent = str_replace("%COMMAND_NAME%", self::MONITOR_DOWNLOADS_COMMAND_NAME, $scriptContent);
-			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH."/monitor.sh";
+			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/monitor.sh";
 		} else if ($command == CommandType::RENAME_DOWNLOADS) {
 			$scriptContent = str_replace("%COMMAND_NAME%", self::RENAME_COMMAND_NAME, $scriptContent);
-			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH."/rename.sh";
+			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/rename.sh";
+		} else if ($command == CommandType::FETCH_SUBTITLES) {
+			$scriptContent = str_replace("%COMMAND_NAME%", self::FETCH_SUBTITLES_COMMAND_NAME, $scriptContent);
+			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/fetch-subtitles.sh";
 		}
 		
-		$user = get_current_user();
-		$this->logger->debug("About to write script in Temp area as user $user");
 		file_put_contents($scriptFilePath, $scriptContent);
 		$this->logger->debug("The script is in path $scriptFilePath");
 		
 		if ($executableByAll) {
-			$this->logger->debug("Writing script $scriptFilePath with 0755 permission - umask 022");
+			$this->logger->debug("Writing script $scriptFilePath");
 			chmod($scriptFilePath, 0755);
-			//umask(0022);
 		}
 
 		return $scriptFilePath;
@@ -132,7 +168,8 @@ class ProcessManager {
 		
 		if (file_exists($monitorPidFile)) {
 			$this->logger->info("Flagging stop for monitoring process");
-			fopen($monitorTerminatedFile,"w");
+			$file = fopen($monitorTerminatedFile,"w");
+			fclose($file);
 		} else {
 			$this->logger->warn("Looks like there is no monitoring process running");
 		}

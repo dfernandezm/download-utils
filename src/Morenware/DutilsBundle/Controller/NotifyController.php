@@ -1,8 +1,6 @@
 <?php
 namespace Morenware\DutilsBundle\Controller;
 
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Morenware\DutilsBundle\Entity\Instance;
 use Symfony\Component\HttpFoundation\Request;
 use JMS\DiExtraBundle\Annotation as DI;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
@@ -10,47 +8,41 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Morenware\DutilsBundle\Util\ControllerUtils;
-use Morenware\DutilsBundle\Util\GuidGenerator;
-use Morenware\DutilsBundle\Entity\JobState;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Morenware\DutilsBundle\Service\WorkerType;
+use Morenware\DutilsBundle\Entity\Torrent;
 
 /**
  * This controller is used to receive (push) notifications from external services
  * 
  * @Route("/api")
  */
-class NotifyController extends Controller {
+class NotifyController {
 	
-	/** @DI\Inject("async.service") */
-	private $asyncService;
+	/** @DI\Inject("transmission.service") */
+	public $transmissionService;
 	
-	/** @DI\Inject("torrentfeed.service") */
-	private $torrentFeedService;
+	/** @DI\Inject("logger") */
+	private $logger;
 	
 	
 	/**
-	 * Notifies something is ready in the responses queue
+	 * Notification from transmission that a download has finished. This will trigger a single
+	 * poll for status in transmission and only a subset of torrents will be updated and renamed.
 	 *
-     * @Route("/notify")
-     * @Method("POST")
+     * @Route("/notify/finished")
+     * @Method("PUT")
      * 
 	 */
-	public function postNotificationAction() {			
-		$this->asyncService->pollResponsesQueue();
-		return ControllerUtils::createJsonResponseForArray(null);
-	}
-	
-	
-	/**
-	 * Feed checker externally invoked
-	 *
-	 * @Route("/notify/checkFeeds")
-	 * @Method("POST")
-	 *
-	 */
-	public function postCheckFeeds() {
-		$this->torrentFeedService->checkFeedsForTorrents();
-		return ControllerUtils::createJsonResponseForArray(null);
+	public function putTransmissionNotificationAction() {			
+		try {
+			$this->transmissionService->checkTorrentsStatus();
+			return ControllerUtils::createJsonResponseForArray(null);
+		} catch (\Exception $e) {
+			$this->logger->error("Error notifying from transmission " . $e->getMessage() . " " . $e->getTraceAsString());
+			$error = array(
+					"error" => "There was an error notifying from transmission ".$e->getMessage(),
+					"errorCode" => 500);
+			
+			return ControllerUtils::createJsonResponseForArray($error, 500);
+		}
 	}
 }
