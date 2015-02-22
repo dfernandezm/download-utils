@@ -13,6 +13,7 @@ use Morenware\DutilsBundle\Util\GuidGenerator;
 use Morenware\DutilsBundle\Service\ProcessManager;
 use Symfony\Component\Process\Process;
 use Morenware\DutilsBundle\Entity\TorrentState;
+use Morenware\DutilsBundle\Service\CommandType;
 
 /** 
  * @Service("subtitlescommand.service") 
@@ -40,7 +41,7 @@ class SubtitlesCommand extends Command {
 	const SUBTITLES_SCRIPT_PATH = "scripts/multiple-subtitle-filebot.sh";
 	
 	// File whose presence indicates flags the process for termination
-	const TERMINATED_FILE_NAME = "subtitlefetcher.terminated";
+	const TERMINATED_FILE_NAME = "subtitles.terminated";
 	
 	// File containing the PID of the subtitle fetcher process. Its presence indicates that one and only
 	// one is currently running
@@ -141,7 +142,7 @@ class SubtitlesCommand extends Command {
 					$exitCode = $process->getExitCode();
 					$exitCodeText = $process->getExitCodeText();
 					
-					$renamerLogger->error("[SUBTITLES] Renamer process exitCode is $exitCodeText ==> $exitCode");
+					$renamerLogger->error("[SUBTITLES] Subtitles process exitCode is $exitCodeText ==> $exitCode");
 					
 					if (intval($exitCode) !== 0) {
 						$renamerLogger->error("[SUBTITLES] Error executing fetching subs process with PID $pid, non-zero exit value");
@@ -186,7 +187,7 @@ class SubtitlesCommand extends Command {
 		$subtitlesLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/subtitles_$processPid"; 
 		$scriptContent = str_replace("%LOG_LOCATION%", $subtitlesLogFilePath, $scriptContent);
 		
-		$inputPathsAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToFetchSubs, $mediacenterSettings->getBaseLibraryPath());
+		$inputPathsAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToFetchSubs, $mediacenterSettings->getBaseLibraryPath(), CommandType::FETCH_SUBTITLES);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathsAsBashArray, $scriptContent);
 		
 		$scriptContent = str_replace("%SUBS_LANGUAGES%", "en,es", $scriptContent);

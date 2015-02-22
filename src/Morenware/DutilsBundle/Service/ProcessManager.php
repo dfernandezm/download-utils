@@ -18,16 +18,17 @@ class ProcessManager {
 	/** @DI\Inject("monolog.logger.renamer") */
 	public $renamerLogger;
 	
-	
+	/** @DI\Inject("settings.service") */
+	public $settingsService;
 	
 	/** @DI\Inject("kernel") */
 	public $kernel;
 	
-	const TEMP_AREA_SCRIPT_EXECUTION_PATH = "/home/david/scripts";
 	const TEMPLATE_NOTIFY_SCRIPT_PATH = "scripts/notify.sh";
 	const TEMPLATE_COMMAND_SCRIPT_PATH = "scripts/executeCommand.sh";
 	const MONITOR_DOWNLOADS_COMMAND_NAME = "dutils:monitorDownloads";
-	const RENAME_COMMAND_NAME = "dutils:rename";
+	const RENAME_COMMAND_NAME = "dutils:renamer";
+    const NOTIFY_COMMAND_NAME = "dutils:notifyTorrentDone";
 	const FETCH_SUBTITLES_COMMAND_NAME = "dutils:subtitles";
 	
 	public function getOverallTimeout() {
@@ -40,8 +41,8 @@ class ProcessManager {
 		return 10 * 60;
 	}
 	
-	//TODO: refactor to use generic method startSymfonyCommandAsynchronously
 	public function startDownloadsMonitoring() {
+		
 		if (!$this->isMonitorDownloadsRunning()) {
 			return $this->startSymfonyCommandAsynchronously(CommandType::MONITOR_DOWNLOADS);	
 		} else {
@@ -73,7 +74,6 @@ class ProcessManager {
 					$this->renamerLogger->info("Process for renaming started: ". $process->getStatus() . " with PID " . $process->getPid());
 					break;
 				case CommandType::NOTIFY:
-					//TODO: wrap in a command to invoke locally maybe better? and use a call to invoke remotely...
 					$scriptToExecute = $this->prepareScriptToExecuteNotifyCall();
 					$processToExecute = "sh " . $scriptToExecute;
 					$this->logger->info("Executing notification to call asynchronously");
@@ -117,30 +117,39 @@ class ProcessManager {
 	
 	
 	public function isMonitorDownloadsRunning() {
-		return file_exists(self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/monitor.pid");
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		return file_exists( $processingPath . "/monitor.pid");
 	}
 	
 	
 	public function prepareScriptToExecuteNotifyCall() {
 		
-		$notifyCallUrl = "http://local-dutils/api/notify/finished";
-		
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();	
 		$this->logger->debug("Preparing script to notify");
 		
 		$appRoot =  $this->kernel->getRootDir();
-		$filePath = $appRoot . "/" . self::TEMPLATE_NOTIFY_SCRIPT_PATH;
 		
-		$this->logger->debug("The template script path is $filePath");
+		if ($mediacenterSettings->getIsRemote()) {
+			$notifyCallUrl = "http://local-dutils/api/notify/finished";
+			$filePath = $appRoot . "/" . self::TEMPLATE_NOTIFY_SCRIPT_PATH;
+			$this->logger->debug("The template script path is $filePath");
+			$scriptContent = file_get_contents($filePath);
+			$scriptContent = str_replace("%NOTIFY_URL%", $notifyCallUrl, $scriptContent);
+		} else {
+			$filePath = $appRoot . "/" . self::TEMPLATE_COMMAND_SCRIPT_PATH;
+			$this->logger->debug("The template script path is $filePath");
+			$scriptContent = file_get_contents($filePath);
+			$appRootPath = str_replace("/app","",$appRoot);
+			$scriptContent = str_replace("%SYMFONY_APP_ROOT%", $appRootPath, $scriptContent);
+			$scriptContent = str_replace("%COMMAND_NAME%", self::NOTIFY_COMMAND_NAME, $scriptContent);
+		}
 		
-		$scriptContent = file_get_contents($filePath);
-		$scriptContent = str_replace("%NOTIFY_URL%", $notifyCallUrl, $scriptContent);
-		$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/notify.sh";
-		
+		$scriptFilePath = $processingPath . "/notify.sh";
 		file_put_contents($scriptFilePath, $scriptContent);
 		chmod($scriptFilePath, 0755);
-		
-		$this->logger->debug("The script is in path $scriptFilePath");
-		
+		$this->logger->debug("The script used to notify is in path $scriptFilePath");
 		return $scriptFilePath;
 	}
 	

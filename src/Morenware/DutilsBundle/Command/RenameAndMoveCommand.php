@@ -13,6 +13,7 @@ use Morenware\DutilsBundle\Util\GuidGenerator;
 use Morenware\DutilsBundle\Service\ProcessManager;
 use Symfony\Component\Process\Process;
 use Morenware\DutilsBundle\Entity\TorrentState;
+use Morenware\DutilsBundle\Service\CommandType;
 
 /** 
  * @Service("renamecommand.service") 
@@ -189,7 +190,7 @@ class RenameAndMoveCommand extends Command {
 		$baseDownloadsPath = $mediacenterSettings->getBaseDownloadsPath();
 		$libraryBasePath = $mediacenterSettings->getBaseLibraryPath();
 
-		$inputPathAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToRename, $baseDownloadsPath);
+		$inputPathAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToRename, $baseDownloadsPath, CommandType::RENAME_DOWNLOADS);
 		
 		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathAsBashArray, $scriptContent);

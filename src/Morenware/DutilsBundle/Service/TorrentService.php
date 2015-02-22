@@ -136,18 +136,24 @@ class TorrentService {
 				$existingTorrent->setPercentDone($percentDone);
 				$existingTorrent->setHash($torrentHash);
 
+				$this->monitorLogger->debug("Torrent $torrentName state is $torrentState, percentage $percentDone");
+				
 				if ($torrentState == TorrentState::DOWNLOADING) {
 					$this->monitorLogger->debug("Torrent $torrentName state is $torrentState, percentage $percentDone");
 				}
 				
 				if ($percentDone != null && $percentDone > 0 && $percentDone < 100 && 
-					$torrentState != TorrentState::DOWNLOADING &&
-					$torrentState != TorrentState::DOWNLOAD_COMPLETED && 
-					$torrentState != TorrentState::COMPLETED) {
+					$torrentState !== TorrentState::DOWNLOADING &&
+					$torrentState !== TorrentState::DOWNLOAD_COMPLETED &&
+					$torrentState !== TorrentState::RENAMING &&
+					$torrentState !== TorrentState::RENAMING_COMPLETED &&
+					$torrentState !== TorrentState::FETCHING_SUBTITLES &&
+					$torrentState !== TorrentState::FAILED_DOWNLOAD_ATTEMPT &&
+					$torrentState !== TorrentState::COMPLETED) {
 						
 					$existingTorrent->setState(TorrentState::DOWNLOADING);
 					$this->monitorLogger->debug("Torrent $torrentName found in DB, setting as DOWNLOADING, state was $torrentState, percent $percentDone");	
-				} else if ($percentDone == 100 && $torrentState == TorrentState::DOWNLOADING) {
+				} else if ($percentDone == 100 && ($torrentState == TorrentState::DOWNLOADING || $torrentState == null || $torrentState == '')) {
 					$existingTorrent->setState(TorrentState::DOWNLOAD_COMPLETED);
 					$this->monitorLogger->info("[MONITOR] Torrent $torrentName finished downloading, percent $percentDone, starting renaming process");
 					$this->logger->info("[MONITOR] Torrent $torrentName finished downloading, starting renaming process");
@@ -338,24 +344,36 @@ class TorrentService {
 		}
 	}
 	
-	public function getTorrentsPathsAsBashArray($torrents, $baseDownloadsOrLibraryPath) {
+	public function getTorrentsPathsAsBashArray($torrents, $baseDownloadsOrLibraryPath, $renamerOrSubtitles) {
 		
 		$torrentsPathsAsBashArray = "(";
 		
 		foreach ($torrents as $torrent) {
-		   $this->renamerLogger->debug("[RENAMER-SUBTITLES] Torrent to process " . $torrent->getFilePath());
-		   
+			
+           $torrentPath = "";
+           $targetState = "";
+           if ($renamerOrSubtitles == CommandType::RENAME_DOWNLOADS) {
+             $torrentPath = $torrent->getFilePath();
+             $targetState = TorrentState::RENAMING;
+             $this->renamerLogger->debug("[RENAMING] Torrent to process " . $torrent->getFilePath());        
+           } else if ($renamerOrSubtitles == CommandType::FETCH_SUBTITLES) {
+           	 $torrentPath = $torrent->getRenamedPath();
+           	 $targetState = TorrentState::FETCHING_SUBTITLES;
+           	 $this->renamerLogger->debug("[SUBTITLES] Torrent to process " . $torrent->getFilePath());
+           	  
+           }
+		
 		   $torrentDir = "";
 		   
-		   if (is_dir($torrent->getFilePath())) {
-		   	 $torrentDir = $torrent->getFilePath();
+		   if (is_dir($torrentPath)) {
+		   	 $torrentDir = $torrentPath;
 		   } else {
-		   	 $torrentDir = dirname($torrent->getFilePath());
+		   	 $torrentDir = dirname($torrentPath);
 		   }
 		   
 		   $torrentsPathsAsBashArray = $torrentsPathsAsBashArray . "\"" . $torrentDir . "\" ";
-		   $torrent->setState(TorrentState::RENAMING);
-		   $this->merge($torrent);
+		   $torrent->setState($targetState);
+		   $this->update($torrent);
 		}
 	
 		$torrentsPathsAsBashArray = trim($torrentsPathsAsBashArray) . ")";
