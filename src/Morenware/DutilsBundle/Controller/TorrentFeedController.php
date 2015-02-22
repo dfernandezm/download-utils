@@ -160,8 +160,6 @@ class TorrentFeedController {
 	
 		try {
 			
-			$session = $request->getSession();
-			
 			$this->transmissionService->checkTorrentsStatus();
 			return ControllerUtils::createJsonResponseForArray(null);
 		} catch(\Exception $e)  {
@@ -177,8 +175,6 @@ class TorrentFeedController {
 	/**
 	 * TODO: Move to another API endpoint
 	 *
-	 * Check status of downloading torrents every 10 seconds
-	 *
 	 * @Route("/torrents/checkdaemon")
 	 * @Method("GET")
 	 *
@@ -186,7 +182,11 @@ class TorrentFeedController {
 	public function checkTorrentsContinuouslyAction() {
 	
 		try {
-			$this->processManager->startDownloadsMonitoring();
+			
+			//$this->processManager->startDownloadsMonitoring();
+			//$this->processManager->startRenamerWorker();
+			$this->processManager->startSubtitleFetchWorker();
+			
 			return ControllerUtils::createJsonResponseForArray(null);
 		} catch(\Exception $e)  {
 			$error = array(
@@ -196,13 +196,6 @@ class TorrentFeedController {
 			return ControllerUtils::createJsonResponseForArray($error, 500);
 		}
 	
-// 		$this->torrentService->processTorrentsAfterRenaming("/home/david/scripts/rename_14765.log");
-
-		$torrentId = 9;
-		//$this->transmissionService->renameDownloadingTorrent($torrentId);
-		
-// 		$this->transmissionService->getSessionProperty("download-dir");
-// 		return ControllerUtils::createJsonResponseForArray(null);
 	}
 	
 	

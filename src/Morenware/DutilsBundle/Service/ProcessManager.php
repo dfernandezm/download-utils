@@ -15,6 +15,11 @@ class ProcessManager {
 	/** @DI\Inject("logger") */
 	public $logger;
 	
+	/** @DI\Inject("monolog.logger.renamer") */
+	public $renamerLogger;
+	
+	
+	
 	/** @DI\Inject("kernel") */
 	public $kernel;
 	
@@ -23,27 +28,22 @@ class ProcessManager {
 	const TEMPLATE_COMMAND_SCRIPT_PATH = "scripts/executeCommand.sh";
 	const MONITOR_DOWNLOADS_COMMAND_NAME = "dutils:monitorDownloads";
 	const RENAME_COMMAND_NAME = "dutils:rename";
+	const FETCH_SUBTITLES_COMMAND_NAME = "dutils:subtitles";
 	
 	public function getOverallTimeout() {
-		// No more than 2 hours running
-		return 2 * 60 * 60;
+		// No more than 6 hours running
+		return 6 * 60 * 60;
 	}
 	
 	public function getIdleTimeout() {
-		// No more than 2 minutes idle
+		// No more than 10 minutes idle
 		return 10 * 60;
 	}
 	
 	//TODO: refactor to use generic method startSymfonyCommandAsynchronously
 	public function startDownloadsMonitoring() {
 		if (!$this->isMonitorDownloadsRunning()) {
-			$processToExecute = "sh " . $this->prepareScriptToExecuteSymfonyCommand(CommandType::MONITOR_DOWNLOADS, true);
-			$this->logger->info("Starting process to monitor downloads in Transmission: $processToExecute");
-			$process = new Process($processToExecute);
-			$process->setTimeout($this->getOverallTimeout());
-			$process->setIdleTimeout($this->getIdleTimeout());
-			$process->start();
-			return $process;	
+			return $this->startSymfonyCommandAsynchronously(CommandType::MONITOR_DOWNLOADS);	
 		} else {
 			$this->logger->debug("There is already one monitoring process running");
 		}
@@ -56,28 +56,49 @@ class ProcessManager {
 	 * @return $process a Process object representing the command started, to further control execution or null if no process could have been started
 	 */
 	public function startSymfonyCommandAsynchronously($command) {
-		
+		$this->renamerLogger->info("Starting Symfony command asynchronously: ". $command);
 		try {
 			
 			$process = null;
-		
+			$appRoot =  $this->kernel->getRootDir();
 			switch($command) {
 				case CommandType::RENAME_DOWNLOADS:
-					$scriptToExecute = $this->prepareScriptToExecuteSymfonyCommand(CommandType::RENAME_DOWNLOADS);
+					$processToExecute = "php console " . self::RENAME_COMMAND_NAME . " -e prod --no-debug";
+					$this->renamerLogger->info("Starting Symfony command asynchronously: ". $processToExecute);
+					$process = new Process($processToExecute);
+					$process->setWorkingDirectory($appRoot);
+					$process->setTimeout($this->getOverallTimeout());
+					$process->setIdleTimeout($this->getIdleTimeout());
+					$process->start();
+					$this->renamerLogger->info("Process for renaming started: ". $process->getStatus() . " with PID " . $process->getPid());
+					break;
+				case CommandType::NOTIFY:
+					//TODO: wrap in a command to invoke locally maybe better? and use a call to invoke remotely...
+					$scriptToExecute = $this->prepareScriptToExecuteNotifyCall();
 					$processToExecute = "sh " . $scriptToExecute;
-					$this->logger->info("Starting Symfony command asynchronously: ". $processToExecute);
+					$this->logger->info("Executing notification to call asynchronously");
 					$process = new Process($processToExecute);
 					$process->setTimeout($this->getOverallTimeout());
 					$process->setIdleTimeout($this->getIdleTimeout());
 					$process->start();
+					$this->logger->info("Process started: " . $process->getStatus());
 					break;
-				case CommandType::NOTIFY:
-					//TODO: wrap in a command to invoke locally maybe better? and use a call to invoke remotely...
-					$notifyCall = "http://local-dutils/api/notify/finished";
-					$scriptToExecute = $this->prepareScriptToExecuteNotifyCall($notifyCall);
-					$processToExecute = "sh " . $scriptToExecute;
-					$this->logger->info("Executing notification to $notifyCall asynchronously");
+				case CommandType::FETCH_SUBTITLES:
+					$this->renamerLogger->info("Preparing fetch subtitles ");
+					$processToExecute = "php console " . self::FETCH_SUBTITLES_COMMAND_NAME . " -e prod --no-debug";
+					$this->renamerLogger->info("Starting Symfony command asynchronously: ". $processToExecute . " from $appRoot");
 					$process = new Process($processToExecute);
+					$process->setWorkingDirectory($appRoot);
+					$process->setTimeout($this->getOverallTimeout());
+					$process->setIdleTimeout($this->getIdleTimeout());
+					$process->start();
+					$this->renamerLogger->info("Process for subtitles started: ". $process->getStatus() . " with PID " . $process->getPid());
+					break;
+				case CommandType::MONITOR_DOWNLOADS:
+					$processToExecute = "php console " . self::MONITOR_DOWNLOADS_COMMAND_NAME . " -e prod --no-debug";
+					$this->logger->info("Starting process to monitor downloads in Transmission: $processToExecute");
+					$process = new Process($processToExecute);
+					$process->setWorkingDirectory($appRoot);
 					$process->setTimeout($this->getOverallTimeout());
 					$process->setIdleTimeout($this->getIdleTimeout());
 					$process->start();
@@ -96,68 +117,30 @@ class ProcessManager {
 	
 	
 	public function isMonitorDownloadsRunning() {
-		return file_exists("/home/david/scripts/monitor.pid");
+		return file_exists(self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/monitor.pid");
 	}
 	
 	
-	private function prepareScriptToExecuteNotifyCall($notifyCallUrl) {
+	public function prepareScriptToExecuteNotifyCall() {
+		
+		$notifyCallUrl = "http://local-dutils/api/notify/finished";
 		
 		$this->logger->debug("Preparing script to notify");
 		
 		$appRoot =  $this->kernel->getRootDir();
-		
 		$filePath = $appRoot . "/" . self::TEMPLATE_NOTIFY_SCRIPT_PATH;
 		
 		$this->logger->debug("The template script path is $filePath");
 		
 		$scriptContent = file_get_contents($filePath);
-
 		$scriptContent = str_replace("%NOTIFY_URL%", $notifyCallUrl, $scriptContent);
-		
-		$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH."/notify.sh";
+		$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/notify.sh";
 		
 		file_put_contents($scriptFilePath, $scriptContent);
+		chmod($scriptFilePath, 0755);
 		
 		$this->logger->debug("The script is in path $scriptFilePath");
 		
-		return $scriptFilePath;
-	}
-	
-	public function prepareScriptToExecuteSymfonyCommand($command, $executableByAll = false) {
-		
-		$this->logger->debug("Preparing script to execute Symfony command $command");
-		
-		$appRoot =  $this->kernel->getRootDir();
-		$filePath = $appRoot . "/" . self::TEMPLATE_COMMAND_SCRIPT_PATH;
-		
-		$this->logger->debug("The template script path is $filePath");
-		
-		$scriptContent = file_get_contents($filePath);
-		
-		//TODO: not needed the str replace if scripts folder is inside app
-		$scriptContent = str_replace("%SYMFONY_APP_ROOT%", str_replace("/app","",$appRoot), $scriptContent);
-		
-		$scriptFilePath = "";
-		
-		if ($command == CommandType::MONITOR_DOWNLOADS) {
-			$scriptContent = str_replace("%COMMAND_NAME%", self::MONITOR_DOWNLOADS_COMMAND_NAME, $scriptContent);
-			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/monitor.sh";
-		} else if ($command == CommandType::RENAME_DOWNLOADS) {
-			$scriptContent = str_replace("%COMMAND_NAME%", self::RENAME_COMMAND_NAME, $scriptContent);
-			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/rename.sh";
-		} else if ($command == CommandType::FETCH_SUBTITLES) {
-			$scriptContent = str_replace("%COMMAND_NAME%", self::FETCH_SUBTITLES_COMMAND_NAME, $scriptContent);
-			$scriptFilePath = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/fetch-subtitles.sh";
-		}
-		
-		file_put_contents($scriptFilePath, $scriptContent);
-		$this->logger->debug("The script is in path $scriptFilePath");
-		
-		if ($executableByAll) {
-			$this->logger->debug("Writing script $scriptFilePath");
-			chmod($scriptFilePath, 0755);
-		}
-
 		return $scriptFilePath;
 	}
 	
@@ -187,7 +170,7 @@ class ProcessManager {
 		$process->setTimeout($this->getOverallTimeout());
 		$process->setIdleTimeout($this->getIdleTimeout());
 		$process->start();
-		$this->logger->debug("Starting process asynchronously...");
+		$this->logger->debug("Starting process asynchronously: " . $process->isStarted());
 		return $process;
 	}
 	
@@ -214,6 +197,40 @@ class ProcessManager {
 			fopen($renamerTerminatedFile,"w");
 		} else {
 			$this->logger->warn("Looks like there is no renamer process running");
+		}
+	}
+	
+	public function isRenamerWorkerRunning() {
+		$renamerPidFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/renamer.pid";
+		
+		if (file_exists($renamerPidFile)) {
+			$this->logger->info("[RENAMING] There is already one renamer process running");
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public function isSubtitleFetchWorkerRunning() {
+		$subtitleFetchPidFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/subtitles.pid";
+		
+		if (file_exists($subtitleFetchPidFile)) {
+			$this->logger->info("[SUBTITLES] There is already one subtitle fetcher process running");
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public function startRenamerWorker() {
+		if (!$this->isRenamerWorkerRunning()) {
+			$this->startSymfonyCommandAsynchronously(CommandType::RENAME_DOWNLOADS);
+		}
+	}
+	
+	public function startSubtitleFetchWorker() {
+		if (!$this->isSubtitleFetchWorkerRunning()) {
+			$this->startSymfonyCommandAsynchronously(CommandType::FETCH_SUBTITLES);
 		}
 	}
 }

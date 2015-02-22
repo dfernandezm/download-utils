@@ -343,7 +343,7 @@ class TransmissionService {
 		$this->transmissionLogger->info("[TRANSMISSION-CONFIGURE-SESSION] Setting up transmission session settings");
 		
 		// This will prepare one script to execute a push notification from transmission when a download finishes
-		$notificationScript = $this->processManager->prepareScriptToExecuteSymfonyCommand(CommandType::NOTIFY, true);
+		$notificationScript = $this->processManager->prepareScriptToExecuteNotifyCall();
 		
 		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
 		

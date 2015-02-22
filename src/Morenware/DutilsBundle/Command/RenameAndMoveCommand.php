@@ -12,9 +12,10 @@ use JMS\DiExtraBundle\Annotation\Tag;
 use Morenware\DutilsBundle\Util\GuidGenerator;
 use Morenware\DutilsBundle\Service\ProcessManager;
 use Symfony\Component\Process\Process;
+use Morenware\DutilsBundle\Entity\TorrentState;
 
 /** 
- * @Service("renamecommad.service") 
+ * @Service("renamecommand.service") 
  * @Tag("console.command")
  */
 class RenameAndMoveCommand extends Command {
@@ -63,7 +64,7 @@ class RenameAndMoveCommand extends Command {
 	
 	protected function configure() {
 		$this
-		->setName('dutils:rename')
+		->setName('dutils:renamer')
 		->setDescription('Rename files after download completion');
 	}
 	
@@ -74,97 +75,108 @@ class RenameAndMoveCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
 		
+		$logger = $this->logger;
+		$pid = getmypid();
+		$logger->info("[RENAMING] Starting Renamer process with PID $pid");
+		$this->renamerLogger->info("[RENAMING] Starting Renamer process with PID $pid");
+		$output->writeln("[RENAMING] Renamer process started with PID $pid");
+			
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingTempPath = $mediacenterSettings->getProcessingTempPath();
+		
+		$this->renamerLogger->debug("[RENAMING] Read config from DB, processing temp path is $processingTempPath");
+		
+		$terminatedFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::TERMINATED_FILE_NAME;
+		$pidFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::PID_FILE_NAME;
+		
+		// Check race condition, only one rename at a time
+		if (file_exists($pidFile)) {
+			$logger->info("[RENAMING] There is already one renamer process running -- exiting");
+			return;
+		}
+		
+		// Write pid file
+		$handle = fopen($pidFile, "w");
+		fwrite($handle, $pid);
+	
+		//TODO: create poll loop every 30 seconds checking the DB for torrents in DOWNLOAD_COMPLETED state
+		$terminated = false;
+		
+		if (file_exists($terminatedFile)) {
+			$this->renamerLogger->debug("[RENAMING] Terminated renamer worker on demand");
+			$terminated = true;
+		}
+		
 		try {
 			
-			$logger = $this->logger;
-			$pid = getmypid();
-			$logger->info("[RENAMING] Starting Renamer process with PID $pid");
-			$output->writeln("[RENAMING] Renamer process started with PID $pid");
-			
-			$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
-			$processingTempPath = $mediacenterSettings->getProcessingTempPath();
-		
-			$this->renamerLogger->debug("[RENAMING] Read config from DB, processing temp path is $processingTempPath");
-		
-			$terminatedFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::TERMINATED_FILE_NAME;
-			$pidFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::PID_FILE_NAME;
-		
-			// Check race condition, only one rename at a time
-			if (file_exists($pidFile)) {
-				$logger->info("[RENAMING] There is already one renamer process running -- exiting");
-				return;
-			}
-		
-			// Write pid file
-			$handle = fopen($pidFile, "w");
-			fwrite($handle, $pid);
-		
-			// Perform substitutions in the template renamer script
-			list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($mediacenterSettings, $pid, $mediacenterSettings->getXbmcHostOrIp());	
-		
-			if (!file_exists($terminatedFile)) {
-
-				$this->renamerLogger->debug("[RENAMING] The script to execute is $scriptToExecute");
-				$renamerLogger = $this->renamerLogger;
+			while (!$terminated) {
+				$this->renamerLogger->debug("[RENAMING] Checking if there are any torrents to rename...");
+				$this->printMemoryUsage();
+				$torrentsToRename = $this->torrentService->findTorrentsByState(TorrentState::DOWNLOAD_COMPLETED);
 				
-				// Define callback function to monitor real time output of the process
-				$waitCallback = function ($type, $buffer, $process) use ($renamerLogger, $terminatedFile) {
+				if (count($torrentsToRename) > 0) {
+					$guid = GuidGenerator::generate();	
+					$this->renamerLogger->debug("[RENAMING] Detected torrents to rename");
 					
- 					$renamerLogger->debug("[RENAMING] ==> $buffer");
- 					
- 					if (file_exists($terminatedFile)) {
- 						$renamerLogger->debug("[RENAMING] Terminated renamer worker on demand");
- 						$process->stop();
- 					}
- 				};
-
- 				// By opening a new shell we avoid the execution permission
-				$commandLineExec = "sh " . $scriptToExecute;
-			
-				try {
+					// Perform substitutions in the template renamer script
+					list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($torrentsToRename, $mediacenterSettings, $pid . "_" . $guid, $mediacenterSettings->getXbmcHostOrIp());
+					$this->renamerLogger->debug("[RENAMING] The script to execute is $scriptToExecute");
+					$renamerLogger = $this->renamerLogger;
+					
+					// Define callback function to monitor real time output of the process
+					$waitCallback = function ($type, $buffer, $process) use ($renamerLogger, $terminatedFile) {
+					
+						$renamerLogger->debug("[RENAMING] ==> $buffer");
+							
+						if (file_exists($terminatedFile)) {
+							$renamerLogger->debug("[RENAMING] Terminated renamer worker on demand");
+							$process->stop();
+						}
+					};
+					
+					// By opening a new shell we avoid the execution permission
+					$commandLineExec = "bash " . $scriptToExecute;
+					
 					// We provide a callback, so the process is not asynchronous in this particular case, it blocks until completed or timeout
- 					$process = $this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
+					$process = $this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
 						
- 					$exitCode = $process->getExitCode();
- 					$exitCodeText = $process->getExitCodeText();
- 					
- 					$renamerLogger->error("[RENAMING] Renamer process exitCode is $exitCodeText ==> $exitCode");
- 					
- 					if ($exitCode == null) {
- 						$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid hasn't seem to be terminated, aborting");
- 						$this->logger->error("[RENAMING] Error executing renamer process with PID $pid hasn't seem to be terminated, aborting");
- 						throw new \Exception("[RENAMING] Error executing renaming process PID $pid", $exitCode, null);
- 					} else if ($exitCode != 0) {
- 						$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid ");
- 						throw new \Exception("[RENAMING] Error executing renaming process PID $pid", $exitCode, null);
- 					}
- 					
-				} catch (\Exception $e) {
-					$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid: " . $e->getMessage() . " " . $e->getTraceAsString());
-					$this->logger->error("[RENAMING] Error executing renamer process with PID $pid: " . $e->getMessage() . " " . $e->getTraceAsString());
+					$exitCode = $process->getExitCode();
+					$exitCodeText = $process->getExitCodeText();
+						
+					$renamerLogger->error("[RENAMING] Renamer process exitCode is $exitCodeText ==> $exitCode");
+						
+					if (intval($exitCode) !== 0) {
+						$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code");
+						$this->logger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code");
+						throw new \Exception("[RENAMING] Error executing renaming process PID $pid", $exitCode, null);
+					}
+						
+					$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- starting further checks...");
+						
+					$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
+							
 				}
 				
- 				$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- starting further checks...");
- 				
- 				$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
- 				
-			} else {
-				$renamerLogger->debug("[RENAMING] .terminated file found -- terminating execution");
-				$output->writeln("[RENAMING] .terminated file found -- terminating execution");
+				if (file_exists($terminatedFile)) {
+					$this->renamerLogger->debug("[RENAMING] Terminated renamer worker on demand");
+					$terminated = true;
+				}
+				
+				gc_collect_cycles();
+				sleep(10);
 			}
 			
-			gc_collect_cycles();
-		
 		} catch (\Exception $e) {
-			$this->logger->error("Error executing Renamer process with PID $pid -- " . $e->getMessage() . " -- " . $e->getTraceAsString());		
-		} finally {
-			
+			$this->logger->error("Error executing Renamer process with PID $pid -- stopping" . $e->getMessage() . " -- " . $e->getTraceAsString());
+		} finally {			
 			unlink($pidFile);
-			unlink($terminatedFile);
-		}
+			if (file_exists($terminatedFile)) {
+				unlink($terminatedFile);
+			}
+		}			
 	}
 	
-	public function prepareRenameScriptToExecute($mediacenterSettings, $processPid, $xbmcHost = null) {
+	public function prepareRenameScriptToExecute($torrentsToRename, $mediacenterSettings, $processPid, $xbmcHost = null) {
 		
 		$appRoot = $this->kernel->getRootDir();
 		$filePath = $appRoot . "/" . self::RENAME_SCRIPT_PATH;
@@ -177,7 +189,7 @@ class RenameAndMoveCommand extends Command {
 		$baseDownloadsPath = $mediacenterSettings->getBaseDownloadsPath();
 		$libraryBasePath = $mediacenterSettings->getBaseLibraryPath();
 
-		$inputPathAsBashArray = $this->torrentService->getTorrentsCompletedDownloadsPathsAsBashArray($baseDownloadsPath);
+		$inputPathAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToRename, $baseDownloadsPath);
 		
 		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathAsBashArray, $scriptContent);
@@ -189,14 +201,17 @@ class RenameAndMoveCommand extends Command {
 		
 		$scriptFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename-filebot_$processPid.sh";
 		file_put_contents($scriptFilePath, $scriptContent);
+		file_put_contents($renamerLogFilePath . ".log","");
 				
 		return array($scriptFilePath, $renamerLogFilePath . ".log");
 	}
 	
-	
-	
 	// Utility to delete files like /path/to/somename*
 	public function deleteFileUsingWildCard($pathWithWildcard) {
 		array_map('unlink', glob($pathWithWildcard));
+	}
+	
+	public function printMemoryUsage(){
+		$this->renamerLogger->debug(sprintf('[RENAMER] Memory usage: (current) %dKB / (max) %dKB', round(memory_get_usage(true) / 1024), memory_get_peak_usage(true) / 1024));
 	}
 }

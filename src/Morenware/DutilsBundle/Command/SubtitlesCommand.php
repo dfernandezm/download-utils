@@ -12,12 +12,13 @@ use JMS\DiExtraBundle\Annotation\Tag;
 use Morenware\DutilsBundle\Util\GuidGenerator;
 use Morenware\DutilsBundle\Service\ProcessManager;
 use Symfony\Component\Process\Process;
+use Morenware\DutilsBundle\Entity\TorrentState;
 
 /** 
- * @Service("fetchsubscommand.service") 
+ * @Service("subtitlescommand.service") 
  * @Tag("console.command")
  */
-class FetchSubtitlesCommand extends Command {
+class SubtitlesCommand extends Command {
 	
 	private $logger;
 	
@@ -48,7 +49,7 @@ class FetchSubtitlesCommand extends Command {
 	/**
 	 * @DI\InjectParams({
 	 *     "logger" = @DI\Inject("logger"),
-	 *     "renamerLogger" =  @DI\Inject("monolog.logger.renamer")
+	 *     "renamerLogger" = @DI\Inject("monolog.logger.renamer")
 	 * })
 	 *
 	 */
@@ -59,15 +60,13 @@ class FetchSubtitlesCommand extends Command {
 		parent::__construct();
 	}
 	
-	
 	protected function configure() {
-		$this
-		->setName('dutils:subtitles')
+		$this->setName('dutils:subtitles')
 		->setDescription('Fetch subtitles for files after being moved to the destination');
 	}
 	
 	/**
-	 * It will pick the torrents in RENAMED status
+	 * It will pick the torrents in RENAMING_FINISHED status
 	 * 
 	 * @see \Symfony\Component\Console\Command\Command::execute()
 	 */
@@ -75,7 +74,7 @@ class FetchSubtitlesCommand extends Command {
 		
 		try {
 			
-			$logger = $this->logger;
+			$logger = $this->renamerLogger;
 			$pid = getmypid();
 			$logger->info("[SUBTITLES] Starting Subtitle Fetch process with PID $pid");
 			$output->writeln("[SUBTITLES] Starting Subtitle Fetch process with PID $pid");
@@ -83,7 +82,7 @@ class FetchSubtitlesCommand extends Command {
 			$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
 			$processingTempPath = $mediacenterSettings->getProcessingTempPath();
 		
-			$this->renamerLogger->debug("[SUBTITLES] Read config from DB, processing temp path is $processingTempPath");
+			$this->renamerLogger->debug("[SUBTITLES] Reading config from DB, processing temp path is $processingTempPath");
 		
 			$terminatedFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::TERMINATED_FILE_NAME;
 			$pidFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::PID_FILE_NAME;
@@ -97,74 +96,85 @@ class FetchSubtitlesCommand extends Command {
 			// Write pid file
 			$handle = fopen($pidFile, "w");
 			fwrite($handle, $pid);
+			fclose($handle);
 			
-			// Perform substitutions in the template renamer script
-			list($scriptToExecute, $renamerLogFilePath) = $this->prepareSubtitleScriptToExecute($mediacenterSettings, $pid);	
-		
-			if (!file_exists($terminatedFile)) {
-
-				$this->renamerLogger->debug("[SUBTITLES] The script to execute is $scriptToExecute");
-				$renamerLogger = $this->renamerLogger;
-				
-				// Define callback function to monitor real time output of the process
-				$waitCallback = function ($type, $buffer, $process) use ($renamerLogger, $terminatedFile) {
-					
- 					$renamerLogger->debug("[SUBTITLES] ==> $buffer");
- 					
- 					if (file_exists($terminatedFile)) {
- 						$renamerLogger->debug("[SUBTITLES] Terminated renamer worker on demand");
- 						$process->stop();
- 					}
- 				};
-
- 				// By opening a new shell we avoid the execution permission
-				$commandLineExec = "sh " . $scriptToExecute;
-			
-				try {
-					// We provide a callback, so the process is not asynchronous in this particular case, it blocks until completed or timeout
- 					$process = $this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
-						
- 					$exitCode = $process->getExitCode();
- 					$exitCodeText = $process->getExitCodeText();
- 					
- 					$renamerLogger->error("[SUBTITLES] Renamer process exitCode is $exitCodeText ==> $exitCode");
- 					
- 					if ($exitCode == null) {
- 						$renamerLogger->error("[SUBTITLES] Error executing fetching subs process with PID $pid hasn't seem to be terminated, aborting");
- 						$this->logger->error("[SUBTITLES] Error executing fetching subs process with PID $pid hasn't seem to be terminated, aborting");
- 						throw new \Exception("[SUBTITLES] Error executing fetching subs subs process PID $pid", $exitCode, null);
- 					} else if ($exitCode != 0) {
- 						$renamerLogger->error("[SUBTITLES] Error executing fetching subs process with PID $pid ");
- 						throw new \Exception("[SUBTITLES] Error executing fetching subs process PID $pid", $exitCode, null);
- 					}
- 					
-				} catch (\Exception $e) {
-					$renamerLogger->error("[SUBTITLES] Error executing fetching subs process with PID $pid: " . $e->getMessage() . " " . $e->getTraceAsString());
-					$this->logger->error("[SUBTITLES] Error executing fetching subs process with PID $pid: " . $e->getMessage() . " " . $e->getTraceAsString());
-					throw $e;
-				}
-				
- 				$renamerLogger->debug("[SUBTITLES] Subtitle fetcher with PID $pid finished processing");
- 				
- 				$this->torrentService->finishProcessingAfterFetchingSubs();
- 				
-			} else {
-				$renamerLogger->debug("[SUBTITLES] .terminated file found -- terminating execution");
+			// Check for termination
+			if (file_exists($terminatedFile)) {
+				$this->renamerLogger->debug("[SUBTITLES] .terminated file found -- terminating execution");
 				$output->writeln("[SUBTITLES] .terminated file found -- terminating execution");
 			}
 			
-			gc_collect_cycles();
-		
+			$terminated = false;
+			
+			while (!$terminated) {
+				$this->renamerLogger->debug("[SUBTITLES] Checking if there are any torrents for subtitle fetching...");
+				$this->printMemoryUsage();
+				$torrentsToFetchSubs = $this->torrentService->findTorrentsByState(TorrentState::RENAMING_COMPLETED);
+				
+				if (count($torrentsToFetchSubs) > 0) {
+
+					$guid = GuidGenerator::generate();
+					
+					// Perform substitutions in the template renamer script
+					list($scriptToExecute, $renamerLogFilePath) = $this->prepareSubtitleScriptToExecute($torrentsToFetchSubs, $mediacenterSettings, $pid . "_" . $guid);
+					
+					$this->renamerLogger->debug("[SUBTITLES] The script to execute is $scriptToExecute");
+					$renamerLogger = $this->renamerLogger;
+					
+					// Define callback function to monitor real time output of the process
+					$waitCallback = function ($type, $buffer, $process) use ($renamerLogger, $terminatedFile) {
+							
+						$renamerLogger->debug("[SUBTITLES] ==> $buffer");
+					
+						if (file_exists($terminatedFile)) {
+							$renamerLogger->debug("[SUBTITLES] Terminated renamer worker on demand");
+							$process->stop();
+						}
+					};
+					
+					// By opening a new shell we avoid the execution permission
+					$commandLineExec = "bash " . $scriptToExecute;
+						
+					// We provide a callback, so the process is not asynchronous in this particular case, it blocks until completed or timeout
+					$process = $this->processManager->startProcessAsynchronouslyWithCallback($commandLineExec, $waitCallback);
+						
+					$exitCode = $process->getExitCode();
+					$exitCodeText = $process->getExitCodeText();
+					
+					$renamerLogger->error("[SUBTITLES] Renamer process exitCode is $exitCodeText ==> $exitCode");
+					
+					if (intval($exitCode) !== 0) {
+						$renamerLogger->error("[SUBTITLES] Error executing fetching subs process with PID $pid, non-zero exit value");
+						throw new \Exception("[SUBTITLES] Error executing fetching subs subs process PID $pid", $exitCode, null);
+					}
+					
+					$renamerLogger->debug("[SUBTITLES] Subtitle fetcher with PID $pid finished processing");
+						
+					$this->torrentService->finishProcessingAfterFetchingSubs();
+						
+				}
+			 		
+				if (file_exists($terminatedFile)) {
+					$renamerLogger->debug("[SUBTITLES] .terminated file found -- terminating execution");
+					$output->writeln("[SUBTITLES] .terminated file found -- terminating execution");
+				}
+				
+				gc_collect_cycles();
+				
+				sleep(10);
+			}
+	
 		} catch (\Exception $e) {
 			$this->logger->error("Error executing Subtitle Fetcher process with PID $pid -- " . $e->getMessage() . " -- " . $e->getTraceAsString());		
 		} finally {
-			
 			unlink($pidFile);
-			unlink($terminatedFile);
+			if (file_exists($terminatedFile)) {
+				unlink($terminatedFile);
+			}
 		}
 	}
 	
-	public function prepareSubtitleScriptToExecute($mediacenterSettings, $processPid) {
+	public function prepareSubtitleScriptToExecute($torrentsToFetchSubs, $mediacenterSettings, $processPid) {
 		
 		$appRoot = $this->kernel->getRootDir();
 		$filePath = $appRoot . "/" . self::SUBTITLES_SCRIPT_PATH;
@@ -176,7 +186,7 @@ class FetchSubtitlesCommand extends Command {
 		$subtitlesLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/subtitles_$processPid"; 
 		$scriptContent = str_replace("%LOG_LOCATION%", $subtitlesLogFilePath, $scriptContent);
 		
-		$inputPathsAsBashArray = $this->torrentService->getRenamedTorrentsPathsAsBashArray($mediacenterSettings->getBaseLibraryPath());
+		$inputPathsAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToFetchSubs, $mediacenterSettings->getBaseLibraryPath());
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathsAsBashArray, $scriptContent);
 		
 		$scriptContent = str_replace("%SUBS_LANGUAGES%", "en,es", $scriptContent);
@@ -190,5 +200,9 @@ class FetchSubtitlesCommand extends Command {
 	// Utility to delete files like /path/to/somename*
 	public function deleteFileUsingWildCard($pathWithWildcard) {
 		array_map('unlink', glob($pathWithWildcard));
+	}
+	
+	public function printMemoryUsage(){
+		$this->renamerLogger->debug(sprintf('[SUBTITLES] Memory usage: (current) %dKB / (max) %dKB', round(memory_get_usage(true) / 1024), memory_get_peak_usage(true) / 1024));
 	}
 }

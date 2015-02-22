@@ -20,6 +20,12 @@ class NotifyController {
 	/** @DI\Inject("transmission.service") */
 	public $transmissionService;
 	
+	/** @DI\Inject("torrent.service") */
+	public $torrentService;
+	
+	/** @DI\Inject("processmanager.service") */
+	public $processManager;
+	
 	/** @DI\Inject("logger") */
 	private $logger;
 	
@@ -34,7 +40,10 @@ class NotifyController {
 	 */
 	public function putTransmissionNotificationAction() {			
 		try {
+			
 			$this->transmissionService->checkTorrentsStatus();
+			$this->processManager->startRenamerWorker();
+			$this->processManager->startSubtitleFetchWorker();
 			return ControllerUtils::createJsonResponseForArray(null);
 		} catch (\Exception $e) {
 			$this->logger->error("Error notifying from transmission " . $e->getMessage() . " " . $e->getTraceAsString());
