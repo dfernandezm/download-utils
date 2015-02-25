@@ -99,13 +99,15 @@ class SubtitlesCommand extends Command {
 			fwrite($handle, $pid);
 			fclose($handle);
 			
+			$terminated = false;
+			
 			// Check for termination
 			if (file_exists($terminatedFile)) {
 				$this->renamerLogger->debug("[SUBTITLES] .terminated file found -- terminating execution");
 				$output->writeln("[SUBTITLES] .terminated file found -- terminating execution");
+				$terminated = true;
 			}
-			
-			$terminated = false;
+				
 			
 			while (!$terminated) {
 				$this->renamerLogger->debug("[SUBTITLES] Checking if there are any torrents for subtitle fetching...");
@@ -158,6 +160,7 @@ class SubtitlesCommand extends Command {
 				if (file_exists($terminatedFile)) {
 					$renamerLogger->debug("[SUBTITLES] .terminated file found -- terminating execution");
 					$output->writeln("[SUBTITLES] .terminated file found -- terminating execution");
+					$terminated = true;
 				}
 				
 				gc_collect_cycles();

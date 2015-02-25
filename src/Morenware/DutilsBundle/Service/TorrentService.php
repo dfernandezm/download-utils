@@ -276,13 +276,13 @@ class TorrentService {
 							
 						$torrentName = $torrent->getTorrentName();
 						
-						//TODO: We could start here subtitles and move to complete
+				        //TODO: Get subtitles requirement for this Movie/TV Show in the current profile
 						$requireSubtitles = true;
+						$torrent->setRenamedPath($newPath);
 						
 						if ($requireSubtitles) {
-							$torrent->setState(TorrentState::RENAMING_COMPLETED);
-							$torrent->setRenamedPath($newPath);
-							$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
+							$torrent->setState(TorrentState::RENAMING_COMPLETED);	
+							$this->renamerLogger->debug("[RENAMING] No subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
 						} else {
 							$torrent->setState(TorrentState::COMPLETED);
 							$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");

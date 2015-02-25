@@ -92,7 +92,9 @@ class MonitorDownloadsCommand extends Command {
 			$this->logger->error("Error occurred executing monitor process with GUID $guid and PID $pid", $e->getMessage());
 		} finally {
 			unlink($pidFile);
-			unlink($terminatedFile);
+		    if (file_exists($terminatedFile)) {
+				unlink($terminatedFile);
+			}
 		}
 	}
 	

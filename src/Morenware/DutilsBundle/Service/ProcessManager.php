@@ -154,9 +154,11 @@ class ProcessManager {
 	}
 	
 	public function stopMonitoring() {
-	
-		$monitorPidFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/monitor.pid";
-		$monitorTerminatedFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/monitor.terminated";
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		
+		$monitorPidFile = $processingPath . "/monitor.pid";
+		$monitorTerminatedFile = $processingPath . "/monitor.terminated";
 		
 		if (file_exists($monitorPidFile)) {
 			$this->logger->info("Flagging stop for monitoring process");
@@ -197,9 +199,11 @@ class ProcessManager {
 	}
 	
 	public function stopRenamer() {
-	
-		$renamerPidFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/renamer.pid";
-		$renamerTerminatedFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/renamer.terminated";
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		
+		$renamerPidFile = $processingPath . "/renamer.pid";
+		$renamerTerminatedFile = $processingPath . "/renamer.terminated";
 		
 		if (file_exists($renamerPidFile)) {
 			$this->logger->info("Flagging stop for renamer process");
@@ -210,7 +214,11 @@ class ProcessManager {
 	}
 	
 	public function isRenamerWorkerRunning() {
-		$renamerPidFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/renamer.pid";
+		
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		
+		$renamerPidFile = $processingPath . "/renamer.pid";
 		
 		if (file_exists($renamerPidFile)) {
 			$this->logger->info("[RENAMING] There is already one renamer process running");
@@ -221,7 +229,9 @@ class ProcessManager {
 	}
 	
 	public function isSubtitleFetchWorkerRunning() {
-		$subtitleFetchPidFile = self::TEMP_AREA_SCRIPT_EXECUTION_PATH . "/subtitles.pid";
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		$subtitleFetchPidFile = $processingPath . "/subtitles.pid";
 		
 		if (file_exists($subtitleFetchPidFile)) {
 			$this->logger->info("[SUBTITLES] There is already one subtitle fetcher process running");

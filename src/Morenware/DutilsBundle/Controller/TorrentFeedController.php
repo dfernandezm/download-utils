@@ -183,8 +183,8 @@ class TorrentFeedController {
 	
 		try {
 			
-			//$this->processManager->startDownloadsMonitoring();
-			//$this->processManager->startRenamerWorker();
+			$this->processManager->startDownloadsMonitoring();
+			$this->processManager->startRenamerWorker();
 			$this->processManager->startSubtitleFetchWorker();
 			
 			return ControllerUtils::createJsonResponseForArray(null);

@@ -7,13 +7,12 @@ SUBS_LANG=%SUBS_LANGUAGES%
 IFS=","
 # Bash array - needs a substitution with a string like ==> ("path/to/files/1" "/path/to/files/2" ...)
 INPUT_ARRAY=%INPUT_PATHS%
-#INPUT_ARRAY=("/mediacenter/TV Shows/Supernatural/Season 10" "/mediacenter/TV Shows/24/Season 9")
 COUNT=${#INPUT_ARRAY[@]}
 echo "Input Array: ${INPUT_ARRAY[*]}"
 
-for INPUT_PATH in ${INPUT_ARRAY[*]}
+for ((i = 0; i < ${#INPUT_ARRAY[@]}; i++)) 
 do
-  
+  INPUT_PATH="${INPUT_ARRAY[$i]}"
   for LANG in $SUBS_LANG
   do
     # We do -get-subtitles as if we would have done -get-missing-subtitles, it would only fetch subtitles in case there are no previous ones 
