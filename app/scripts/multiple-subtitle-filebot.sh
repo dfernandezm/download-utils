@@ -26,11 +26,13 @@ do
   echo "Command executed: " >> $LOG_LOCATION
   echo "$REPLACE1_CMD " >> $LOG_LOCATION
   eval $REPLACE1_CMD
+  rm "$INPUT_PATH/*.spa.srt"
 
   REPLACE2_CMD="$FB_EXEC -r -script fn:replace --log-file $LOG_LOCATION --action move --def \"e=[.](eng|english)[.]srt\" \"r=.en.srt\" \"$INPUT_PATH\""
   echo "Command executed: " >> $LOG_LOCATION
   echo "$REPLACE2_CMD " >> $LOG_LOCATION
   eval $REPLACE2_CMD
+  rm "$INPUT_PATH/*.eng.srt"
 
 done
 

@@ -282,7 +282,7 @@ class TorrentService {
 						
 						if ($requireSubtitles) {
 							$torrent->setState(TorrentState::RENAMING_COMPLETED);	
-							$this->renamerLogger->debug("[RENAMING] No subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
+							$this->renamerLogger->debug("[RENAMING] With subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
 						} else {
 							$torrent->setState(TorrentState::COMPLETED);
 							$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
