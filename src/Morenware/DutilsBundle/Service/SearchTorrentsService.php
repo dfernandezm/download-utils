@@ -234,7 +234,7 @@ class SearchTorrentsService {
    		$torrentFilename =  $torrent->getTorrentName();
    		$torrentFilePath = "$tempTorrentsPath/$torrentFilename";
    		
-   		$torrent->setFilePath($torrentFilePath);
+   		$torrent->setTorrentFileLink($torrentFilePath);
    		
    		file_put_contents($torrentFilePath, file_get_contents($torrent->getTorrentFileLink())); 		
    		
