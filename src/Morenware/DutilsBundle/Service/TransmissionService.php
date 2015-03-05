@@ -57,7 +57,7 @@ class TransmissionService {
 	    $filenameParameter = $magnetLink;
 	    
 		if ($isFromFile) {
-			$filenameParameter = $torrent->getFilePath();
+			$filenameParameter = $torrent->getTorrentFileLink();
 		}
 		
 		if ($filenameParameter == null || strlen($filenameParameter) == 0) {
@@ -339,8 +339,20 @@ class TransmissionService {
 	 */
 	public function deleteTorrent($torrentHash) {
 		
-		//TODO:
+		$requestPayload = array(
+				"method" => "torrent-remove",
+				"arguments" => array("ids" => array($torrentHash),
+						             "delete-local-data" => true)
+		);
 		
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		
+		$this->transmissionLogger->debug("[TRANSMISSION-DELETE-TORRENT] The payload to send to transmission API is $jsonRequest");
+		
+		$result = $this->executeTransmissionApiCall($jsonRequest);
+		
+		$this->transmissionLogger->debug("[TRANSMISSION-DELETE-TORRENT] The result after deletion is: ". json_encode($result));
+			
 	}
 	
 	

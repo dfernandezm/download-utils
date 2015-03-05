@@ -152,7 +152,7 @@ class TorrentFeedController {
 	/**
 	 * TODO: Move to another API endpoint
 	 *
-	 * @Route("/torrents/checkdaemon")
+	 * @Route("/torrentscheck")
 	 * @Method("GET")
 	 *
 	 */

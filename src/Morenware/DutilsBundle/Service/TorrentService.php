@@ -98,8 +98,8 @@ class TorrentService {
 		return $this->getRepository()->findOneBy(array('magnetLink' => $magnetLink));
 	}
 	
-	public function findTorrentByFilePath($torrentFilePath) {
-		return $this->getRepository()->findOneBy(array('filePath' => $torrentFilePath));
+	public function findTorrentByFileLink($torrentFileLink) {
+		return $this->getRepository()->findOneBy(array('torrentFileLink' => $torrentFileLink));
 	}
 	
 	public function findTorrentsByState($torrentState) {
@@ -337,9 +337,7 @@ class TorrentService {
 		$this->logger->debug("Starting download from link $magnetLink");	
 		$torrent = $this->findTorrentByMagnetLink($magnetLink);
 	
-		if ($torrent != null) {
-			return $this->startDownload($torrent);
-		} else {
+		if ($torrent == null) {
 			$torrent = new Torrent();
 			$torrent->setMagnetLink($magnetLink);
 			$torrent->setGuid(GuidGenerator::generate());
@@ -348,28 +346,27 @@ class TorrentService {
 			if ($origin != null) {
 				$torrent->setOrigin($origin);
 			}
-				
-			return $this->transmissionService->startDownload($torrent);
 		}
+		
+		return $this->transmissionService->startDownload($torrent);
 	}
 	
-	public function startDownloadFromTorrentFile($torrentFilePath, $origin = null) {
-		$torrent = $this->findTorrentByFilePath($torrentFilePath);
+	public function startDownloadFromTorrentFile($torrentFileLink, $origin = null) {
+		$this->logger->debug("Starting download from torrent file  $torrentFileLink");
+		$torrent = $this->findTorrentByFileLink($torrentFileLink);
 	
-		if ($torrent != null) {
-			return $this->transmissionService->startDownload($torrent);
-		} else {
+		if ($torrent == null) {
 			$torrent = new Torrent();
-			$torrent->setMagnetLink($torrentFilePath);
+			$torrent->setTorrentFileLink($torrentFileLink);
 			$torrent->setGuid(GuidGenerator::generate());
 			$torrent->setTitle("Unknown");
 	
 			if ($origin != null) {
 				$torrent->setOrigin($origin);
 			}
-	
-			return $this->transmissionService->startDownload($torrent);
 		}
+		
+		return $this->transmissionService->startDownload($torrent, true);
 	}
 	
 	public function getTorrentsPathsAsBashArray($torrents, $baseDownloadsOrLibraryPath, $renamerOrSubtitles) {
