@@ -86,9 +86,8 @@ class TorrentService {
 		return $this->repository->findAll();
 	}
 	
-	public function delete($torrent) {
+	private function delete($torrent) {
 		$this->em->remove($torrent);
-		$this->em->flush();
 	}
 	
 	public function findTorrentByHash($torrentHash) {
@@ -99,12 +98,31 @@ class TorrentService {
 		return $this->getRepository()->findOneBy(array('magnetLink' => $magnetLink));
 	}
 	
-	public function findTorrentByFilePath($torrentFilePath) {
-		return $this->getRepository()->findOneBy(array('filePath' => $torrentFilePath));
+	public function findTorrentByFileLink($torrentFileLink) {
+		return $this->getRepository()->findOneBy(array('torrentFileLink' => $torrentFileLink));
 	}
 	
 	public function findTorrentsByState($torrentState) {
 		return $this->getRepository()->findBy(array('state' => $torrentState));
+	}
+	
+	public function findTorrentByGuid($guid) {
+		return $this->getRepository()->findOneBy(array('guid' => $guid));
+	}
+	
+	public function deleteTorrent($torrent, $deleteInTransmission = false) {
+		
+		if (!$deleteInTransmission) {
+			$this->delete($torrent);
+			$this->em->flush();
+		} else {
+			
+			$this->em->transactional(function($em) use ($torrent) {
+				$this->transmissionService->deleteTorrent($torrent);
+				$this->delete($torrent);		
+			});	
+		}	
+
 	}
 	
 	public function clearDoctrine() {
@@ -116,6 +134,8 @@ class TorrentService {
 	public function updateDataForTorrents($torrentsResponse) {
 		$countTorrents = count($torrentsResponse);
 		$finishedTorrents = array();
+		
+		$updatedTorrents = array();
 		
 		// General logger
 		$this->logger->info("Updating data for $countTorrents torrents");
@@ -161,6 +181,8 @@ class TorrentService {
 				}
 				
 				$this->merge($existingTorrent);
+				
+				$updatedTorrents[] = $existingTorrent;
 				
 			} else {
 				
@@ -214,6 +236,8 @@ class TorrentService {
 				if ($finished) {
 					$finishedTorrents[] = $existingTorrent;
 				}
+				
+				$updatedTorrents[] = $torrent;
 			}
 		}
 		
@@ -222,6 +246,10 @@ class TorrentService {
 		} else {
 			$this->monitorLogger->debug("[MONITOR] Finished torrents update -- No torrents to rename");
 		}
+		
+		$this->monitorLogger->debug("[MONITOR] Finished torrents update");
+		
+		return $updatedTorrents;
 	}
 
 	
@@ -309,9 +337,7 @@ class TorrentService {
 		$this->logger->debug("Starting download from link $magnetLink");	
 		$torrent = $this->findTorrentByMagnetLink($magnetLink);
 	
-		if ($torrent != null) {
-			return $this->startDownload($torrent);
-		} else {
+		if ($torrent == null) {
 			$torrent = new Torrent();
 			$torrent->setMagnetLink($magnetLink);
 			$torrent->setGuid(GuidGenerator::generate());
@@ -320,28 +346,27 @@ class TorrentService {
 			if ($origin != null) {
 				$torrent->setOrigin($origin);
 			}
-				
-			return $this->transmissionService->startDownload($torrent);
 		}
+		
+		return $this->transmissionService->startDownload($torrent);
 	}
 	
-	public function startDownloadFromTorrentFile($torrentFilePath, $origin = null) {
-		$torrent = $this->findTorrentByFilePath($torrentFilePath);
+	public function startDownloadFromTorrentFile($torrentFileLink, $origin = null) {
+		$this->logger->debug("Starting download from torrent file  $torrentFileLink");
+		$torrent = $this->findTorrentByFileLink($torrentFileLink);
 	
-		if ($torrent != null) {
-			return $this->transmissionService->startDownload($torrent);
-		} else {
+		if ($torrent == null) {
 			$torrent = new Torrent();
-			$torrent->setMagnetLink($torrentFilePath);
+			$torrent->setTorrentFileLink($torrentFileLink);
 			$torrent->setGuid(GuidGenerator::generate());
 			$torrent->setTitle("Unknown");
 	
 			if ($origin != null) {
 				$torrent->setOrigin($origin);
 			}
-	
-			return $this->transmissionService->startDownload($torrent);
 		}
+		
+		return $this->transmissionService->startDownload($torrent, true);
 	}
 	
 	public function getTorrentsPathsAsBashArray($torrents, $baseDownloadsOrLibraryPath, $renamerOrSubtitles) {

@@ -31,9 +31,7 @@ class TransmissionService {
 	/** @DI\Inject("settings.service") */
 	public $settingsService;
 	
-	const BASE_TORRENTS_PATH = "/home/david/scripts/downloads";
-	
-
+    
    /**
 	* @DI\InjectParams({
 	*     "logger"  = @DI\Inject("logger"),
@@ -59,7 +57,7 @@ class TransmissionService {
 	    $filenameParameter = $magnetLink;
 	    
 		if ($isFromFile) {
-			$filenameParameter = $torrent->getFilePath();
+			$filenameParameter = $torrent->getTorrentFileLink();
 		}
 		
 		if ($filenameParameter == null || strlen($filenameParameter) == 0) {
@@ -144,8 +142,10 @@ class TransmissionService {
 		$result = $this->executeTransmissionApiCall($jsonRequest);
 	
 		$this->transmissionLogger->debug("[TRANSMISSION-API-CALL] Result of torrents query is: ". json_encode($result->arguments->torrents));
-		$this->torrentService->updateDataForTorrents($result->arguments->torrents);
+
+		$updatedTorrents = $this->torrentService->updateDataForTorrents($result->arguments->torrents);
 		
+		return $updatedTorrents;
 	}
 	
 	
@@ -331,6 +331,33 @@ class TransmissionService {
 	}
 	
 	/**
+	 * 
+	 * Delete torrent and data in Transmission. Update DB to DELETED state
+	 * This will allow to re-add the torrent and download it again.
+	 * 
+	 * @param unknown $torrent
+	 */
+	public function deleteTorrent($torrentHash) {
+		
+		$requestPayload = array(
+				"method" => "torrent-remove",
+				"arguments" => array("ids" => array($torrentHash),
+						             "delete-local-data" => true)
+		);
+		
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		
+		$this->transmissionLogger->debug("[TRANSMISSION-DELETE-TORRENT] The payload to send to transmission API is $jsonRequest");
+		
+		$result = $this->executeTransmissionApiCall($jsonRequest);
+		
+		$this->transmissionLogger->debug("[TRANSMISSION-DELETE-TORRENT] The result after deletion is: ". json_encode($result));
+			
+	}
+	
+	
+	
+	/**
 	 * Sets some global session properties in Transmission
 	 * 
 	 *  - Sets the download-dir to a known path (one with the right permission)
@@ -344,6 +371,8 @@ class TransmissionService {
 		
 		// This will prepare one script to execute a push notification from transmission when a download finishes
 		$notificationScript = $this->processManager->prepareScriptToExecuteNotifyCall();
+		
+		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
 		
 		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
 		
