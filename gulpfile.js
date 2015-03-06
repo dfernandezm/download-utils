@@ -16,6 +16,7 @@ gulp.task('coffeelint', function () {
 gulp.task("dev", ["coffeelint", "webpack-dev"], function() {
     livereload.listen();
     gulp.watch([baseClientPath + "/**/*"], ["coffeelint", "webpack-dev", "all-livereload"]);
+    // sudo sysctl fs.inotify.max_user_watches=100000 to prevent failure
 });
 
 // modify some webpack config options

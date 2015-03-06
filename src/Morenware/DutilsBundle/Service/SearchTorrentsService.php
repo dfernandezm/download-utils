@@ -8,6 +8,7 @@ use Morenware\DutilsBundle\Entity\TorrentOrigin;
 use Morenware\DutilsBundle\Entity\TorrentContentType;
 use Morenware\DutilsBundle\Entity\TorrentState;
 use Morenware\DutilsBundle\Entity\Feed;
+use Symfony\Component\DomCrawler\Crawler;
 
 /** @Service("search.service") */
 class SearchTorrentsService {
@@ -135,7 +136,7 @@ class SearchTorrentsService {
 	public function searchDivxTotal($searchQuery, $limit = 1000, $offset = 0) {
 		
 		$baseUrl = "http://www.divxtotal.com";
-		$limit = 1000;
+		$limit = 50;
 		$offset = 0;
 		$searchQuery = urlencode($searchQuery);
 		
@@ -143,6 +144,7 @@ class SearchTorrentsService {
 		$innerPageLinkPattern = '/href="(\/series\/[^\s"]+)/';
 		$episodeNameAndTorrentFilePattern = '/href="(\/torrents_tor[^\s"]+).*>(.*)<\/a>/';
 		$moreThanOnePagePattern = '/href="(buscar\.php\?busqueda=[^"]+)&pagina=([0-9])"/';
+		$datePattern = '/href="/';
 		
 		// use this to extract movies
 		$moviesInnerPageLinkPattern = '/href="(peliculas\/torrent\/[0-9]+\/.*\/)/'; 
@@ -169,7 +171,6 @@ class SearchTorrentsService {
 			//TODO: We have to check if there is any movie to resolve its detail page as TV Shows resolve just with one page only
 		}
 		
-		
 		if (preg_match($innerPageLinkPattern, $resultsPageHtml, $matches)) {
 		
 			$innerLinkForTvShow = $matches[1];
@@ -177,40 +178,51 @@ class SearchTorrentsService {
 			$this->logger->debug("Inner link for TV Show is $baseUrl$innerLinkForTvShow");
 		
 			$tvShowDetailHtml = file_get_contents($baseUrl . $innerLinkForTvShow);
-		
-			$matchesForEpisodes = array();
 			
-			if (preg_match_all($episodeNameAndTorrentFilePattern, $tvShowDetailHtml, $matchesForEpisodes)) {
-		
-				$torrentFiles = $matchesForEpisodes[1];
-				$episodeTitles = $matchesForEpisodes[2];
-		
-				$total = count($torrentFiles);
-				
+			$crawler = new Crawler($tvShowDetailHtml);
+			$crawlerRows = $crawler->filter('table.fichserietabla tr');
+			
+			$episodeNamesAndTorrentLinks = $crawlerRows->filter('tr td.capitulonombre a')->extract(array("_text","href"));
+			$episodeDate = $crawlerRows->filter('tr td.capitulofecha')->extract(array("_text"));
+			
+			$total = count($episodeNamesAndTorrentLinks);
+			
+			if ($total > 0) {
+
 				$this->logger->debug("Total is $total - offset $offset - limit $limit");
 				$limit = $limit >= $total ? $total-$offset : $limit;
-				
+				$j = $offset;
 				for ($i = $offset; $i < ($offset+$limit); $i++) {
-		
-					$torrentFileLink = $torrentFiles[$i];
-					$episodeTitle = $episodeTitles[$i];
-		
+		            $episodeNameAndTorrentLink = $episodeNamesAndTorrentLinks[$i];
+		            $episodeTitle = $episodeNameAndTorrentLink[0];
+		            $torrentFileLink = $episodeNameAndTorrentLink[1];
+					$torrentDate = trim($episodeDate[$j]);
+					
+					// Skip header "Fecha"
+					if (strpos($torrentDate, "F") !== false) {
+						$j++;
+						$torrentDate = trim($episodeDate[$j]);
+					}
+					
 					if (!in_array($episodeTitle, $torrentNames, true)) {
 						$torrent = new Torrent();
 						$torrent->setTorrentName($episodeTitle);
 						$torrentFileLink = $baseUrl . $torrentFileLink;
 						$torrent->setTorrentFileLink($torrentFileLink);
-							
+						$date = new \DateTime($torrentDate);
+						$torrent->setDate($date);
 						$torrents[] = $torrent;
 						$torrentNames[] = $episodeTitle;	
 					}
 					
-					$this->logger->debug("[DivxTotal] Getting Torrent $episodeTitle <==> $torrentFileLink \n");
+					$j++;
+					$this->logger->debug("[DivxTotal] Offset current $episodeTitle ==> $torrentDate ==> " . $date->format('d-m-Y') . " \n");
 				}
 				
 				$currentOffset = $i;
 			}
 		}
+		
 		
 		return array($torrents, $currentOffset, $total);
 	}
