@@ -1,4 +1,4 @@
-app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$window', '$location', ($scope, apiFactory, utilsService, $window, $location) ->
+app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$window', '$location', 'Torrent', ($scope, apiFactory, utilsService, $window, $location, Torrent) ->
 
   promise = null
   reloadPage = true
@@ -35,7 +35,21 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
      promise = apiFactory.downloadTorrentFile torrent
      utilsService.resolvePromiseWithCallbacks promise, onDownloadSuccess, null, null
 
+  $scope.startDownload = (torrent) ->
+    $scope.torrentDownload = new Torrent()
+    $scope.torrentDownload.magnetLink = torrent.magnetLink
+    $scope.torrentDownload.torrentFileLink = torrent.torrentFileLink
+
+    $scope.torrentDownload.$save((torrentDownload) ->
+      console.log("Torrent started " + torrentDownload)
+      torrent.state = torrentDownload.state
+      return
+    )
+
   $scope.onDownloadSuccess = (data) ->
+    return
+
+  onDownloadStarted =  (data) ->
     return
   return
 ]

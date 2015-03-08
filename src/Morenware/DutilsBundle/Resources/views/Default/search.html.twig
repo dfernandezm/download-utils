@@ -44,11 +44,13 @@
                                 <tr ng-repeat="torrent in torrents">
                                     <td ng-bind="offset+$index+1"></td>
                                     <td ng-bind="torrent.torrentName"></td>
-                                    <td  ng-bind="torrent.date"></td>
+                                    <td ng-bind="torrent.date"></td>
                                     <td class="col-lg-6">
-                                        <a ng-show="torrent.magnetLink" href="[[torrent.magnetLink]]" target="_blank" class="col-lg-3 magnet">Magnet</a>&nbsp;
-                                        <a href="[[torrent.torrentFileLink]]" class="download-torrent" target="_blank" class="col-lg-3">Download</a>
+                                        <a href="[[torrent.torrentFileLink]]" class="download-torrent" target="_blank" class="col-lg-3">Download torrent</a>
+                                        <a href="#" ng-click="startDownload(torrent)" target="_blank" class="col-lg-3">Start download</a>
+
                                     </td>
+                                    <td> <span ng-hide="torrent.state !== DOWNLOADING">[[torrent.state]]</span></td>
                                 </tr>
                             </tbody>
                         </table>

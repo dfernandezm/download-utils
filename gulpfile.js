@@ -6,6 +6,7 @@ var livereload = require('gulp-livereload');
 
 var webpackConfig = require("./webpack.config.js");
 var baseClientPath = "./src/Morenware/DutilsBundle/Resources/client";
+var baseServerTemplatesPath = "./src/Morenware/DutilsBundle/Resources/views";
 
 gulp.task('coffeelint', function () {
     gulp.src(baseClientPath + "/**/*.coffee")
@@ -15,7 +16,7 @@ gulp.task('coffeelint', function () {
 
 gulp.task("dev", ["coffeelint", "webpack-dev"], function() {
     livereload.listen();
-    gulp.watch([baseClientPath + "/**/*"], ["coffeelint", "webpack-dev", "all-livereload"]);
+    gulp.watch([baseClientPath + "/**/*", baseServerTemplatesPath + "/**/*"], ["coffeelint", "webpack-dev", "all-livereload"]);
     // sudo sysctl fs.inotify.max_user_watches=100000 to prevent failure
 });
 
