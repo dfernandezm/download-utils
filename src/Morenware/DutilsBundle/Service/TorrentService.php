@@ -91,7 +91,10 @@ class TorrentService {
 	}
 	
 	public function findTorrentByHash($torrentHash) {
-		return $this->getRepository()->findOneBy(array('hash' => $torrentHash));
+		$torrent = $this->getRepository()->findOneBy(array('hash' => $torrentHash));
+		$this->em->flush();
+		$this->em->clear();
+		return $torrent;
 	}
 	
 	public function findTorrentByMagnetLink($magnetLink) {
@@ -138,7 +141,7 @@ class TorrentService {
 		$updatedTorrents = array();
 		
 		// General logger
-		$this->logger->info("Updating data for $countTorrents torrents");
+		$this->monitorLogger->info("Updating data for $countTorrents torrents");
 		
 		foreach ($torrentsResponse as $torrentResponse) {
 			
@@ -146,34 +149,46 @@ class TorrentService {
 			$transmissionId = $torrentResponse->id;
 			$torrentName = $torrentResponse->name;
 			$torrentHash = $torrentResponse->hashString;	
-			
+			$magnetLink = $torrentResponse->magnetLink;
+				
 			$existingTorrent = $this->findTorrentByHash($torrentHash);
 			
-			if ($existingTorrent != null) {
+			$this->monitorLogger->debug("Torrent HASH is $torrentHash");
+			
+			if ($existingTorrent !== null) {
 				
-				$torrentState = $existingTorrent->getState();
-								
-				$existingTorrent->setPercentDone($percentDone);
-				$existingTorrent->setHash($torrentHash);
-
-				$this->monitorLogger->debug("Torrent $torrentName state is $torrentState, percentage $percentDone");
+				$torrentState = $existingTorrent->getState();							
+				$existingTorrent->setMagnetLink($magnetLink);
+				
+				$existingTorrentName = $existingTorrent->getTorrentName();
+				$existingTorrentPercent = $existingTorrent->getPercentDone();
 				
 				if ($torrentState == TorrentState::DOWNLOADING) {
-					$this->monitorLogger->debug("Torrent $torrentName state is $torrentState, percentage $percentDone");
+					$this->monitorLogger->debug("Torrent response: $torrentName is DOWNLOADING state read is $torrentState, percentage read $percentDone");
+					$this->monitorLogger->debug("Torrent DB: $existingTorrentName is DOWNLOADING, stored percentage is $existingTorrentPercent");
+				} else {
+					$this->monitorLogger->debug("Torrent response: $torrentName state is $torrentState, percentage read $percentDone");
+					$this->monitorLogger->debug("Torrent DB: $existingTorrentName is $torrentState, stored percentage is $existingTorrentPercent");
 				}
 				
 				if ($percentDone != null && $percentDone > 0 && $percentDone < 100 && 
-					$torrentState !== TorrentState::DOWNLOADING &&
 					$torrentState !== TorrentState::DOWNLOAD_COMPLETED &&
 					$torrentState !== TorrentState::RENAMING &&
 					$torrentState !== TorrentState::RENAMING_COMPLETED &&
 					$torrentState !== TorrentState::FETCHING_SUBTITLES &&
 					$torrentState !== TorrentState::FAILED_DOWNLOAD_ATTEMPT &&
 					$torrentState !== TorrentState::COMPLETED) {
+
+					$existingTorrent->setPercentDone($percentDone);
+					
+					if ($torrentState == TorrentState::DOWNLOADING) {
+						$existingTorrent->setState(TorrentState::DOWNLOADING);
+						$this->monitorLogger->debug("Torrent $torrentName found in DB, setting as DOWNLOADING");
+					}
 						
-					$existingTorrent->setState(TorrentState::DOWNLOADING);
-					$this->monitorLogger->debug("Torrent $torrentName found in DB, setting as DOWNLOADING, state was $torrentState, percent $percentDone");	
 				} else if ($percentDone == 100 && ($torrentState == TorrentState::DOWNLOADING || $torrentState == null || $torrentState == '')) {
+					
+					$existingTorrent->setPercentDone($percentDone);
 					$existingTorrent->setState(TorrentState::DOWNLOAD_COMPLETED);
 					$this->monitorLogger->info("[MONITOR] Torrent $torrentName finished downloading, percent $percentDone, starting renaming process");
 					$this->logger->info("[MONITOR] Torrent $torrentName finished downloading, starting renaming process");
@@ -230,11 +245,12 @@ class TorrentService {
 				// TODO: try to discover if it is movie or tv show using filebot here??
 				$torrent->setContentType(TorrentContentType::TV_SHOW);
 				$torrent->setPercentDone($percentDone);
+				$torrent->setMagnetLink($magnetLink);
 				
 				$this->create($torrent);
 				
 				if ($finished) {
-					$finishedTorrents[] = $existingTorrent;
+					$finishedTorrents[] = $torrent;
 				}
 				
 				$updatedTorrents[] = $torrent;
@@ -246,8 +262,6 @@ class TorrentService {
 		} else {
 			$this->monitorLogger->debug("[MONITOR] Finished torrents update -- No torrents to rename");
 		}
-		
-		$this->monitorLogger->debug("[MONITOR] Finished torrents update");
 		
 		return $updatedTorrents;
 	}

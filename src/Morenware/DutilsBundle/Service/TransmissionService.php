@@ -311,7 +311,7 @@ class TransmissionService {
 		$newLocation = $this->getTorrentSubfolderPath($torrentName, $torrentHash);
 		
 		$this->logger->debug("Relocating torrent with $torrentName into subfolder $newLocation ");
-		$this->transmissionLogger->debug("Relocating torrent with $torrentName into subfolder $newLocation ");
+		$this->transmissionLogger->debug("[TRANSMISSION-RELOCATE] Relocating torrent with $torrentName into subfolder $newLocation ");
 		
 		$requestPayload = array(
 				"method" => "torrent-set-location",
@@ -319,13 +319,13 @@ class TransmissionService {
 		);
 		
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
-		$this->transmissionLogger->debug("The payload to send to transmission API is $jsonRequest");
+		$this->transmissionLogger->debug("[TRANSMISSION-RELOCATE] The payload to send to transmission API is $jsonRequest");
 		
 		$result = $this->executeTransmissionApiCall($jsonRequest);
-		$this->transmissionLogger->debug("Result of call is: ". json_encode($result));
+		$this->transmissionLogger->debug("[TRANSMISSION-RELOCATE] Result of call is: ". json_encode($result));
 		
 		$this->logger->debug("Torrent $torrentName successfully RELOCATED in $newLocation");
-		$this->transmissionLogger->debug("Torrent $torrentName successfully RELOCATED in $newLocation");
+		$this->transmissionLogger->debug("[TRANSMISSION-RELOCATE] Torrent $torrentName successfully RELOCATED in $newLocation");
 		
 		return $newLocation;
 	}
