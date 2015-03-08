@@ -183,6 +183,8 @@ class SearchTorrentsService {
 			$crawlerRows = $crawler->filter('table.fichserietabla tr');
 			
 			$episodeNamesAndTorrentLinks = $crawlerRows->filter('tr td.capitulonombre a')->extract(array("_text","href"));
+			
+			// This can include the "Fecha" headers
 			$episodeDate = $crawlerRows->filter('tr td.capitulofecha')->extract(array("_text"));
 			
 			$total = count($episodeNamesAndTorrentLinks);
@@ -209,6 +211,7 @@ class SearchTorrentsService {
 						$torrent->setTorrentName($episodeTitle);
 						$torrentFileLink = $baseUrl . $torrentFileLink;
 						$torrent->setTorrentFileLink($torrentFileLink);
+						$this->getQualityFromTorrentFileName($torrentFileLink);
 						$date = new \DateTime($torrentDate);
 						$torrent->setDate($date);
 						$torrents[] = $torrent;
@@ -255,4 +258,8 @@ class SearchTorrentsService {
    		$this->transmissionService->startDownload($torrent, true);
    		
    }	
+   
+   private function getQualityFromTorrentFileName($torrentFileLink) {
+   	//TODO:
+   }
 }
