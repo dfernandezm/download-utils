@@ -22,11 +22,11 @@ app.factory 'apiFactory', ['$http', ($http) ->
   apiFactory.deleteInstance = (id) ->
     return $http.delete(urlBase + "/" + id)
 
-  apiFactory.searchTorrent = (searchQuery) ->
+  apiFactory.searchTorrent = (searchQuery, sitesParam) ->
     req = {
       method: 'get',
       url: searchUrl
-      params: { searchQuery : searchQuery }
+      params: { searchQuery : searchQuery, sitesParam: sitesParam }
     }
     return $http(req)
 

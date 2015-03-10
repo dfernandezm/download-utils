@@ -41,12 +41,26 @@ class SearchTorrentsApiController extends Controller {
 	public function searchQueryAction(Request $request) {
 		
 		$searchQuery = $request->query->get("searchQuery", null);
-		$ip = $request->get('request')->getClientIp();
+		$sitesParam = $request->query->get("sitesParam", null);
+		$websitesToSearch = array();
 		
-		$this->logger->debug('Received query to search: '. $searchQuery . " from IP ". $ip);
+		if ($sitesParam !== null) {
+			$websitesToSearch = explode(",",$sitesParam);
+		}
 		
-		$torrents = $this->searchService->searchTorrentsInWebsites($searchQuery);
+		$this->logger->debug('Received query to search: '. $searchQuery . " websites is: " . $websitesToSearch[0]);
 		
-		return ControllerUtils::createJsonResponseForDto($this->serializer, $torrents);
+		list($torrents, $currentOffset, $total) = $this->searchService->searchTorrentsInWebsites($searchQuery, 50, 0);    		
+    		
+    	$torrentsInfo =
+    				array('torrents' => $torrents, 
+    					  'limit' => 50,
+    					  'offset' => 0,		 
+    					  'currentOffset' => $currentOffset, 
+    					  'total' => $total,  
+    					  'query' => $searchQuery
+    				);
+		
+    	return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $torrentsInfo, 200, "torrentsInfo");
 	}	
 }

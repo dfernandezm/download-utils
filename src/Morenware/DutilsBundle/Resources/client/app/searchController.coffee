@@ -1,7 +1,12 @@
 app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$window', '$location', 'Torrent', ($scope, apiFactory, utilsService, $window, $location, Torrent) ->
 
   promise = null
-  reloadPage = true
+  reloadPage = false
+
+  $scope.searchSites = [
+      { id: "KT", name: 'Kickass Torrents'},
+      { id: "DT", name: 'Divx Total'}
+  ]
 
   $scope.search = ->
 
@@ -11,13 +16,29 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
       $window.location.href =  url + "?searchQuery=" + $scope.query
     else
       searchQuery = $scope.query
-      promise = apiFactory.searchTorrent searchQuery
+      searchSites = _.where $scope.searchSites, {selected: true}
+      sitesParam = ""
+      _.each searchSites, (elem,index,list) ->
+        sitesParam = sitesParam + elem.id + ","
+        return
+
+      sitesParam = sitesParam.replace(/,$/, "")
+
+      # Loading
+      $scope.loading = true
+      promise = apiFactory.searchTorrent searchQuery, sitesParam
       utilsService.resolvePromiseWithCallbacks promise, onSearchSuccess, null, null
     return
 
   onSearchSuccess = (data) ->
-    $scope.torrents = data
+    $scope.torrents = data.torrentsInfo.torrents
+    $scope.query = data.torrentsInfo.query
+    $scope.limit = data.torrentsInfo.limit
+    $scope.offset = data.torrentsInfo.offset
+    $scope.currentOffset = data.torrentsInfo.currentOffset
+    $scope.total = data.torrentsInfo.total
     $scope.searchFinished = true
+    $scope.loading = false
     return
 
   $scope.initTorrents = (torrentsInfo) ->
@@ -39,10 +60,11 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
     $scope.torrentDownload = new Torrent()
     $scope.torrentDownload.magnetLink = torrent.magnetLink
     $scope.torrentDownload.torrentFileLink = torrent.torrentFileLink
+    $scope.torrentDownload.state = "STARTING..."
 
     $scope.torrentDownload.$save((torrentDownload) ->
       console.log("Torrent started " + torrentDownload)
-      torrent.state = torrentDownload.state
+      torrent = torrentDownload
       return
     )
 

@@ -142,10 +142,9 @@ class SearchTorrentsService {
 		
 		$mainUrl = $baseUrl . "/buscar.php?busqueda=" . $searchQuery;
 		$innerPageLinkPattern = '/href="(\/series\/[^\s"]+)/';
-		$episodeNameAndTorrentFilePattern = '/href="(\/torrents_tor[^\s"]+).*>(.*)<\/a>/';
+
 		$moreThanOnePagePattern = '/href="(buscar\.php\?busqueda=[^"]+)&pagina=([0-9])"/';
-		$datePattern = '/href="/';
-		
+
 		// use this to extract movies
 		$moviesInnerPageLinkPattern = '/href="(peliculas\/torrent\/[0-9]+\/.*\/)/'; 
 		
@@ -216,6 +215,7 @@ class SearchTorrentsService {
 						$torrent->setDate($date);
 						$torrents[] = $torrent;
 						$torrentNames[] = $episodeTitle;	
+						$this->logger->debug("Adding torrent to the list $episodeTitle");
 					}
 					
 					$j++;
@@ -260,6 +260,14 @@ class SearchTorrentsService {
    }	
    
    private function getQualityFromTorrentFileName($torrentFileLink) {
-   	//TODO:
+    //TODO:
    }
+   
+   
+   public function torrentAlreadyExists($torrentFileNameOrMagnetLink) {
+   	 $hash = base64_encode($torrentFileNameOrMagnetLink);
+   	 return $hash;
+   }
+   
+   
 }

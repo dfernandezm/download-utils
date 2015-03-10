@@ -10,21 +10,33 @@
 	    </div>
 	</div>
 
-	<div class="row search-form">
-		 <div class="input-group custom-search-form col-lg-12">
-         	<input type="text" class="form-control" ng-model="query" placeholder="Buscar...">
-            <span class="input-group-btn">
-              <button class="btn btn-default" type="button" ng-click="search()">
-                <i class="fa fa-search"></i>
-              </button>
+    <form>
+    	<div class="row search-form">
+    		 <div class="input-group custom-search-form col-lg-12">
+             	<input type="text" class="form-control" ng-model="query" placeholder="Buscar...">
+                <span class="input-group-btn">
+                  <button class="btn btn-default" type="submit" ng-click="search()">
+                    <i class="fa fa-search"></i>
+                  </button>
 
-{#               <a class="btn btn-default" href="search?searchQuery=castle">#}
-{#               	 <i class="fa fa-search"></i>#}
-{#               </a>#}
+    {#               <a class="btn btn-default" href="search?searchQuery=castle">#}
+    {#               	 <i class="fa fa-search"></i>#}
+    {#               </a>#}
 
-            </span>
-         </div>
-	</div>
+                </span>
+             </div>
+    	</div>
+    </form>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="checkbox">
+                <label ng-repeat="site in searchSites">
+                    <input type="checkbox" ng-model="site.selected" id="searchSite1" /> [[site.name]] &nbsp;
+                </label>
+            </div>
+        </div>
+    </div>
 
 	<div class="row search-results" ng-show="searchFinished">
 	    <div class="col-lg-12">
@@ -46,11 +58,10 @@
                                     <td ng-bind="torrent.torrentName"></td>
                                     <td ng-bind="torrent.date"></td>
                                     <td class="col-lg-6">
-                                        <a href="[[torrent.torrentFileLink]]" class="download-torrent" target="_blank" class="col-lg-3">Download torrent</a>
                                         <a href="#" ng-click="startDownload(torrent)" target="_blank" class="col-lg-3">Start download</a>
-
+                                        <a href="[[torrent.torrentFileLink]]" target="_blank" class="col-lg-3">Torrent file</a>
                                     </td>
-                                    <td> <span ng-hide="torrent.state !== DOWNLOADING">[[torrent.state]]</span></td>
+                                    <td> <span>[[torrent.state]]</span></td>
                                 </tr>
                             </tbody>
                         </table>
