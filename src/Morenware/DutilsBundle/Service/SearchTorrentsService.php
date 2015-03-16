@@ -18,6 +18,12 @@ class SearchTorrentsService {
 	/** @DI\Inject("transmission.service") */
 	public $transmissionService;
 
+	const MAIN_SECTION = "MAIN";
+	const DETAIL_SECTION = "DETAIL";
+	const DIVX_TOTAL_ID = "DT";
+	const KICKASS_TORRENTS_ID = "KT";
+	
+	
    /**
 	* @DI\InjectParams({
 	*     "logger"  = @DI\Inject("logger")
@@ -146,13 +152,21 @@ class SearchTorrentsService {
 		$moreThanOnePagePattern = '/href="(buscar\.php\?busqueda=[^"]+)&pagina=([0-9])"/';
 
 		// use this to extract movies
-		$moviesInnerPageLinkPattern = '/href="(peliculas\/torrent\/[0-9]+\/.*\/)/'; 
+		// moviesInnerPageLinkPattern = '/href="(peliculas\/torrent\/[0-9]+\/.*\/)/'; 
 		
 		// Number of results
-		$numberOfResultsPattern = '/<h3>(.*)torrents[\s]+encontrados.*<\/h3>/';
+		// numberOfResultsPattern = '/<h3>(.*)torrents[\s]+encontrados.*<\/h3>/';
 		
+		$resultsPageHtml = $this->getFromCache(self::DIVX_TOTAL_ID, self::MAIN_SECTION, $searchQuery);
 		
-		$resultsPageHtml = file_get_contents($mainUrl);
+		if ($resultsPageHtml == null) {
+			$this->logger->debug("Cache miss, connecting to website and caching");
+			$resultsPageHtml = file_get_contents($mainUrl);
+			$this->writeCacheFile(self::DIVX_TOTAL_ID, self::MAIN_SECTION, $searchQuery, $resultsPageHtml);
+		} else {
+			$this->logger->debug("Cache hit, getting cached content");
+		}
+		
 	
 		$torrents = array();
 		$torrentNames = array();
@@ -176,7 +190,16 @@ class SearchTorrentsService {
 		
 			$this->logger->debug("Inner link for TV Show is $baseUrl$innerLinkForTvShow");
 		
-			$tvShowDetailHtml = file_get_contents($baseUrl . $innerLinkForTvShow);
+			$tvShowDetailHtml = $this->getFromCache(self::DIVX_TOTAL_ID, self::DETAIL_SECTION, $searchQuery);
+			
+			if ($tvShowDetailHtml == null) {
+				$this->logger->debug("Cache miss, connecting to website and caching");
+				$tvShowDetailHtml = file_get_contents($baseUrl . $innerLinkForTvShow);
+				$this->writeCacheFile(self::DIVX_TOTAL_ID, self::DETAIL_SECTION, $searchQuery, $tvShowDetailHtml);
+			} else {
+				$this->logger->debug("Cache hit, getting cached content");
+			}
+			
 			
 			$crawler = new Crawler($tvShowDetailHtml);
 			$crawlerRows = $crawler->filter('table.fichserietabla tr');
@@ -263,11 +286,41 @@ class SearchTorrentsService {
     //TODO:
    }
    
-   
    public function torrentAlreadyExists($torrentFileNameOrMagnetLink) {
    	 $hash = base64_encode($torrentFileNameOrMagnetLink);
    	 return $hash;
    }
    
+   public function writeCacheFile($websiteId, $section, $searchQuery, $content) {
+ 	$filename = $this->getCacheFilename($websiteId, $section, $searchQuery);
+ 	file_put_contents($filename, $content);
+   }
+   
+   public function getFromCache($websiteId, $section, $searchQuery) {
+   	 $filename = $this->getCacheFilename($websiteId, $section, $searchQuery);
+   	 if (file_exists($filename)) {
+   	 	$cachedContent = file_get_contents($filename);
+   	 	return $cachedContent;
+   	 } else {
+   	 	return null;
+   	 }
+   }
+   
+   public function getCacheFilename($websiteId, $section, $searchQuery) {
+   	 date_default_timezone_set('UTC');
+   	 $date = date("d-m-Y");
+   	 $cachePath = "/tmp/dutils/cache/$websiteId";
+   	 $normalizedSearchQuery = strtolower(trim($searchQuery));
+   	 $baseFileName = base64_encode($section . "-" . $normalizedSearchQuery . "-" . $date);
+   	 $path = $cachePath . "/" . $baseFileName . ".cache";
+   	 $dir = dirname($path);
+
+   	 if (!file_exists($dir)) {
+   	 	mkdir($dir, 0777, true);
+   	 }
+ 
+   	 $this->logger->debug("The cache path to check is $path");
+   	 return $path;
+   }
    
 }

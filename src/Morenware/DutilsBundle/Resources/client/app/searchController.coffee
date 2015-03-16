@@ -5,7 +5,7 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
 
   $scope.searchSites = [
       { id: "KT", name: 'Kickass Torrents'},
-      { id: "DT", name: 'Divx Total'}
+      { id: "DT", name: 'Divx Total', selected: true}
   ]
 
   $scope.search = ->
