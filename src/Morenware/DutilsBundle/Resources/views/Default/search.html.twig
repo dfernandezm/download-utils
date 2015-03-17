@@ -49,6 +49,7 @@
                                     <th>#</th>
                                     <th>Title</th>
                                     <th>Date</th>
+                                    <th>State</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -57,11 +58,12 @@
                                     <td ng-bind="offset+$index+1"></td>
                                     <td ng-bind="torrent.torrentName"></td>
                                     <td ng-bind="torrent.date"></td>
+                                    <td>[[torrent.state]]</td>
                                     <td class="col-lg-6">
-                                        <button ng-click="startDownload(torrent)" target="_blank" class="col-lg-3">Start download</button>
-                                        <a href="[[torrent.torrentFileLink]]" target="_blank" class="col-lg-3">Torrent file</a>
+                                        <button ng-show="torrent.state == 'NEW'" ng-click="startDownload(torrent)" target="_blank" class="btn btn-sm btn-primary col-lg-2">Download</button>
+
+                                        <a href="[[torrent.torrentFileLink]]" target="_blank" class="btn btn-sm btn-info col-lg-2">Torrent file</a>
                                     </td>
-                                    <td> <span>[[torrent.state]]</span></td>
                                 </tr>
                             </tbody>
                         </table>

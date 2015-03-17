@@ -7,6 +7,7 @@ var livereload = require('gulp-livereload');
 var webpackConfig = require("./webpack.config.js");
 var baseClientPath = "./src/Morenware/DutilsBundle/Resources/client";
 var baseServerTemplatesPath = "./src/Morenware/DutilsBundle/Resources/views";
+var cssFilesBasePath = "./web/client/css";
 
 gulp.task('coffeelint', function () {
     gulp.src(baseClientPath + "/**/*.coffee")
@@ -16,7 +17,7 @@ gulp.task('coffeelint', function () {
 
 gulp.task("dev", ["coffeelint", "webpack-dev"], function() {
     livereload.listen();
-    gulp.watch([baseClientPath + "/**/*", baseServerTemplatesPath + "/**/*"], ["coffeelint", "webpack-dev", "all-livereload"]);
+    gulp.watch([baseClientPath + "/**/*", baseServerTemplatesPath + "/**/*", cssFilesBasePath + "/**/*"], ["coffeelint", "webpack-dev", "all-livereload"]);
     // sudo sysctl fs.inotify.max_user_watches=100000 to prevent failure
 });
 
@@ -41,6 +42,6 @@ gulp.task("webpack-dev", function(callback) {
 
 // No need to reload all files maybe??
 gulp.task("all-livereload", function() {
-    gulp.src(baseClientPath + "/**/*")
+    gulp.src([baseClientPath + "/**/*", cssFilesBasePath + "/**/*"])
     .pipe(livereload());
 });

@@ -31,3 +31,7 @@
 
 
 .table-striped tbody tr.highlight td { background-color: red; }
+
+.btn {
+    margin-right: 4px;
+}

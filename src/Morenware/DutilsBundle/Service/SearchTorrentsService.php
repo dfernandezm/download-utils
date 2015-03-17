@@ -17,6 +17,9 @@ class SearchTorrentsService {
 	
 	/** @DI\Inject("transmission.service") */
 	public $transmissionService;
+	
+	/** @DI\Inject("torrent.service") */
+	public $torrentService;
 
 	const MAIN_SECTION = "MAIN";
 	const DETAIL_SECTION = "DETAIL";
@@ -142,11 +145,12 @@ class SearchTorrentsService {
 	public function searchDivxTotal($searchQuery, $limit = 1000, $offset = 0) {
 		
 		$baseUrl = "http://www.divxtotal.com";
-		$limit = 50;
+		$limit = 25;
 		$offset = 0;
 		$searchQuery = urlencode($searchQuery);
 		
-		$mainUrl = $baseUrl . "/buscar.php?busqueda=" . $searchQuery;
+		// Sort by date
+		$mainUrl = $baseUrl . "/buscar.php?busqueda=" . $searchQuery . "&orden=1";
 		$innerPageLinkPattern = '/href="(\/series\/[^\s"]+)/';
 
 		$moreThanOnePagePattern = '/href="(buscar\.php\?busqueda=[^"]+)&pagina=([0-9])"/';
@@ -233,9 +237,17 @@ class SearchTorrentsService {
 						$torrent->setTorrentName($episodeTitle);
 						$torrentFileLink = $baseUrl . $torrentFileLink;
 						$torrent->setTorrentFileLink($torrentFileLink);
-						$this->getQualityFromTorrentFileName($torrentFileLink);
+						//$this->getQualityFromTorrentFileName($torrentFileLink);
 						$date = new \DateTime($torrentDate);
 						$torrent->setDate($date);
+						$torrent->setState("NEW");
+						
+						$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($torrentFileLink);
+						
+						if ($existingTorrent !== null) {
+							$torrent->setState($existingTorrent->getState());
+						}
+						
 						$torrents[] = $torrent;
 						$torrentNames[] = $episodeTitle;	
 						$this->logger->debug("Adding torrent to the list $episodeTitle");

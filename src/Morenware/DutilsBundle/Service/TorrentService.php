@@ -435,4 +435,23 @@ class TorrentService {
 		$this->monitorLogger->info("[WORKFLOW-FINISHED] Processing of torrents finished");
 	}
 	
+	public function findTorrentByMagnetOrFile($magnetOrTorrentFile) {
+		
+		$torrent = null;
+		
+		if ($this->endsWith($magnetOrTorrentFile,".torrent")) {
+			// It is a torrent file link
+			$torrent = $this->findTorrentByFileLink($magnetOrTorrentFile);
+		} else {
+			// Assume a magnet link
+			$torrent = $this->findTorrentByMagnetLink($magnetOrTorrentFile);
+		}
+		
+		return $torrent;
+	}
+	
+	public function endsWith($target, $suffix) {
+		return strrpos($target, $suffix, strlen($target) - strlen($suffix)) !== false;
+	}
+	
 }
