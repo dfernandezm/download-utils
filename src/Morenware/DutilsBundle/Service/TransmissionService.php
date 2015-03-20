@@ -47,13 +47,11 @@ class TransmissionService {
 	
 	//TODO: Add support for starting multiple downloads at the same time, like the upload feature in the WebInterface
 	// of Transmission - Check RPC api or WebInterface code
-	public function startDownload($torrent, $isFromFile = false, $force = false) {
+	public function startDownload($torrent, $isFromFile = false) {
 		
 		// Ensure transmission has the right configuration (cache this to not call every time)
-		// $this->configureTransmission();
-		$link = $torrent->getMagnetLink();
-		$magnetLink = "$link";
-	  
+		$magnetLink = $torrent->getMagnetLink();
+		
 	    $filenameParameter = $magnetLink;
 	    
 		if ($isFromFile) {

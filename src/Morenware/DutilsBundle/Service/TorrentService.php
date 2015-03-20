@@ -113,7 +113,7 @@ class TorrentService {
 		return $this->getRepository()->findOneBy(array('guid' => $guid));
 	}
 	
-	public function deleteTorrent($torrent, $deleteInTransmission = false) {
+	public function deleteTorrent($torrent, $deleteInTransmission = true) {
 		
 		if (!$deleteInTransmission) {
 			$this->delete($torrent);
@@ -121,17 +121,11 @@ class TorrentService {
 		} else {
 			
 			$this->em->transactional(function($em) use ($torrent) {
-				$this->transmissionService->deleteTorrent($torrent);
+				$this->transmissionService->deleteTorrent($torrent->getHash());
 				$this->delete($torrent);		
 			});	
 		}	
 
-	}
-	
-	public function clearDoctrine() {
-		$this->em->flush();
-		$this->em->clear();
-		
 	}
 	
 	public function updateDataForTorrents($torrentsResponse) {
@@ -198,6 +192,11 @@ class TorrentService {
 				$this->merge($existingTorrent);
 				
 				$updatedTorrents[] = $existingTorrent;
+				
+				// Clear finished torrents from transmission
+				if ($torrentState == TorrentState::COMPLETED) {
+					$this->transmissionService->deleteTorrent($existingTorrent->getHash());
+				}
 				
 			} else {
 				
@@ -329,6 +328,7 @@ class TorrentService {
 							$torrent->setState(TorrentState::COMPLETED);
 							$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
 							$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName");
+							$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 						}
 						
 						$this->update($torrent);
@@ -430,6 +430,7 @@ class TorrentService {
 			$this->merge($torrent);
 			$torrentName = $torrent->getTorrentName();
 			$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName after fetching subtitles");
+			$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 		}
 
 		$this->monitorLogger->info("[WORKFLOW-FINISHED] Processing of torrents finished");
@@ -452,6 +453,19 @@ class TorrentService {
 	
 	public function endsWith($target, $suffix) {
 		return strrpos($target, $suffix, strlen($target) - strlen($suffix)) !== false;
+	}
+
+	
+	public function clearTorrentFromTransmissionIfSuccessful($torrent) {
+		//TODO: if remote, the path could not be accessible
+		if (file_exists($torrent->getRenamedPath())) {
+			$this->transmissionService->deleteTorrent($torrent->getHash());
+		} else {
+			$renamedPath = $torrent->getRenamedPath();
+			$this->monitorLogger->warn("[MONITOR-WARNING] The processed torrent does not have a valid renamed path -- $renamedPath");
+			$torrent->setState(TorrentState::COMPLETED_WITH_ERROR);
+			$this->update($torrent);
+		}
 	}
 	
 }

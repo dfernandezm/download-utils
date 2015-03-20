@@ -16,12 +16,13 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
       $window.location.href =  url + "?searchQuery=" + $scope.query
     else
       searchQuery = $scope.query
+      # returns objects on the list with the property indicated
       searchSites = _.where $scope.searchSites, {selected: true}
       sitesParam = ""
       _.each searchSites, (elem,index,list) ->
         sitesParam = sitesParam + elem.id + ","
         return
-
+      # remove last comma
       sitesParam = sitesParam.replace(/,$/, "")
 
       # Loading
@@ -31,6 +32,10 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
     return
 
   onSearchSuccess = (data) ->
+    _.map data.torrentsInfo.torrents, (elem) ->
+      elem.state = _str.capitalize elem.state.toLowerCase()
+      return
+    # TODO: create proper torrent entities from search results to then use resource plugin
     $scope.torrents = data.torrentsInfo.torrents
     $scope.query = data.torrentsInfo.query
     $scope.limit = data.torrentsInfo.limit
@@ -52,26 +57,22 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
       $scope.searchFinished = true
       return
 
-  $scope.downloadTorrentFile = (torrent) ->
-     promise = apiFactory.downloadTorrentFile torrent
-     utilsService.resolvePromiseWithCallbacks promise, onDownloadSuccess, null, null
-
-  $scope.startDownload = (torrent) ->
-    $scope.torrentDownload = new Torrent()
-    $scope.torrentDownload.magnetLink = torrent.magnetLink
-    $scope.torrentDownload.torrentFileLink = torrent.torrentFileLink
-    $scope.torrentDownload.state = "STARTING..."
-
-    $scope.torrentDownload.$save((torrentDownload) ->
-      console.log("Torrent started " + torrentDownload)
-      torrent = torrentDownload
+  $scope.startDownload = (torrentDefinition) ->
+    torrentDownload = new Torrent()
+    # copies properties over from 2 to 1 - torrentDefinition to torrentDownload
+    _.extend torrentDownload, torrentDefinition
+    torrentDefinition.state = "Starting..."
+    torrentDownload.$save((data) ->
+      data.torrent.state = _str.capitalize data.torrent.state?.toLowerCase()
+      _.extend torrentDefinition, data.torrent
       return
     )
 
-  $scope.onDownloadSuccess = (data) ->
-    return
+    # TODO: either refactor torrent API to use resource properly or use another endpoint
+    $scope.cancelDownload = (torrent) ->
+      torrent.$delete((data) ->
+        torrent.state = "Cleared"
+      )
 
-  onDownloadStarted =  (data) ->
-    return
   return
 ]

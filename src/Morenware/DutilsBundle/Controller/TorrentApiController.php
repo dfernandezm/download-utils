@@ -82,18 +82,18 @@ class TorrentApiController {
 		
 		try {
 			$this->logger->debug("Torrent is " . $torrent->getMagnetLink());
-			if ($torrent->getMagnetLink() != null) {
+			if ($torrent->getMagnetLink() !== null) {
 				$torrent = $this->torrentService->startDownloadFromMagnetLink($torrent->getMagnetLink());
-			} else if ($torrent->getTorrentFileLink() != null) {
+			} else if ($torrent->getTorrentFileLink() !== null) {
 				$torrent = $this->torrentService->startDownloadFromTorrentFile($torrent->getTorrentFileLink());
 			} else {
 				return $this->generateErrorResponse("INVALID_TORRENT", 400);
 			}
 			
-			return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent);
+			return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent, 200, "torrent");
 			
 		} catch (\Exception $e) {
-			$this->logger->error("Error: " . str_replace("#", "\n#", $e->getTraceAsString()));	
+			$this->logger->error("Error: " . $e->getMessage() . " -- " . str_replace("#", "\n#", $e->getTraceAsString()));	
 			return $this->generateErrorResponse($e->getMessage(), 400);
 		}
 	}
@@ -136,8 +136,8 @@ class TorrentApiController {
 				$torrent = $this->torrentService->findTorrentByHash($hashOrGuid);
 			}
 				
-			if ($torrent != null) {
-				$this->torrentService->deleteTorrent($hashOrGuid, true);
+			if ($torrent !== null) {
+				$this->torrentService->deleteTorrent($torrent, true);
 				return ControllerUtils::createJsonResponseForArray(null);
 			} else {
 				return $this->generateErrorResponse("TORRENT_NOT_FOUND", 404);
@@ -147,8 +147,6 @@ class TorrentApiController {
 			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
 		}
 	}
-	
-	
 	
 	
 	private function generateErrorResponse($message, $errorCode) {
