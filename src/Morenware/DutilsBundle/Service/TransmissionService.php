@@ -100,7 +100,10 @@ class TransmissionService {
 	    		
 	    		$torrent->setHash($hash);
 	    		$torrent->setTransmissionId($transmissionId);
-	    		$torrent->setTorrentName($nameAdded);
+	    		
+	    		if ($torrent->getTorrentName() == null ) {
+	    			$torrent->setTorrentName($nameAdded);
+	    		}
 	    		
 	    		if ($torrent->getTitle() == "Unknown") {
 	    			$torrent->setTitle($nameAdded);

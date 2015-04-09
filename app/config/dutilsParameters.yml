@@ -1,0 +1,3 @@
+parameters:
+    search_cache_dir: /tmp/dutils/cache
+    torrents_temp_path: /home/david/scripts/torrent-temp

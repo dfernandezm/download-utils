@@ -6,3 +6,6 @@
 /bin/
 /app/cache/
 /app/logs/
+web/client/js/init.js
+web/client/js/init.js.map
+

@@ -20,11 +20,28 @@ class SearchTorrentsService {
 	
 	/** @DI\Inject("torrent.service") */
 	public $torrentService;
+	
+	/**
+	 * @DI\Inject("%torrents_temp_path%")
+	 */
+	public $torrentsTempPath;
+	
+	/**
+	 * @DI\Inject("%search_cache_dir%")
+	 */
+	public $searchCacheDir;
+	
 
 	const MAIN_SECTION = "MAIN";
 	const DETAIL_SECTION = "DETAIL";
 	const DIVX_TOTAL_ID = "DT";
 	const KICKASS_TORRENTS_ID = "KT";
+	
+	const AGE_DAY = "day";
+	const AGE_WEEK = "week";
+	const AGE_HOUR = "hour";
+	const AGE_MONTH = "month";
+	const AGE_YEAR = "year";
 	
 	
    /**
@@ -43,7 +60,9 @@ class SearchTorrentsService {
 		//$torrents = $this->searchEliteTorrent($searchQuery);
 		
 		// We need to paginate results here as the search retrieves the whole series in a single page...
-		$torrents = $this->searchDivxTotal($searchQuery, $limit, $offset);
+		//$torrents = $this->searchDivxTotal($searchQuery, $limit, $offset);
+		
+		$torrents = $this->searchKickassTorrents($searchQuery);
 		
 		return $torrents;
 	}
@@ -156,10 +175,10 @@ class SearchTorrentsService {
 		$moreThanOnePagePattern = '/href="(buscar\.php\?busqueda=[^"]+)&pagina=([0-9])"/';
 
 		// use this to extract movies
-		// moviesInnerPageLinkPattern = '/href="(peliculas\/torrent\/[0-9]+\/.*\/)/'; 
+		// oviesInnerPageLinkPattern = '/href="(peliculas\/torrent\/[0-9]+\/.*\/)/'; 
 		
 		// Number of results
-		// numberOfResultsPattern = '/<h3>(.*)torrents[\s]+encontrados.*<\/h3>/';
+		// OfResultsPattern = '/<h3>(.*)torrents[\s]+encontrados.*<\/h3>/';
 		
 		$resultsPageHtml = $this->getFromCache(self::DIVX_TOTAL_ID, self::MAIN_SECTION, $searchQuery);
 		
@@ -280,7 +299,7 @@ class SearchTorrentsService {
    public function downloadTorrentToFileAndStart(Torrent $torrent) {
    		
    		$this->logger->debug("Downloading torrent file to  $torrent->getTorrentFileLink() to temporary path");
-   		$tempTorrentsPath = "/home/david/scripts/torrent-temp";
+   		$tempTorrentsPath = $this->torrentsTempPath;
    		$torrentFilename =  $torrent->getTorrentName();
    		$torrentFilePath = "$tempTorrentsPath/$torrentFilename";
    		
@@ -321,7 +340,7 @@ class SearchTorrentsService {
    public function getCacheFilename($websiteId, $section, $searchQuery) {
    	 date_default_timezone_set('UTC');
    	 $date = date("d-m-Y");
-   	 $cachePath = "/tmp/dutils/cache/$websiteId";
+   	 $cachePath = $this->searchCacheDir . "/$websiteId";
    	 $normalizedSearchQuery = strtolower(trim($searchQuery));
    	 $baseFileName = base64_encode($section . "-" . $normalizedSearchQuery . "-" . $date);
    	 $path = $cachePath . "/" . $baseFileName . ".cache";
@@ -333,6 +352,112 @@ class SearchTorrentsService {
  
    	 $this->logger->debug("The cache path to check is $path");
    	 return $path;
+   }
+   
+   public function searchKickassTorrents($searchQuery, $limit = 25, $offset = 0) {
+     
+     $baseUrl = "http://katproxy.com";
+     $searchQuery = urlencode($searchQuery);
+     $searchUrl = $baseUrl . "/usearch/$searchQuery/?field=time_add&sorder=desc";
+     
+     $resultsPageHtml = $this->getInitialSearchResultsFromSite(self::KICKASS_TORRENTS_ID, self::MAIN_SECTION, $searchUrl, $searchQuery);
+     
+     //$orderByFields = array("age", "seed");
+     
+     $crawler = new Crawler($resultsPageHtml);
+     $crawlerRows = $crawler->filter('div table.data tr');
+
+     $total = iterator_count($crawlerRows) - 1; // minus header row
+     
+     $torrents = array();
+     
+     if ($total > 1) {
+     	
+     	$this->logger->debug("[SEARCH-KICKASS] Found $total rows to filter as results");
+
+     	foreach ($crawlerRows as $i => $content) {
+			
+     		$subCrawler = new Crawler($content);	
+     		
+     		//$torrentInfoCrawler = $subCrawler->filter("td");
+     		
+     		$titles = $subCrawler->filter("td div.torrentname div.markeredBlock a.cellMainLink")->extract("_text");
+     		$magnetLinks = $subCrawler->filter("td div.iaconbox a.imagnet")->extract("href");
+     		// size, files, age, seed, leech
+     		$torrentAttributes = $subCrawler->filter("td.center")->extract("_text");
+     		
+     		$count = count($titles);
+     		for ($k = 0; $k < $count; $k++) {
+     			$torrent = new Torrent();
+     			
+     			$torrentName = $titles[$k];
+     			$magnetLink = $magnetLinks[$k];
+     			
+     			$age = $torrentAttributes[2];
+     			$date = $this->convertAgeToDate($age);
+     			
+     			$seeds = $torrentAttributes[3];
+     			$this->logger->debug("======== Torrent: $torrentName -- $magnetLink -- Age ". $date->format('Y-m-d H:i:s') . " -- Seed $seeds");
+     			$torrent->setTorrentName($torrentName);
+     			$torrent->setTitle($torrentName);
+     			$torrent->setMagnetLink($magnetLink);
+     			$torrent->setDate($date);
+     			$torrent->setState("NEW");
+     			$torrents[] = $torrent;
+     		}
+     	}	
+     }
+     
+     $this->logger->debug("==================== Returning!!!");
+     return array($torrents, 25, $total);
+     
+     //TODO: use the feed link to generate Feed object and then generate torrents!!
+     // Example: http://katproxy.com/usearch/better%20call%20saul/?rss=1
+   }
+   
+   private function getInitialSearchResultsFromSite($siteId, $siteSection, $searchUrl, $urlEncodedSearchQuery) {
+	   	$resultsPageHtml = $this->getFromCache($siteId, $siteSection, $urlEncodedSearchQuery);
+	   	
+	   	if ($resultsPageHtml == null) {
+	   		$this->logger->debug("Cache miss, connecting to website and caching");
+	   		$resultsPageHtml = file_get_contents($searchUrl);
+	   		$this->writeCacheFile($siteId, $siteSection, $urlEncodedSearchQuery, $resultsPageHtml);
+	   	} else {
+	   		$this->logger->debug("Cache hit, getting cached content");
+	   	}
+	   	
+	   	return $resultsPageHtml;
+   }
+   
+   private function convertAgeToDate($ageAsString) {
+
+   		$ageParts = explode(" ",$ageAsString);
+   		
+   		$number = intval(trim($ageParts[0]));
+   		
+   		$date = new \DateTime();
+   		
+   		$intervalString = "";
+   		
+   		if (strpos($ageAsString, self::AGE_HOUR) !== false) {
+   			$intervalString = "-" . $number . " hours"; 
+   		} else if (strpos($ageAsString, self::AGE_DAY) !== false) {
+   			$intervalString = "-" . $number . " days";
+   		} else if (strpos($ageAsString, self::AGE_WEEK) !== false) {
+   			$intervalString = "-" . $number . " weeks";
+   		} else if (strpos($ageAsString, self::AGE_MONTH) !== false) {
+   			$intervalString = "-" . $number . " months";
+   		} else if (strpos($ageAsString, self::AGE_YEAR) !== false) {
+   			$intervalString = "-" . $number . " years";
+   		} 
+   		
+   		$this->logger->debug("Interval is $intervalString");
+   		
+   		$interval = \DateInterval::createFromDateString($intervalString);
+   
+   		$date = $date->add($interval);
+   		
+   		return $date;		
    }
    
 }
