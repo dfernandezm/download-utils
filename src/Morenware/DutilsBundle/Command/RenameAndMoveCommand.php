@@ -148,8 +148,8 @@ class RenameAndMoveCommand extends Command {
 						
 					if (intval($exitCode) !== 0) {
 						$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code");
-						$this->logger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code");
-						throw new \Exception("[RENAMING] Error executing renaming process PID $pid", $exitCode, null);
+						$this->logger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code from filebot, continue polling....");
+						
 					}
 						
 					$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- starting further checks...");

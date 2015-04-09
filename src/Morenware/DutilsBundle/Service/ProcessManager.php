@@ -252,4 +252,62 @@ class ProcessManager {
 			$this->startSymfonyCommandAsynchronously(CommandType::FETCH_SUBTITLES);
 		}
 	}
+	
+	public function cleanupPidAndTerminatedFiles() {
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		$this->deleteFileUsingWildcard($processingPath . "/*.pid");
+		$this->deleteFileUsingWildcard($processingPath . "/*.terminated");
+	}
+	
+	public function killWorkerProcessesIfRunning() {
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		
+		$monitorPidFile = $processingPath . "/monitor.pid";
+		$renamerPidFile = $processingPath . "/renamer.pid";
+		$subtitlePidFile = $processingPath . "/subtitles.pid";
+
+		$monitorTerminatedFile = $processingPath . "/monitor.terminated";
+		$renamerTerminatedFile = $processingPath . "/renamer.terminated";
+		$subtitleTerminatedFile = $processingPath . "/subtitles.terminated";
+		
+		//First attempt gracefully kill by touching .terminated file, if still running, execute kill -9
+		
+		$this->logger->debug("Attempt gracefully shutdown of worker processes...");
+		
+		if (file_exists($monitorPidFile)) {
+			$pid = trim(file_get_contents($monitorPidFile));
+			if (file_exists("/proc/$pid")) {
+				touch($monitorTerminatedFile);
+			} else {
+				$this->logger->debug("Monitor process wasn't running, deleting files");
+				unlink($monitorPidFile);
+			}
+		}
+		
+		if (file_exists($renamerPidFile)) {
+			$pid = trim(file_get_contents($renamerPidFile));
+			if (file_exists("/proc/$pid")) {
+				touch($renamerTerminatedFile);
+			} else {
+				$this->logger->debug("Renamer process wasn't running, deleting files");
+				unlink($renamerPidFile);
+			}
+		}
+		
+		if (file_exists($subtitlePidFile)) {
+			$pid = trim(file_get_contents($subtitlePidFile));
+			if (file_exists("/proc/$pid")) {	
+				touch($subtitleTerminatedFile);
+			} else {
+				$this->logger->debug("Subtitle process wasn't running, deleting files");
+				unlink($subtitlePidFile);
+			}
+		}
+	}
+	
+	public function deleteFileUsingWildcard($pathWithWildcard) {
+		array_map('unlink', glob($pathWithWildcard));
+	}
 }

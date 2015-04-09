@@ -40,7 +40,7 @@ class NotifyController {
 	 */
 	public function putTransmissionNotificationAction() {			
 		try {
-			
+			$this->logger->error("Notifying from transmission finished download");
 			$this->transmissionService->checkTorrentsStatus();
 			$this->processManager->startRenamerWorker();
 			$this->processManager->startSubtitleFetchWorker();

@@ -7,6 +7,7 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
       { id: "KT", name: 'Kickass Torrents'},
       { id: "DT", name: 'Divx Total', selected: true}
   ]
+  $scope.buttonText = "Download"
 
   $scope.search = ->
 
@@ -28,33 +29,17 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
       # Loading
       $scope.loading = true
       promise = apiFactory.searchTorrent searchQuery, sitesParam
-      utilsService.resolvePromiseWithCallbacks promise, onSearchSuccess, null, null
+      utilsService.resolvePromiseWithCallbacks promise, onSuccess, null, null
     return
-
-  onSearchSuccess = (data) ->
-    _.map data.torrentsInfo.torrents, (elem) ->
-      elem.state = _str.capitalize elem.state.toLowerCase()
-      return
-    # TODO: create proper torrent entities from search results to then use resource plugin
-    $scope.torrents = data.torrentsInfo.torrents
-    $scope.query = data.torrentsInfo.query
-    $scope.limit = data.torrentsInfo.limit
-    $scope.offset = data.torrentsInfo.offset
-    $scope.currentOffset = data.torrentsInfo.currentOffset
-    $scope.total = data.torrentsInfo.total
-    $scope.searchFinished = true
-    $scope.loading = false
-    return
-
+  # When loading the page - injected JSON
   $scope.initTorrents = (torrentsInfo) ->
+    $scope.buttonText = "Download"
+    $scope.searchSites = [
+      { id: "KT", name: 'Kickass Torrents'},
+      { id: "DT", name: 'Divx Total', selected: true}
+    ]
     if torrentsInfo?
-      $scope.torrents = torrentsInfo.torrents
-      $scope.query = torrentsInfo.query
-      $scope.limit = torrentsInfo.limit
-      $scope.offset = torrentsInfo.offset
-      $scope.currentOffset = torrentsInfo.currentOffset
-      $scope.total = torrentsInfo.total
-      $scope.searchFinished = true
+      populateScopeWithTorrents(torrentsInfo)
       return
 
   $scope.startDownload = (torrentDefinition) ->
@@ -62,17 +47,41 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
     # copies properties over from 2 to 1 - torrentDefinition to torrentDownload
     _.extend torrentDownload, torrentDefinition
     torrentDefinition.state = "Starting..."
+    $scope.buttonText = "Starting..."
     torrentDownload.$save((data) ->
+      # The resource entity is actually data, but we want it to be data.torrent
+      # We have to move the __proto from data to data.torrent
       data.torrent.state = _str.capitalize data.torrent.state?.toLowerCase()
       _.extend torrentDefinition, data.torrent
+      $scope.buttonText = torrentDefinition.state
       return
     )
 
     # TODO: either refactor torrent API to use resource properly or use another endpoint
-    $scope.cancelDownload = (torrent) ->
-      torrent.$delete((data) ->
-        torrent.state = "Cleared"
-      )
+  $scope.cancelDownload = (torrent) ->
+    torrent.$delete((data) ->
+      torrent.state = "Cleared"
+      return
+    )
+    return
+
+  populateScopeWithTorrents = (torrentsInfo) ->
+    _.map torrentsInfo.torrents, (elem) ->
+      elem.state = _str.capitalize elem.state.toLowerCase()
+      return
+    # TODO: create proper torrent entities from search results to then use resource plugin
+    $scope.torrents = torrentsInfo.torrents
+    $scope.query = torrentsInfo.query
+    $scope.limit = torrentsInfo.limit
+    $scope.offset = torrentsInfo.offset
+    $scope.currentOffset = torrentsInfo.currentOffset
+    $scope.total = torrentsInfo.total
+    $scope.searchFinished = true
+    $scope.loading = false
+
+  onSuccess = (responseData) ->
+    populateScopeWithTorrents(responseData.torrentsInfo)
+    return
 
   return
 ]

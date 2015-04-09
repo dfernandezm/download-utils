@@ -82,19 +82,21 @@ class TorrentApiController {
 		
 		try {
 			$this->logger->debug("Torrent is " . $torrent->getMagnetLink());
-			if ($torrent->getMagnetLink() !== null) {
-				$torrent = $this->torrentService->startDownloadFromMagnetLink($torrent->getMagnetLink());
-			} else if ($torrent->getTorrentFileLink() !== null) {
-				$torrent = $this->torrentService->startDownloadFromTorrentFile($torrent->getTorrentFileLink());
-			} else {
-				return $this->generateErrorResponse("INVALID_TORRENT", 400);
-			}
+// 			if ($torrent->getMagnetLink() !== null) {
+// 				$torrent = $this->torrentService->startDownloadFromMagnetLink($torrent->getMagnetLink());
+// 			} else if ($torrent->getTorrentFileLink() !== null) {
+// 				$torrent = $this->torrentService->startDownloadFromTorrentFile($torrent->getTorrentFileLink());
+// 			} else {
+// 				return $this->generateErrorResponse("INVALID_TORRENT", 400);
+// 			}
 			
+			$torrent = $this->torrentService->startTorrentDownload($torrent, null, false);
+
 			return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent, 200, "torrent");
 			
 		} catch (\Exception $e) {
 			$this->logger->error("Error: " . $e->getMessage() . " -- " . str_replace("#", "\n#", $e->getTraceAsString()));	
-			return $this->generateErrorResponse($e->getMessage(), 400);
+			return $this->generateErrorResponse($e->getMessage(), 500);
 		}
 	}
 	

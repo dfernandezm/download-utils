@@ -60,7 +60,13 @@
                                     <td ng-bind="torrent.date"></td>
                                     <td>[[torrent.state]]</td>
                                     <td class="col-lg-6">
-                                        <button ng-show="torrent.state == 'New'" ng-click="startDownload(torrent)" target="_blank" class="btn btn-sm btn-primary col-lg-2">Download</button>
+                                        <button
+                                         ng-show="torrent.state == 'New'"
+                                         ng-click="startDownload(torrent)"
+                                         class="btn btn-sm btn-primary col-lg-2"
+                                         ng-disabled="torrent.state !== 'New'">
+                                          [[buttonText]]
+                                         </button>
 
                                         <button ng-show="torrent.state == 'Downloading' || torrent.state == 'Download_completed'" ng-click="cancelDownload(torrent)" target="_blank" class="btn btn-sm btn-primary col-lg-2">Cancel</button>
 

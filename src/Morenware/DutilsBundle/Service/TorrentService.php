@@ -69,14 +69,16 @@ class TorrentService {
 	
 	public function merge($torrent) {
 		$this->em->merge($torrent);
-		//TODO: remove, as this commits automatically and this method is intended to be called inside a transactional block
 		$this->em->flush();
+		$this->em->clear();
 	}
 	
 	public function update($torrent) {
 		$this->em->merge($torrent);
 		$this->em->flush();
+		$this->em->clear();
 	}
+
 	
 	public function find($id) {
 		return $this->em->find($id);
@@ -310,19 +312,19 @@ class TorrentService {
 					
 					$torrent = $this->findTorrentByHash($hash);
 					
-					if ($torrent != null && 
+					if ($torrent != null &&
 						$torrent->getState() == TorrentState::RENAMING &&
-						$torrent->getState() !== TorrentState::RENAMING_COMPLETED && 
+						$torrent->getState() !== TorrentState::RENAMING_COMPLETED &&
 						$torrent->getState() !== TorrentState::COMPLETED) {
-							
+			
 						$torrentName = $torrent->getTorrentName();
-						
-				        //TODO: Get subtitles requirement for this Movie/TV Show in the current profile
+							
+						//TODO: Get subtitles requirement for this Movie/TV Show in the current profile
 						$requireSubtitles = true;
 						$torrent->setRenamedPath($newPath);
-						
+							
 						if ($requireSubtitles) {
-							$torrent->setState(TorrentState::RENAMING_COMPLETED);	
+							$torrent->setState(TorrentState::RENAMING_COMPLETED);
 							$this->renamerLogger->debug("[RENAMING] With subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
 						} else {
 							$torrent->setState(TorrentState::COMPLETED);
@@ -330,12 +332,13 @@ class TorrentService {
 							$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName");
 							$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 						}
-						
+						//TODO: NOT WORKING Joder puta!!! -- It does not update the state to renaming completed!! -- doctrine cache???
 						$this->update($torrent);
-						
+			
 					} else {
 						$this->renamerLogger->warn("[RENAMING] Could not find torrent in DB with hash $hash");
-					}
+					}	
+						
 				} else {
 					$this->renamerLogger->warn("[RENAMING] Could not detect hash in path $originalPath, fix path creation to follow '/path/to/torrentName_hash/torrentName/filename.ext'");	
 				}
@@ -356,6 +359,7 @@ class TorrentService {
 			$torrent->setMagnetLink($magnetLink);
 			$torrent->setGuid(GuidGenerator::generate());
 			$torrent->setTitle("Unknown");
+			$torrent->setDate(new \DateTime());
 				
 			if ($origin != null) {
 				$torrent->setOrigin($origin);
@@ -374,6 +378,7 @@ class TorrentService {
 			$torrent->setTorrentFileLink($torrentFileLink);
 			$torrent->setGuid(GuidGenerator::generate());
 			$torrent->setTitle("Unknown");
+			$torrent->setDate(new \DateTime());
 	
 			if ($origin != null) {
 				$torrent->setOrigin($origin);
@@ -381,6 +386,57 @@ class TorrentService {
 		}
 		
 		return $this->transmissionService->startDownload($torrent, true);
+	}
+	
+	public function startTorrentDownload($torrent, $origin = null, $force = false) {
+		
+		$existingTorrent = null;
+		$fromFile = true;
+		if ($torrent->getTorrentFileLink() !== null) {
+			$torrentFileLink = $torrent->getTorrentFileLink();
+			$this->logger->debug("Starting download from torrent file  $torrentFileLink");
+			$existingTorrent = $this->findTorrentByFileLink($torrentFileLink);	
+		} else if ($torrent->getMagnetLink() !== null){
+			$torrentMagnetLink = $torrent->getMagnetLink();
+			$this->logger->debug("Starting download from magnet  $torrentMagnetLink");
+			$existingTorrent = $this->findTorrentByMagnetLink($torrentFileLink);
+			$fromFile = false;
+		} else {
+			$this->logger->error("No fileLink or magnet provided for Torrent download ");
+			// Not filelink or magnet provided
+			return null;
+		}
+		
+		if (strlen($torrent->getTitle()) == 0 || $torrent->getTitle() !== null) {
+			$torrent->setTitle("Unknown");
+		}
+		
+		$downloadingTorrent = null;
+		
+		if ($existingTorrent == null) {
+			$torrent->setGuid(GuidGenerator::generate());
+			
+			if ($origin != null) {
+				$torrent->setOrigin($origin);
+			}
+			
+			$downloadingTorrent = $this->transmissionService->startDownload($torrent, $fromFile);
+			
+		} else {
+			
+			if ($force || $existingTorrent->getState() == TorrentState::AWAITING_DOWNLOAD || $existingTorrent->getState() == null) {
+				$this->deleteTorrent($existingTorrent, true);
+				$torrent->setGuid(GuidGenerator::generate());
+				$downloadingTorrent = $this->transmissionService->startDownload($torrent, $fromFile);
+				
+			} else {
+				// This torrent is already downloading or terminated
+				$this->logger->error("The torrent provided is already downloading or finished (duplicated) -- " . $existingTorrent->getTorrentName());
+				return null;	
+			}
+		}
+		
+		return $downloadingTorrent;
 	}
 	
 	public function getTorrentsPathsAsBashArray($torrents, $baseDownloadsOrLibraryPath, $renamerOrSubtitles) {
@@ -434,6 +490,7 @@ class TorrentService {
 		}
 
 		$this->monitorLogger->info("[WORKFLOW-FINISHED] Processing of torrents finished");
+		$this->processManager->killWorkerProcessesIfRunning();
 	}
 	
 	public function findTorrentByMagnetOrFile($magnetOrTorrentFile) {

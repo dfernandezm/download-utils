@@ -31,6 +31,8 @@ class TransmissionService {
 	/** @DI\Inject("settings.service") */
 	public $settingsService;
 	
+	private $transmissionConfigured = false;
+	
     
    /**
 	* @DI\InjectParams({
@@ -47,9 +49,16 @@ class TransmissionService {
 	
 	//TODO: Add support for starting multiple downloads at the same time, like the upload feature in the WebInterface
 	// of Transmission - Check RPC api or WebInterface code
+	//TODO: !!!!!This should execute in a transaction block -- make all methods not doing flush, commits!!!!
 	public function startDownload($torrent, $isFromFile = false) {
 		
 		// Ensure transmission has the right configuration (cache this to not call every time)
+		
+		if (!$this->transmissionConfigured) {
+			$this->configureTransmission();
+			$this->transmissionConfigured = true;
+		}
+		
 		$magnetLink = $torrent->getMagnetLink();
 		
 	    $filenameParameter = $magnetLink;
@@ -102,7 +111,7 @@ class TransmissionService {
 	    		$torrent->setFilePath($newLocation);
 	    		
 	    		$this->updateTorrentState($torrent, TorrentState::DOWNLOADING);
-	    		$this->processManager->startDownloadsMonitoring();
+
 	    	}
 	    	
 	    } catch (\Exception $e) {
@@ -372,13 +381,11 @@ class TransmissionService {
 		
 		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
 		
-		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
-		
 		$requestPayload = array(
 				"method" => "session-set",
 				"arguments" => array("download-dir" => $baseDownloadsPath, 
 						             "script-torrent-done-enabled" => true,
-									 "script-torrent-done-filename" => "$notificationScript")
+									 "script-torrent-done-filename" => "/home/pi/notify.sh")
 		);
 	
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
