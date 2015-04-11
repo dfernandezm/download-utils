@@ -29,7 +29,7 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
       # Loading
       $scope.loading = true
       promise = apiFactory.searchTorrent searchQuery, sitesParam
-      utilsService.resolvePromiseWithCallbacks promise, onSuccess, null, null
+      utilsService.resolvePromiseWithCallbacks promise, onSuccess, onError, null, null
     return
   # When loading the page - injected JSON
   $scope.initTorrents = (torrentsInfo) ->
@@ -44,16 +44,20 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
 
   $scope.startDownload = (torrentDefinition) ->
     torrentDownload = new Torrent()
+    torrentDefinition.date = moment(torrentDefinition.date).format('YYYY-MM-DD[T]HH:mm:ssZZ')
     # copies properties over from 2 to 1 - torrentDefinition to torrentDownload
     _.extend torrentDownload, torrentDefinition
     torrentDefinition.state = "Starting..."
-    $scope.buttonText = "Starting..."
+    torrentDefinition.buttonText = "Starting..."
+    # Change the API handler to improve this
+
     torrentDownload.$save((data) ->
       # The resource entity is actually data, but we want it to be data.torrent
       # We have to move the __proto from data to data.torrent
       data.torrent.state = _str.capitalize data.torrent.state?.toLowerCase()
+      data.torrent.date = moment(data.torrent.date).format('YYYY-MM-DD')
       _.extend torrentDefinition, data.torrent
-      $scope.buttonText = torrentDefinition.state
+      torrentDefinition.buttonText = torrentDefinition.state
       return
     )
 
@@ -66,9 +70,10 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
     return
 
   populateScopeWithTorrents = (torrentsInfo) ->
-    _.map torrentsInfo.torrents, (elem) ->
-      elem.state = _str.capitalize elem.state.toLowerCase()
-      return
+    _.map torrentsInfo.torrents, (torrent) ->
+      torrent.state = _str.capitalize torrent.state.toLowerCase()
+      torrent.date = moment(torrent.date, 'YYYY-MM-DD').format('YYYY-MM-DD')
+      torrent.buttonText = "Download"
     # TODO: create proper torrent entities from search results to then use resource plugin
     $scope.torrents = torrentsInfo.torrents
     $scope.query = torrentsInfo.query
@@ -81,6 +86,11 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
 
   onSuccess = (responseData) ->
     populateScopeWithTorrents(responseData.torrentsInfo)
+    return
+
+  onError = (responseData) ->
+    $scope.errors = "Error in request"
+    console.log($scope.errors)
     return
 
   return

@@ -1,5 +1,6 @@
 window._str = require '../lib/underscore.string.min.js'
 window._ = require '../lib/underscore.min.js'
+window.moment = require 'moment'
 
 require '../lib/angular.min.js'
 require '../lib/angular-route.min.js'

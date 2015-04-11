@@ -399,7 +399,7 @@ class TorrentService {
 		} else if ($torrent->getMagnetLink() !== null){
 			$torrentMagnetLink = $torrent->getMagnetLink();
 			$this->logger->debug("Starting download from magnet  $torrentMagnetLink");
-			$existingTorrent = $this->findTorrentByMagnetLink($torrentFileLink);
+			$existingTorrent = $this->findTorrentByMagnetLink($torrentMagnetLink);
 			$fromFile = false;
 		} else {
 			$this->logger->error("No fileLink or magnet provided for Torrent download ");

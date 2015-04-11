@@ -82,15 +82,13 @@ class TorrentApiController {
 		
 		try {
 			$this->logger->debug("Torrent is " . $torrent->getMagnetLink());
-// 			if ($torrent->getMagnetLink() !== null) {
-// 				$torrent = $this->torrentService->startDownloadFromMagnetLink($torrent->getMagnetLink());
-// 			} else if ($torrent->getTorrentFileLink() !== null) {
-// 				$torrent = $this->torrentService->startDownloadFromTorrentFile($torrent->getTorrentFileLink());
-// 			} else {
-// 				return $this->generateErrorResponse("INVALID_TORRENT", 400);
-// 			}
-			
-			$torrent = $this->torrentService->startTorrentDownload($torrent, null, false);
+			if ($torrent->getMagnetLink() !== null) {
+				$torrent = $this->torrentService->startDownloadFromMagnetLink($torrent->getMagnetLink());
+			} else if ($torrent->getTorrentFileLink() !== null) {
+				$torrent = $this->torrentService->startDownloadFromTorrentFile($torrent->getTorrentFileLink());
+			} else {
+				return $this->generateErrorResponse("INVALID_TORRENT", 400);
+			}
 
 			return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent, 200, "torrent");
 			

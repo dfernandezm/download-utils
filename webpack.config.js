@@ -1,4 +1,5 @@
 var path = require("path");
+var webpack = require("webpack");
 module.exports = {
   module: {
     loaders: [
@@ -17,7 +18,16 @@ module.exports = {
   output: {
     path: './web/client/js/app',
     filename: 'init.js'
-  }
+  },
+   plugins: [
+    new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /de|fr|hu/)
+    // new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/)
+  ],
+  resolve: {
+            alias: {
+                moment: path.join(__dirname, "node_modules/moment/moment.js")
+            },
+        },
 
 
 };

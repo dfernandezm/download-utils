@@ -4,7 +4,7 @@ app.service 'utilsService', [ ->
     promise.success(successCallback).error(errorCallback)
     return
 
-  resolvePromiseWithCallbacks = (callPromise, successClosure, loadingAction, loadingActionStop) ->
+  resolvePromiseWithCallbacks = (callPromise, successClosure, errorCallback, loadingAction, loadingActionStop) ->
     loadingAction() unless !loadingAction
     resolve callPromise,
       ((data) ->
@@ -12,7 +12,7 @@ app.service 'utilsService', [ ->
         loadingActionStop() unless !loadingActionStop
         return),
       ((data) ->
-        $scope.errors = "Error in the request"
+        errorCallback(data)
         loadingActionStop() unless !loadingActionStop
         return)
     return

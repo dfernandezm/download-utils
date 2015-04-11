@@ -55,111 +55,24 @@ class SearchTorrentsService {
 		$this->logger = $logger;
 	}
 	
-	public function searchTorrentsInWebsites($searchQuery, $limit = 25, $offset = 0) {
+	public function searchTorrentsInWebsites($searchQuery, $websitesToSearch, $limit = 25, $offset = 0) {
 		
-		//$torrents = $this->searchEliteTorrent($searchQuery);
-		
-		// We need to paginate results here as the search retrieves the whole series in a single page...
-		//$torrents = $this->searchDivxTotal($searchQuery, $limit, $offset);
-		
-		$torrents = $this->searchKickassTorrents($searchQuery);
-		
-		return $torrents;
-	}
-	
-	
-	
-	public function searchEliteTorrent($searchQuery, $page = null) {
-		
-		$pagination = $page !== null ? "/pag:" . $page : "";
-		$baseUrl = "http://www.elitetorrent.net";
-		$useList = true;
-		
-		$listMode = (($useList) ? "/modo:listado" : "");
-		
-		$mainUrl = $baseUrl . "/busqueda/" . $searchQuery . $listMode . $pagination;
-		
-		//$getTorrentUrlPattern = '/href="(\/get-torrent[^\s"]+)/';
-		$resultsUrlsPattern = '/href="(\/torrent[^\s"]+)/';
-		$torrentMagnetLinkPattern = '/href="(magnet:[^\s"]+)/';
-		$nameAndIdTorrentPattern = '/href="\/torrent\/([0-9]+)\/.*title="([^"]+)/';
-		
-		
-		$resultsPageHtml = file_get_contents($mainUrl);
-		
+		// We need to paginate results here as the search could retrieves the whole series in a single page
 		$torrents = array();
-		$torrentNames = array();
-		$matches = array();
-			
-		if($useList) {
 		
-			if (preg_match_all($nameAndIdTorrentPattern, $resultsPageHtml, $matches)) {
-		
-				$idsList = $matches[1];
-				$namesList = $matches[2];
-		
-				for ($i = 0; $i < count($idsList); $i++) {
-		
-					$torrentId = $idsList[$i];
-					$torrentName = $namesList[$i];
-		
-					
-					if (!in_array($torrentName, $torrentNames, true)) {
+		foreach ($websitesToSearch as $websiteId) {
 
-						$torrent = new Torrent();
-						$torrent->setTorrentName($torrentName);
-						$torrentFileLink = $baseUrl . "/get-torrent/". $torrentId;
-						
-						$torrent->setTorrentFileLink($torrentFileLink);
-						$torrent->setOrigin(TorrentOrigin::SEARCH);
-						
-						$torrents[] = $torrent;
-						$torrentNames[] = $torrentNames;
-						
-						$this->logger->debug("[EliteTorrent] Getting Torrent $torrentName <==> $torrentFileLink");					
-					}
-				}
+			if ($websiteId === self::KICKASS_TORRENTS_ID) {
+				$torrents = $torrents + $this->searchKickassTorrents($searchQuery);
 			}
-		} else {
 			
-			// We need to navigate to each detail page -- this gives also the magnet link, but it is very slow		
-			if (preg_match_all($resultsUrlsPattern, $resultsPageHtml, $matches)) {
-			
-				foreach ($matches[1] as $partialTorrentUrl) {
-			
-					$indexSlash = strrpos($partialTorrentUrl, "/");
-
-					// get Name of torrent
-					$torrentName = substr($partialTorrentUrl, $indexSlash - strlen($partialTorrentUrl) + 1);
-					
-					$torrentDetailUrl = $baseUrl . $partialTorrentUrl;
-			
-					$torrentDetailHtml = file_get_contents($torrentDetailUrl);
-
-					$magnetMatches = array();
-					
-					// Get magnet links
-					if(preg_match($torrentMagnetLinkPattern, $torrentDetailHtml, $magnetMatches)) {
-						// echo "Magnet Link: " . $magnetMatches[1] . "\n";
-						$torrent = new Torrent();
-						$torrent->setTorrentName($torrentName);
-						$torrent->setMagnetLink($magnetMatches[1]);
-						$torrent->setOrigin(TorrentOrigin::SEARCH);
-			
-						if (!in_array($torrentName, $torrentNames, true)) {
-							$torrents[] = $torrent;
-							$torrentNames[] = $torrent->name;
-							$this->logger->debug("[EliteTorrent] Getting Torrent $torrentName <==> $torrentFileLink");
-						}
-					}
-				}
+			if ($websiteId === self::DIVX_TOTAL_ID) {
+				$torrents = $torrents + $this->searchDivxTotal($searchQuery);
 			}
 		}
-		
+			
 		return $torrents;
-		
 	}
-	
 	
 	public function searchDivxTotal($searchQuery, $limit = 1000, $offset = 0) {
 		
@@ -173,12 +86,6 @@ class SearchTorrentsService {
 		$innerPageLinkPattern = '/href="(\/series\/[^\s"]+)/';
 
 		$moreThanOnePagePattern = '/href="(buscar\.php\?busqueda=[^"]+)&pagina=([0-9])"/';
-
-		// use this to extract movies
-		// oviesInnerPageLinkPattern = '/href="(peliculas\/torrent\/[0-9]+\/.*\/)/'; 
-		
-		// Number of results
-		// OfResultsPattern = '/<h3>(.*)torrents[\s]+encontrados.*<\/h3>/';
 		
 		$resultsPageHtml = $this->getFromCache(self::DIVX_TOTAL_ID, self::MAIN_SECTION, $searchQuery);
 		
@@ -284,18 +191,6 @@ class SearchTorrentsService {
 		return array($torrents, $currentOffset, $total);
 	}
 	
-	public function hasMoreThanOnePageDivxTotal($resultsHtml, $moreThanOnePagePattern) {
-		
-		$matches = array();
-		
-		if (preg_match_all($moreThanOnePagePattern, $resultsHtml, $matches)) {
-			return array(true, max($matches[2]));
-		} else {
-			return array(false, 0);
-		}
-	}
-	
-	
    public function downloadTorrentToFileAndStart(Torrent $torrent) {
    		
    		$this->logger->debug("Downloading torrent file to  $torrent->getTorrentFileLink() to temporary path");
@@ -313,29 +208,6 @@ class SearchTorrentsService {
    		
    }	
    
-   private function getQualityFromTorrentFileName($torrentFileLink) {
-    //TODO:
-   }
-   
-   public function torrentAlreadyExists($torrentFileNameOrMagnetLink) {
-   	 $hash = base64_encode($torrentFileNameOrMagnetLink);
-   	 return $hash;
-   }
-   
-   public function writeCacheFile($websiteId, $section, $searchQuery, $content) {
- 	$filename = $this->getCacheFilename($websiteId, $section, $searchQuery);
- 	file_put_contents($filename, $content);
-   }
-   
-   public function getFromCache($websiteId, $section, $searchQuery) {
-   	 $filename = $this->getCacheFilename($websiteId, $section, $searchQuery);
-   	 if (file_exists($filename)) {
-   	 	$cachedContent = file_get_contents($filename);
-   	 	return $cachedContent;
-   	 } else {
-   	 	return null;
-   	 }
-   }
    
    public function getCacheFilename($websiteId, $section, $searchQuery) {
    	 date_default_timezone_set('UTC');
@@ -403,12 +275,18 @@ class SearchTorrentsService {
      			$torrent->setMagnetLink($magnetLink);
      			$torrent->setDate($date);
      			$torrent->setState("NEW");
+     			
+     			$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($magnetLink);
+     			
+     			if ($existingTorrent !== null) {
+     				$torrent->setState($existingTorrent->getState());
+     			}
+     			
      			$torrents[] = $torrent;
      		}
      	}	
      }
      
-     $this->logger->debug("==================== Returning!!!");
      return array($torrents, 25, $total);
      
      //TODO: use the feed link to generate Feed object and then generate torrents!!
@@ -459,5 +337,134 @@ class SearchTorrentsService {
    		
    		return $date;		
    }
+   
+   private function getQualityFromTorrentFileName($torrentFileLink) {
+   	//TODO:
+   }
+    
+   public function torrentAlreadyExists($torrentFileNameOrMagnetLink) {
+   	$hash = base64_encode($torrentFileNameOrMagnetLink);
+   	return $hash;
+   }
+    
+   public function writeCacheFile($websiteId, $section, $searchQuery, $content) {
+   	$filename = $this->getCacheFilename($websiteId, $section, $searchQuery);
+   	file_put_contents($filename, $content);
+   }
+    
+   public function getFromCache($websiteId, $section, $searchQuery) {
+   	$filename = $this->getCacheFilename($websiteId, $section, $searchQuery);
+   	if (file_exists($filename)) {
+   		$cachedContent = file_get_contents($filename);
+   		return $cachedContent;
+   	} else {
+   		return null;
+   	}
+   }
+   
+   public function hasMoreThanOnePageDivxTotal($resultsHtml, $moreThanOnePagePattern) {
+   
+   	$matches = array();
+   
+   	if (preg_match_all($moreThanOnePagePattern, $resultsHtml, $matches)) {
+   		return array(true, max($matches[2]));
+   	} else {
+   		return array(false, 0);
+   	}
+   	
+   }
+   
+
+   public function searchEliteTorrent($searchQuery, $page = null) {
+   
+   	$pagination = $page !== null ? "/pag:" . $page : "";
+   	$baseUrl = "http://www.elitetorrent.net";
+   	$useList = true;
+   
+   	$listMode = (($useList) ? "/modo:listado" : "");
+   
+   	$mainUrl = $baseUrl . "/busqueda/" . $searchQuery . $listMode . $pagination;
+   
+   	//$getTorrentUrlPattern = '/href="(\/get-torrent[^\s"]+)/';
+   	$resultsUrlsPattern = '/href="(\/torrent[^\s"]+)/';
+   	$torrentMagnetLinkPattern = '/href="(magnet:[^\s"]+)/';
+   	$nameAndIdTorrentPattern = '/href="\/torrent\/([0-9]+)\/.*title="([^"]+)/';
+   
+   
+   	$resultsPageHtml = file_get_contents($mainUrl);
+   
+   	$torrents = array();
+   	$torrentNames = array();
+   	$matches = array();
+   		
+   	if($useList) {
+   
+   		if (preg_match_all($nameAndIdTorrentPattern, $resultsPageHtml, $matches)) {
+   
+   			$idsList = $matches[1];
+   			$namesList = $matches[2];
+   
+   			for ($i = 0; $i < count($idsList); $i++) {
+   
+   				$torrentId = $idsList[$i];
+   				$torrentName = $namesList[$i];
+   
+   					
+   				if (!in_array($torrentName, $torrentNames, true)) {
+   
+   					$torrent = new Torrent();
+   					$torrent->setTorrentName($torrentName);
+   					$torrentFileLink = $baseUrl . "/get-torrent/". $torrentId;
+   
+   					$torrent->setTorrentFileLink($torrentFileLink);
+   					$torrent->setOrigin(TorrentOrigin::SEARCH);
+   
+   					$torrents[] = $torrent;
+   					$torrentNames[] = $torrentNames;
+   
+   					$this->logger->debug("[EliteTorrent] Getting Torrent $torrentName <==> $torrentFileLink");
+   				}
+   			}
+   		}
+   	} else {
+   			
+   		// We need to navigate to each detail page -- this gives also the magnet link, but it is very slow
+   		if (preg_match_all($resultsUrlsPattern, $resultsPageHtml, $matches)) {
+   				
+   			foreach ($matches[1] as $partialTorrentUrl) {
+   					
+   				$indexSlash = strrpos($partialTorrentUrl, "/");
+   
+   				// get Name of torrent
+   				$torrentName = substr($partialTorrentUrl, $indexSlash - strlen($partialTorrentUrl) + 1);
+   					
+   				$torrentDetailUrl = $baseUrl . $partialTorrentUrl;
+   					
+   				$torrentDetailHtml = file_get_contents($torrentDetailUrl);
+   
+   				$magnetMatches = array();
+   					
+   				// Get magnet links
+   				if(preg_match($torrentMagnetLinkPattern, $torrentDetailHtml, $magnetMatches)) {
+   					// echo "Magnet Link: " . $magnetMatches[1] . "\n";
+   					$torrent = new Torrent();
+   					$torrent->setTorrentName($torrentName);
+   					$torrent->setMagnetLink($magnetMatches[1]);
+   					$torrent->setOrigin(TorrentOrigin::SEARCH);
+   						
+   					if (!in_array($torrentName, $torrentNames, true)) {
+   						$torrents[] = $torrent;
+   						$torrentNames[] = $torrent->name;
+   						$this->logger->debug("[EliteTorrent] Getting Torrent $torrentName <==> $torrentFileLink");
+   					}
+   				}
+   			}
+   		}
+   	}
+   
+   	return $torrents;
+   
+   }
+    
    
 }
