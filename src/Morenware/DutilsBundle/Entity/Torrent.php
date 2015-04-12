@@ -98,7 +98,17 @@ class Torrent {
 	 */
 	private $renamedPath;
 	
+	/**
+	 * @ORM\Column(name="size", type="integer", nullable=true)
+	 */
+	private $size;
 	
+	/**
+	 * @ORM\Column(name="seeds", type="integer", nullable=true)
+	 */
+	private $seeds;
+	
+
 	public function getTitle() {
 		return $this->title;
 	}
@@ -211,4 +221,33 @@ class Torrent {
 		$this->renamedPath = $renamedPath;
 		return $this;
 	}
+	public function getSize() {
+		return $this->size;
+	}
+	public function setSize($size) {
+		$this->size = $size;
+		return $this;
+	}
+	public function getSeeds() {
+		return $this->seeds;
+	}
+	public function setSeeds($seeds) {
+		$this->seeds = $seeds;
+		return $this;
+	}
+	
+// 	public function cmpSeeds($torrentA, $torrentB) {
+   	 	
+// 		$seedsA = $torrentA->getSeeds();
+// 		$seedsB = "";
+		
+		
+//    	 	if ($torrentA->getSeeds() === $torrentA->getSeeds()) {
+//    	 		return 0;
+//    	 	}
+   	 	
+//    	 	return ($torrentA->getSeeds() < $torrentB->getSeeds()) ? -1 : 1; 	
+//    	 };
+	
+	
 }

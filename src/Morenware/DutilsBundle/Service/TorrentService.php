@@ -108,7 +108,10 @@ class TorrentService {
 	}
 	
 	public function findTorrentsByState($torrentState) {
-		return $this->getRepository()->findBy(array('state' => $torrentState));
+		$torrents = $this->getRepository()->findBy(array('state' => $torrentState));
+		$this->em->flush();
+		$this->em->clear();
+		return $torrents;
 	}
 	
 	public function findTorrentByGuid($guid) {
@@ -138,6 +141,8 @@ class TorrentService {
 		
 		// General logger
 		$this->monitorLogger->info("Updating data for $countTorrents torrents");
+		
+		//$downloadingTorrents = $this->findTorrentsByState(TorrentState::DOWNLOADING);
 		
 		foreach ($torrentsResponse as $torrentResponse) {
 			
@@ -190,6 +195,7 @@ class TorrentService {
 					$this->logger->info("[MONITOR] Torrent $torrentName finished downloading, starting renaming process");
 					$finishedTorrents[] = $existingTorrent;
 				}
+			
 				
 				$this->merge($existingTorrent);
 				
@@ -519,7 +525,7 @@ class TorrentService {
 			$this->transmissionService->deleteTorrent($torrent->getHash());
 		} else {
 			$renamedPath = $torrent->getRenamedPath();
-			$this->monitorLogger->warn("[MONITOR-WARNING] The processed torrent does not have a valid renamed path -- $renamedPath");
+			$this->monitorLogger->warn("[MONITOR-WARNING] The processed torrent ". $torrent->getTorrentName() ." does not have a valid renamed path -- $renamedPath");
 			$torrent->setState(TorrentState::COMPLETED_WITH_ERROR);
 			$this->update($torrent);
 		}

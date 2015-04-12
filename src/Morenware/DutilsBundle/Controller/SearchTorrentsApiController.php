@@ -43,12 +43,13 @@ class SearchTorrentsApiController extends Controller {
 		$searchQuery = $request->query->get("searchQuery", null);
 		$sitesParam = $request->query->get("sitesParam", null);
 		$websitesToSearch = array();
+		$this->logger->debug('Sites is  '. $sitesParam);
 		
 		if ($sitesParam !== null) {
 			$websitesToSearch = explode(",",$sitesParam);
 		}
 		
-		$this->logger->debug('Received query to search: '. $searchQuery . " websites is: " . $websitesToSearch[0]);
+		$this->logger->debug('Received query to search: '. $searchQuery . " websites is: " . print_r($websitesToSearch,true));
 		
 		list($torrents, $currentOffset, $total) = $this->searchService->searchTorrentsInWebsites($searchQuery, $websitesToSearch, 25, 0);    		
     		

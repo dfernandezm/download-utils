@@ -21,18 +21,21 @@ do
     echo "$FETCH_SUBS_CMD" >> $LOG_LOCATION
     eval $FETCH_SUBS_CMD
   done
-   
+  
+ # mkdir temp 
+ # cp *.eng.srt ./temp && cd ./temp && rename 's/\.eng\.srt/\.en.srt/' *.eng.srt  && cp *.en.srt ../ && cd ..
+ # cp *.spa.srt ./temp && cd ./temp && rename 's/\.spa\.srt/\.es.srt/' *.spa.srt  && cp *.es.srt ../ && cd .. 
+ # rm -rf temp 
+ 
   REPLACE1_CMD="$FB_EXEC -r -script fn:replace --log-file $LOG_LOCATION --action move --def \"e=[.](spa|spanish)[.]srt\" \"r=.es.srt\" \"$INPUT_PATH\""
   echo "Command executed: " >> $LOG_LOCATION
   echo "$REPLACE1_CMD " >> $LOG_LOCATION
   eval $REPLACE1_CMD
-  rm -f "$INPUT_PATH/*.spa.srt" 2> /dev/null
 
   REPLACE2_CMD="$FB_EXEC -r -script fn:replace --log-file $LOG_LOCATION --action move --def \"e=[.](eng|english)[.]srt\" \"r=.en.srt\" \"$INPUT_PATH\""
   echo "Command executed: " >> $LOG_LOCATION
   echo "$REPLACE2_CMD " >> $LOG_LOCATION
   eval $REPLACE2_CMD
-  rm -f "$INPUT_PATH/*.eng.srt" 2> /dev/null
   exit 0
 
 done

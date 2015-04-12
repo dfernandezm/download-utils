@@ -49,6 +49,8 @@
                                     <th>#</th>
                                     <th>Title</th>
                                     <th>Date</th>
+                                    <th>Size</th>
+                                    <th>Seeds</th>
                                     <th>State</th>
                                     <th>Actions</th>
                                 </tr>
@@ -58,6 +60,8 @@
                                     <td ng-bind="offset+$index+1"></td>
                                     <td ng-bind="torrent.torrentName"></td>
                                     <td ng-bind="torrent.date"></td>
+                                    <td ng-bind="torrent.size ? torrent.size + ' MB' : 'N/A'"></td>
+                                    <td ng-bind="torrent.seeds == 0 ? 0 : torrent.seeds"></td>
                                     <td>[[torrent.state]]</td>
                                     <td class="col-lg-6">
                                         <button

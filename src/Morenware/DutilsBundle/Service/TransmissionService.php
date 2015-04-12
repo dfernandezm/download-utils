@@ -98,10 +98,12 @@ class TransmissionService {
 	    		$transmissionId = $torrentInfo->id;
 	    		$hash = $torrentInfo->hashString;
 	    		
+	    		//TODO: Get also torrent seeds and size if not present
+	    		
 	    		$torrent->setHash($hash);
 	    		$torrent->setTransmissionId($transmissionId);
 	    		
-	    		if ($torrent->getTorrentName() == null ) {
+	    		if ($torrent->getTorrentName() == null) {
 	    			$torrent->setTorrentName($nameAdded);
 	    		}
 	    		

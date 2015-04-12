@@ -4,6 +4,7 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
   reloadPage = false
 
   $scope.searchSites = [
+      { id: "TPB", name: 'The Pirate Bay'},
       { id: "KT", name: 'Kickass Torrents'},
       { id: "DT", name: 'Divx Total', selected: true}
   ]
@@ -35,6 +36,7 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
   $scope.initTorrents = (torrentsInfo) ->
     $scope.buttonText = "Download"
     $scope.searchSites = [
+      { id: "TPB", name: 'The Pirate Bay'},
       { id: "KT", name: 'Kickass Torrents'},
       { id: "DT", name: 'Divx Total', selected: true}
     ]

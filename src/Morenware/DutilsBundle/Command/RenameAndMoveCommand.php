@@ -156,6 +156,8 @@ class RenameAndMoveCommand extends Command {
 						
 					$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
 							
+				} else {
+					$renamerLogger->debug("[RENAMER] No torrents in DOWNLOAD_COMPLETED state found");
 				}
 				
 				if (file_exists($terminatedFile)) {
