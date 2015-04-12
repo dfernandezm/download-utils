@@ -1,4 +1,4 @@
-app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$window', '$location', 'Torrent', ($scope, apiFactory, utilsService, $window, $location, Torrent) ->
+app.controller 'searchController', ['$scope', 'searchFactory', 'utilsService', '$window', '$location', 'Torrent', ($scope, searchFactory, utilsService, $window, $location, Torrent) ->
 
   promise = null
   reloadPage = false
@@ -9,6 +9,24 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
       { id: "DT", name: 'Divx Total', selected: true}
   ]
   $scope.buttonText = "Download"
+
+  # Way to add extra object/info to a success/error callback by defining this closure creator and
+  # http://stackoverflow.com/questions/939032/jquery-pass-more-parameters-into-callback/939206#939206
+  # http://stackoverflow.com/questions/24963151/passing-parameters-to-promises-callback-in-angularjs
+  startTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
+    return (responseData, status, hearders, config) ->
+      responseData.torrent.state = _str.capitalize responseData.torrent.state?.toLowerCase()
+      responseData.torrent.date = moment(responseData.torrent.date).format('YYYY-MM-DD')
+      _.extend torrentDefinition, responseData.torrent
+      torrentDefinition.state = 'Downloading'
+      torrentDefinition.buttonText = 'Cancel'
+      return
+
+  cancelTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
+    return (responseData, status, hearders, config) ->
+      torrentDefinition.state = "New"
+      torrentDefinition.buttonText = "Download"
+      return
 
   $scope.search = ->
 
@@ -29,9 +47,10 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
 
       # Loading
       $scope.loading = true
-      promise = apiFactory.searchTorrent searchQuery, sitesParam
+      promise = searchFactory.searchTorrent searchQuery, sitesParam, onSuccess, onError
       utilsService.resolvePromiseWithCallbacks promise, onSuccess, onError, null, null
     return
+
   # When loading the page - injected JSON
   $scope.initTorrents = (torrentsInfo) ->
     $scope.buttonText = "Download"
@@ -45,37 +64,35 @@ app.controller 'searchController', ['$scope', 'apiFactory', 'utilsService', '$wi
       return
 
   $scope.startDownload = (torrentDefinition) ->
-    torrentDownload = new Torrent()
+
+    torrentDownload = {}
     torrentDefinition.date = moment(torrentDefinition.date).format('YYYY-MM-DD[T]HH:mm:ssZZ')
     # copies properties over from 2 to 1 - torrentDefinition to torrentDownload
     _.extend torrentDownload, torrentDefinition
-    torrentDefinition.state = "Starting..."
     torrentDefinition.buttonText = "Starting..."
-    # Change the API handler to improve this
 
-    torrentDownload.$save((data) ->
-      # The resource entity is actually data, but we want it to be data.torrent
-      # We have to move the __proto from data to data.torrent
-      data.torrent.state = _str.capitalize data.torrent.state?.toLowerCase()
-      data.torrent.date = moment(data.torrent.date).format('YYYY-MM-DD')
-      _.extend torrentDefinition, data.torrent
-      torrentDefinition.buttonText = torrentDefinition.state
-      return
-    )
+    successCallback = startTorrentDownloadSuccessCallbackCreator(torrentDefinition)
+    searchFactory.startTorrentDownload torrentDownload, successCallback, onError
 
-    # TODO: either refactor torrent API to use resource properly or use another endpoint
-  $scope.cancelDownload = (torrent) ->
-    torrent.$delete((data) ->
-      torrent.state = "Cleared"
-      return
-    )
+    return
+
+  # TODO: either refactor torrent API to use resource properly or use another endpoint
+  $scope.cancelDownload = (torrentDefinition) ->
+
+    torrentGuidOrHash = torrentDefinition.hash
+    torrentDefinition.buttonText = "Cancelling..."
+
+    successCallback = cancelTorrentDownloadSuccessCallbackCreator(torrentDefinition)
+    searchFactory.cancelTorrentDownload torrentGuidOrHash, successCallback, onError
+
     return
 
   populateScopeWithTorrents = (torrentsInfo) ->
     _.map torrentsInfo.torrents, (torrent) ->
+      torrent.buttonText = if torrent.state == 'NEW' then "Download" else "Cancel"
       torrent.state = _str.capitalize torrent.state.toLowerCase()
       torrent.date = moment(torrent.date, 'YYYY-MM-DD').format('YYYY-MM-DD')
-      torrent.buttonText = "Download"
+
     # TODO: create proper torrent entities from search results to then use resource plugin
     $scope.torrents = torrentsInfo.torrents
     $scope.query = torrentsInfo.query

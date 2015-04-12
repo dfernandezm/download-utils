@@ -99,23 +99,31 @@ class TransmissionService {
 	    		$hash = $torrentInfo->hashString;
 	    		
 	    		//TODO: Get also torrent seeds and size if not present
+	    		$existingTorrent = $this->torrentService->findTorrentByHash($hash);
+	    		
+	    		if ($existingTorrent !== null) {
+
+	    			$torrent = $existingTorrent;
+	    			$this->logger->info("[STARTING-DOWNLOAD] Found torrent already in DB with the hash $hash -- " . $existingTorrent->getTorrentName());
+	    			
+	    		} 
 	    		
 	    		$torrent->setHash($hash);
 	    		$torrent->setTransmissionId($transmissionId);
-	    		
+	    	
 	    		if ($torrent->getTorrentName() == null) {
 	    			$torrent->setTorrentName($nameAdded);
 	    		}
 	    		
-	    		if ($torrent->getTitle() == "Unknown") {
+	    		if ($torrent->getTitle() === "Unknown") {
 	    			$torrent->setTitle($nameAdded);
 	    		}
-	    		 
+	    			
 	    		// Relocate based on hash
 	    		$newLocation = $this->relocateTorrent($nameAdded, $hash);
 	    		$torrent->setFilePath($newLocation);
 	    		
-	    		$this->updateTorrentState($torrent, TorrentState::DOWNLOADING);
+	    		$this->createOrUpdateTorrentData($torrent, TorrentState::DOWNLOADING);
 
 	    	}
 	    	
@@ -127,9 +135,10 @@ class TransmissionService {
 	    return $torrent;
 	}
 	
-	public function updateTorrentState($torrent, $torrentState) {
+	public function createOrUpdateTorrentData($torrent, $torrentState) {
 		$torrent->setState($torrentState);
-		$this->torrentService->merge($torrent);
+		//TODO: Warning! this flushes and clears, change to isolated if it is executing in a transaction block
+		$this->torrentService->update($torrent);
 	}
 	
 	/**

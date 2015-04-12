@@ -126,20 +126,24 @@ class ProcessManager {
 	public function prepareScriptToExecuteNotifyCall() {
 		
 		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
-		$processingPath = $mediacenterSettings->getProcessingTempPath();	
-		$this->logger->debug("Preparing script to notify");
+		
+		//TODO: This is temporary, write the script in the shared path between the server running this app and the 
+		// machine running transmission (which has to be accessible via http, normally http://localhost)
+		$processingPath = $mediacenterSettings->getBaseLibraryPath();	
+		
+		$this->logger->debug("Preparing script to notify...");
 		
 		$appRoot =  $this->kernel->getRootDir();
 		
 		if ($mediacenterSettings->getIsRemote()) {
 			$notifyCallUrl = "http://local-dutils/api/notify/finished";
 			$filePath = $appRoot . "/" . self::TEMPLATE_NOTIFY_SCRIPT_PATH;
-			$this->logger->debug("The template script path is $filePath");
+			$this->logger->debug("The template script for notification is in path $filePath");
 			$scriptContent = file_get_contents($filePath);
 			$scriptContent = str_replace("%NOTIFY_URL%", $notifyCallUrl, $scriptContent);
 		} else {
 			$filePath = $appRoot . "/" . self::TEMPLATE_COMMAND_SCRIPT_PATH;
-			$this->logger->debug("The template script path is $filePath");
+			$this->logger->debug("The template script used for notification is in path $filePath");
 			$scriptContent = file_get_contents($filePath);
 			$appRootPath = str_replace("/app","",$appRoot);
 			$scriptContent = str_replace("%SYMFONY_APP_ROOT%", $appRootPath, $scriptContent);
@@ -189,7 +193,7 @@ class ProcessManager {
 		$process = $this->startProcessAsynchronously($commandLineExecution);
 		
 		if ($waitCallback != null) {
-			// Black magic of arguments, closures, use: manage to pass in the $process to enable the callback to stop it
+			//Monitor the process running using black magic of arguments, closures, use: manage to pass in the $process to enable the callback to stop it if needed
 			$process->wait(function($type, $buffer) use ($process, $waitCallback) {
 				$waitCallback($type, $buffer, $process);
 			});
