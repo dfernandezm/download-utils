@@ -69,10 +69,12 @@ class TorrentService {
 		$this->em->persist($torrent);
 	}
 	
+	/** Warning: needs to be executed inside a transaction, otherwise does not hit the DB */
 	public function merge($torrent) {
 		$this->em->merge($torrent);
 	}
 	
+	/* Implicit transaction */
 	public function update($torrent) {
 		$this->em->merge($torrent);
 		$this->em->flush();
@@ -94,6 +96,7 @@ class TorrentService {
 		$this->em->clear();
 	}
 	
+	/** Needs to be executed inside transaction */
 	private function remove($torrent) {
 		$this->em->remove($torrent);
 	}
@@ -220,7 +223,7 @@ class TorrentService {
 				}
 			
 				
-				$this->merge($existingTorrent);
+				$this->update($existingTorrent);
 				
 				$updatedTorrents[] = $existingTorrent;
 				
@@ -476,7 +479,7 @@ class TorrentService {
 		
 		foreach ($subtitledTorrents as $torrent) {
 			$torrent->setState(TorrentState::COMPLETED);
-			$this->merge($torrent);
+			$this->update($torrent);
 			$torrentName = $torrent->getTorrentName();
 			$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName after fetching subtitles");
 			$this->clearTorrentFromTransmissionIfSuccessful($torrent);

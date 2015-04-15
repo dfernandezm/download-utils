@@ -432,7 +432,8 @@ class TransmissionService {
 	}
 	
 	private function getTorrentSubfolderPath($torrentName, $torrentHash) {
-		$newPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir() . "/" . $torrentName . "_" . $torrentHash;
+		$torrentNameForPath = str_replace("+", ".",str_replace(" ", ".", $torrentName));
+		$newPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir() . "/" . $torrentNameForPath . "_" . $torrentHash;
 		return $newPath;
 	}
 	

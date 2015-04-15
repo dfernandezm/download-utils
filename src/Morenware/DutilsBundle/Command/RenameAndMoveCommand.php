@@ -152,12 +152,12 @@ class RenameAndMoveCommand extends Command {
 						
 					}
 						
-					$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- starting further checks...");
+					$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- continue after renaming...");
 						
 					$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
 							
 				} else {
-					$renamerLogger->debug("[RENAMER] No torrents in DOWNLOAD_COMPLETED state found");
+					$this->renamerLogger->debug("[RENAMER] No torrents in DOWNLOAD_COMPLETED state found");
 				}
 				
 				if (file_exists($terminatedFile)) {
