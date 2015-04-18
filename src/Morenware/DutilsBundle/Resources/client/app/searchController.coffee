@@ -10,7 +10,7 @@ app.controller 'searchController', ['$scope', 'searchFactory', 'utilsService', '
   ]
   $scope.buttonText = "Download"
 
-  # Way to add extra object/info to a success/error callback by defining this closure creator and
+  # Way to add extra object/info to a success/error callback by defining this creator closure and
   # http://stackoverflow.com/questions/939032/jquery-pass-more-parameters-into-callback/939206#939206
   # http://stackoverflow.com/questions/24963151/passing-parameters-to-promises-callback-in-angularjs
   startTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
