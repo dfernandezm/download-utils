@@ -193,7 +193,8 @@ class SubtitlesCommand extends Command {
 		$inputPathsAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToFetchSubs, $mediacenterSettings->getBaseLibraryPath(), CommandType::FETCH_SUBTITLES);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathsAsBashArray, $scriptContent);
 		
-		$scriptContent = str_replace("%SUBS_LANGUAGES%", "en,es", $scriptContent);
+		# 2letter-3letter string, comma separated
+		$scriptContent = str_replace("%SUBS_LANGUAGES%", "en-eng,es-spa", $scriptContent);
 		
 		$scriptFilePath = $mediacenterSettings->getProcessingTempPath() . "/subtitles-filebot_$processPid.sh";
 		file_put_contents($scriptFilePath, $scriptContent);

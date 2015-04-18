@@ -99,23 +99,31 @@ class TransmissionService {
 	    		$hash = $torrentInfo->hashString;
 	    		
 	    		//TODO: Get also torrent seeds and size if not present
+	    		$existingTorrent = $this->torrentService->findTorrentByHash($hash);
+	    		
+	    		if ($existingTorrent !== null) {
+
+	    			$torrent = $existingTorrent;
+	    			$this->logger->info("[STARTING-DOWNLOAD] Found torrent already in DB with the hash $hash -- " . $existingTorrent->getTorrentName());
+	    			
+	    		} 
 	    		
 	    		$torrent->setHash($hash);
 	    		$torrent->setTransmissionId($transmissionId);
-	    		
+	    	
 	    		if ($torrent->getTorrentName() == null) {
 	    			$torrent->setTorrentName($nameAdded);
 	    		}
 	    		
-	    		if ($torrent->getTitle() == "Unknown") {
+	    		if ($torrent->getTitle() === "Unknown") {
 	    			$torrent->setTitle($nameAdded);
 	    		}
-	    		 
+	    			
 	    		// Relocate based on hash
 	    		$newLocation = $this->relocateTorrent($nameAdded, $hash);
 	    		$torrent->setFilePath($newLocation);
 	    		
-	    		$this->updateTorrentState($torrent, TorrentState::DOWNLOADING);
+	    		$this->createOrUpdateTorrentData($torrent, TorrentState::DOWNLOADING);
 
 	    	}
 	    	
@@ -127,18 +135,15 @@ class TransmissionService {
 	    return $torrent;
 	}
 	
-	public function updateTorrentState($torrent, $torrentState) {
+	public function createOrUpdateTorrentData($torrent, $torrentState) {
 		$torrent->setState($torrentState);
-		$this->torrentService->merge($torrent);
+		//TODO: Warning! this flushes and clears, change to isolated if it is executing in a transaction block
+		$this->torrentService->update($torrent);
 	}
 	
 	/**
-	 * Invoked from MonitorDownloadsCommand, so this is done in a separate php process
-	 *
-	 * This can be invoked by, in general two API endpoints:
-	 *
-	 * - One, to create a screen with progress bars showing status of torrents
-	 * - Two, for another one to tidy up DB state of torrents and start further processing on them
+	 * Poll Transmission for status of current torrents. The database is updated with
+	 * current status of torrents.
 	 *
 	 */
 	public function checkTorrentsStatus() {
@@ -423,7 +428,8 @@ class TransmissionService {
 	}
 	
 	private function getTorrentSubfolderPath($torrentName, $torrentHash) {
-		$newPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir() . "/" . $torrentName . "_" . $torrentHash;
+		$torrentNameForPath = str_replace("+", ".",str_replace(" ", ".", $torrentName));
+		$newPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir() . "/" . $torrentNameForPath . "_" . $torrentHash;
 		return $newPath;
 	}
 	

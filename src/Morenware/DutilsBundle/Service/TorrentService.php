@@ -28,8 +28,10 @@ class TorrentService {
 	/** @DI\Inject("transmission.service") */
 	public $transmissionService;
 	
-	private $transmissionConfigured = false;
+	/** @DI\Inject("transaction.service") */
+	public $transactionService;
 	
+	private $transmissionConfigured = false;
 	
    /**
 	* @DI\InjectParams({
@@ -67,12 +69,12 @@ class TorrentService {
 		$this->em->persist($torrent);
 	}
 	
+	/** Warning: needs to be executed inside a transaction, otherwise does not hit the DB */
 	public function merge($torrent) {
 		$this->em->merge($torrent);
-		$this->em->flush();
-		$this->em->clear();
 	}
 	
+	/* Implicit transaction */
 	public function update($torrent) {
 		$this->em->merge($torrent);
 		$this->em->flush();
@@ -88,7 +90,14 @@ class TorrentService {
 		return $this->repository->findAll();
 	}
 	
-	private function delete($torrent) {
+	public function delete($torrent) {
+		$this->em->remove($torrent);
+		$this->em->flush();
+		$this->em->clear();
+	}
+	
+	/** Needs to be executed inside transaction */
+	private function remove($torrent) {
 		$this->em->remove($torrent);
 	}
 	
@@ -99,12 +108,23 @@ class TorrentService {
 		return $torrent;
 	}
 	
+	public function findByHashIsolated($torrentHash) {
+		$torrent = $this->getRepository()->findOneBy(array('hash' => $torrentHash));
+		return $torrent;
+	}
+	
 	public function findTorrentByMagnetLink($magnetLink) {
-		return $this->getRepository()->findOneBy(array('magnetLink' => $magnetLink));
+		$torrent = $this->getRepository()->findOneBy(array('magnetLink' => $magnetLink));
+		$this->em->flush();
+		$this->em->clear();
+		return $torrent;
 	}
 	
 	public function findTorrentByFileLink($torrentFileLink) {
-		return $this->getRepository()->findOneBy(array('torrentFileLink' => $torrentFileLink));
+		$torrent = $this->getRepository()->findOneBy(array('torrentFileLink' => $torrentFileLink));
+		$this->em->flush();
+		$this->em->clear();
+		return $torrent;
 	}
 	
 	public function findTorrentsByState($torrentState) {
@@ -115,20 +135,26 @@ class TorrentService {
 	}
 	
 	public function findTorrentByGuid($guid) {
-		return $this->getRepository()->findOneBy(array('guid' => $guid));
+		$torrent = $this->getRepository()->findOneBy(array('guid' => $guid));
+		$this->em->flush();
+		$this->em->clear();
+		return $torrent;
 	}
 	
 	public function deleteTorrent($torrent, $deleteInTransmission = true) {
 		
 		if (!$deleteInTransmission) {
 			$this->delete($torrent);
-			$this->em->flush();
 		} else {
-			
-			$this->em->transactional(function($em) use ($torrent) {
+		    
+			$this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em, function() use ($torrent) {
+				// Fetch and Re-attach entity, as the object passed is a UI one
+			    $torrent = $this->findByHashIsolated($torrent->getHash());
+				$this->merge($torrent);
+				$this->remove($torrent);
 				$this->transmissionService->deleteTorrent($torrent->getHash());
-				$this->delete($torrent);		
-			});	
+			});
+			
 		}	
 
 	}
@@ -197,7 +223,7 @@ class TorrentService {
 				}
 			
 				
-				$this->merge($existingTorrent);
+				$this->update($existingTorrent);
 				
 				$updatedTorrents[] = $existingTorrent;
 				
@@ -354,86 +380,50 @@ class TorrentService {
 		}	
 	}
 	
-	
-	public function startDownloadFromMagnetLink($magnetLink, $origin = null) {
-	
-		$this->logger->debug("Starting download from link $magnetLink");	
-		$torrent = $this->findTorrentByMagnetLink($magnetLink);
-	
-		if ($torrent == null) {
-			$torrent = new Torrent();
-			$torrent->setMagnetLink($magnetLink);
-			$torrent->setGuid(GuidGenerator::generate());
-			$torrent->setTitle("Unknown");
-			$torrent->setDate(new \DateTime());
-				
-			if ($origin != null) {
-				$torrent->setOrigin($origin);
-			}
-		}
-		
-		return $this->transmissionService->startDownload($torrent);
-	}
-	
-	public function startDownloadFromTorrentFile($torrentFileLink, $origin = null) {
-		$this->logger->debug("Starting download from torrent file  $torrentFileLink");
-		$torrent = $this->findTorrentByFileLink($torrentFileLink);
-	
-		if ($torrent == null) {
-			$torrent = new Torrent();
-			$torrent->setTorrentFileLink($torrentFileLink);
-			$torrent->setGuid(GuidGenerator::generate());
-			$torrent->setTitle("Unknown");
-			$torrent->setDate(new \DateTime());
-	
-			if ($origin != null) {
-				$torrent->setOrigin($origin);
-			}
-		}
-		
-		return $this->transmissionService->startDownload($torrent, true);
-	}
-	
-	public function startTorrentDownload($torrent, $origin = null, $force = false) {
+	public function startTorrentDownload($torrent, $force = false) {
 		
 		$existingTorrent = null;
 		$fromFile = true;
+	
 		if ($torrent->getTorrentFileLink() !== null) {
 			$torrentFileLink = $torrent->getTorrentFileLink();
-			$this->logger->debug("Starting download from torrent file  $torrentFileLink");
-			$existingTorrent = $this->findTorrentByFileLink($torrentFileLink);	
+			$this->logger->debug("[TORRENT-API] Starting download from torrent file  $torrentFileLink");
+			$existingTorrent = $this->findTorrentByFileLink($torrentFileLink);
 		} else if ($torrent->getMagnetLink() !== null){
 			$torrentMagnetLink = $torrent->getMagnetLink();
-			$this->logger->debug("Starting download from magnet  $torrentMagnetLink");
+			$this->logger->debug("[TORRENT-API] Starting download from magnet  $torrentMagnetLink");
 			$existingTorrent = $this->findTorrentByMagnetLink($torrentMagnetLink);
 			$fromFile = false;
 		} else {
 			$this->logger->error("No fileLink or magnet provided for Torrent download ");
 			// Not filelink or magnet provided
-			return null;
+			throw new \Exception("No fileLink or magnet provided for Torrent download");
 		}
 		
-		if (strlen($torrent->getTitle()) == 0 || $torrent->getTitle() !== null) {
+		if (strlen($torrent->getTitle()) == 0 || $torrent->getTitle() == null) {
 			$torrent->setTitle("Unknown");
+		}
+		
+		if (strlen($torrent->getTorrentName()) == 0 || $torrent->getTorrentName() == null) {
+			$torrent->setTorrentName("Unknown");
 		}
 		
 		$downloadingTorrent = null;
 		
 		if ($existingTorrent == null) {
 			$torrent->setGuid(GuidGenerator::generate());
-			
-			if ($origin != null) {
-				$torrent->setOrigin($origin);
-			}
-			
 			$downloadingTorrent = $this->transmissionService->startDownload($torrent, $fromFile);
 			
 		} else {
 			
 			if ($force || $existingTorrent->getState() == TorrentState::AWAITING_DOWNLOAD || $existingTorrent->getState() == null) {
-				$this->deleteTorrent($existingTorrent, true);
-				$torrent->setGuid(GuidGenerator::generate());
-				$downloadingTorrent = $this->transmissionService->startDownload($torrent, $fromFile);
+				$this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em, 
+				 function() use ($existingTorrent, $torrent, $fromFile, $downloadingTorrent) {
+					$this->deleteTorrent($existingTorrent, true);
+					$torrent->setGuid(GuidGenerator::generate());
+					$downloadingTorrent = $this->transmissionService->startDownload($torrent, $fromFile);
+				 });	
+				
 				
 			} else {
 				// This torrent is already downloading or terminated
@@ -489,7 +479,7 @@ class TorrentService {
 		
 		foreach ($subtitledTorrents as $torrent) {
 			$torrent->setState(TorrentState::COMPLETED);
-			$this->merge($torrent);
+			$this->update($torrent);
 			$torrentName = $torrent->getTorrentName();
 			$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName after fetching subtitles");
 			$this->clearTorrentFromTransmissionIfSuccessful($torrent);
@@ -520,12 +510,13 @@ class TorrentService {
 
 	
 	public function clearTorrentFromTransmissionIfSuccessful($torrent) {
-		//TODO: if remote, the path could not be accessible
+		//TODO: if remote, the path could not be accessible for the server this app is running (ensure it is mounted)
 		if (file_exists($torrent->getRenamedPath())) {
 			$this->transmissionService->deleteTorrent($torrent->getHash());
 		} else {
 			$renamedPath = $torrent->getRenamedPath();
-			$this->monitorLogger->warn("[MONITOR-WARNING] The processed torrent ". $torrent->getTorrentName() ." does not have a valid renamed path -- $renamedPath");
+			$this->monitorLogger->warn("[MONITOR-WARNING] The processed torrent ". $torrent->getTorrentName() 
+					. " does not have a valid renamed path or cannot be accessed -- $renamedPath");
 			$torrent->setState(TorrentState::COMPLETED_WITH_ERROR);
 			$this->update($torrent);
 		}

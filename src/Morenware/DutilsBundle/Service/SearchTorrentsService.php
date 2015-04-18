@@ -89,11 +89,10 @@ class SearchTorrentsService {
 			$this->logger->debug("Current offset is $currentOffset");
 			$total = $total + $totalFound;
 		}
-		
-		$torrents = $this->sortBySeeds($torrents);
+
 		$torrents = $this->sortByDate($torrents);
-		
-		
+		$torrents = $this->sortBySeeds($torrents);
+
 		return array($torrents, $currentOffset, $total);
 	}
 	
@@ -277,7 +276,7 @@ class SearchTorrentsService {
      			$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($magnetLink);
      			
      			if ($existingTorrent !== null) {
-     				$torrent->setState($existingTorrent->getState());
+     				$torrent = $existingTorrent;
      			}
      			
      			$torrents[] = $torrent;
