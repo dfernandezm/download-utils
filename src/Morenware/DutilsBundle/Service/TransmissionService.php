@@ -142,12 +142,8 @@ class TransmissionService {
 	}
 	
 	/**
-	 * Invoked from MonitorDownloadsCommand, so this is done in a separate php process
-	 *
-	 * This can be invoked by, in general two API endpoints:
-	 *
-	 * - One, to create a screen with progress bars showing status of torrents
-	 * - Two, for another one to tidy up DB state of torrents and start further processing on them
+	 * Poll Transmission for status of current torrents. The database is updated with
+	 * current status of torrents.
 	 *
 	 */
 	public function checkTorrentsStatus() {
