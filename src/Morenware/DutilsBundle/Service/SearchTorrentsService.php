@@ -1,5 +1,5 @@
 <?php
-namespace Morenware\DutilsBundle\Service;
+namespace  Morenware\DutilsBundle\Service;
 use JMS\DiExtraBundle\Annotation\Service;
 use JMS\DiExtraBundle\Annotation as DI;
 use Doctrine\Common\Persistence\ObjectManager;
@@ -9,6 +9,9 @@ use Morenware\DutilsBundle\Entity\TorrentContentType;
 use Morenware\DutilsBundle\Entity\TorrentState;
 use Morenware\DutilsBundle\Entity\Feed;
 use Symfony\Component\DomCrawler\Crawler;
+use Morenware\DutilsBundle\Service\Search\SearchWebsite;
+use Morenware\DutilsBundle\Service\Search\SearchWebsiteType;
+use Morenware\DutilsBundle\Service\Search\TorrentDateType;
 
 /** @Service("search.service") */
 class SearchTorrentsService {
@@ -32,6 +35,9 @@ class SearchTorrentsService {
 	public $searchCacheDir;
 	
 
+	private $searchWebsites;
+	
+	
 	const MAIN_SECTION = "MAIN";
 	const DETAIL_SECTION = "DETAIL";
 	const DIVX_TOTAL_ID = "DT";
@@ -54,6 +60,36 @@ class SearchTorrentsService {
 	public function __construct($logger) {
 
 		$this->logger = $logger;
+		$this->initializeWebsites();
+	}
+	
+	private function initializeWebsites() {
+		$websites = array();
+		
+		// The Pirate Bay
+		$pirateBay = new SearchWebsite();
+		$pirateBay->setName("The Pirate Bay");
+		$pirateBay->setMainUrl("http://pirateproxy.sx"); 
+		$pirateBay->setSiteId(self::PIRATE_BAY_ID);
+		$pirateBay->setStructureType(SearchWebsiteType::LIST_TYPE);
+		$pirateBay->setTorrentDateType(TorrentDateType::DATE);
+		
+		// 0/3/0 means order by uploaded date in The Pirate bay
+		$pirateBay->setSearchUrl("{baseUrl}/search/{searchQuery}/0/3/0");
+		$pirateBay->setTorrentMainResultsFilterString("#main-content #searchResult tr");		
+		$pirateBay->setTorrentTitlesFilterString("td > div.detName > a");
+		$pirateBay->setTorrentMagnetLinksFilterString("td > a"); // The first link
+		$pirateBay->setTorrentAttributesFilterString("td > .detDesc");
+
+		
+		// Kickass Torrents
+		
+		
+		// DivxTotal
+		
+		$websites["TPB"] = $pirateBay;
+				
+		$this->searchWebsites = $websites;
 	}
 	
 	public function searchTorrentsInWebsites($searchQuery, $websitesToSearch, $limit = 25, $offset = 0) {
@@ -292,11 +328,19 @@ class SearchTorrentsService {
    
    public function searchThePirateBay($searchQuery, $limit = 25, $offset = 0) {
    	
-   	$baseUrl = "http://pirateproxy.sx";
+   	$pirateBaySite = $this->searchWebsites["TPB"];
+   	
+   	// $pirateBaySite2 = new SearchWebsite();
+   	
+   	$mainUrl = $pirateBaySite->getMainUrl();
    	$searchQuery = urlencode($searchQuery);
+   	
    	// 0/3/0 means order by uploaded date in The Pirate bay
-   	$searchUrl = $baseUrl . "/search/$searchQuery/0/3/0";
-   	 
+   	$partialSearchUrl = str_replace("{baseUrl}",$mainUrl, $pirateBaySite->getSearchUrl());
+   	$searchUrl = str_replace("{searchQuery}", $searchQuery, $partialSearchUrl);
+
+   	$this->logger->debug("[SEARCH-TPB] Searching using $searchUrl");
+   	
    	$torrents = array();
    	$currentOffset = 0;
    	$total = 0;
@@ -310,16 +354,19 @@ class SearchTorrentsService {
    		return array($torrents, $total, $total);
    	}
    	
-   	$crawlerRows = $this->getInitialFilterFromResultsPage($resultsPageHtml, "#main-content #searchResult tr");
+   	$crawlerRows = $this->getInitialFilterFromResultsPage($resultsPageHtml, $pirateBaySite->getTorrentMainResultsFilterString());
    	
    	$total = iterator_count($crawlerRows) - 1; // minus header row
    	 
    	$torrents = array();
 
-   	$torrentTitlesFilterExpression = "td > div.detName > a";
-   	$magnetLinksOrTorrentFilesFilterExpression = "td > a"; // The first link
+   	$torrentTitlesFilterExpression = $pirateBaySite->getTorrentTitlesFilterString();
+   	$magnetLinksOrTorrentFilesFilterExpression = $pirateBaySite->getTorrentMagnetLinksFilterString();
+   	
    	// Only date and size
-   	$torrentAttributesFilterExpression = "td > .detDesc";
+   	$torrentAttributesFilterExpression = $pirateBaySite->getTorrentAttributesFilterString();
+   	
+   	// In TPB, the seeders and leechers are in the regular table at the rightmost spaces
    	$seedersAndLeechersFilterExpression = 'td';
    	
    	if ($total > 1) {
@@ -327,7 +374,6 @@ class SearchTorrentsService {
    		$this->logger->debug("[SEARCH-PIRATEBAY] Found $total rows to filter as results");
    		
    		foreach ($crawlerRows as $i => $content) {
-   			
    					
    			$subCrawler = new Crawler($content);
    			
@@ -335,13 +381,13 @@ class SearchTorrentsService {
    				continue;
    			}
    			
-   			
    			$titles = $subCrawler->filter($torrentTitlesFilterExpression)->extract("_text");
    			$magnetLinks = $subCrawler->filter($magnetLinksOrTorrentFilesFilterExpression)->eq(0)->extract("href");
    			
    			// size, date
    			$torrentAttributes = $this->getTorrentAttributesResultFromTPB($subCrawler, $torrentAttributesFilterExpression);
    			$seedsText = $subCrawler->filter($seedersAndLeechersFilterExpression)->eq(2)->text();
+   			
    			$count = count($titles);
    			
    			for ($k = 0; $k < $count; $k++) {
@@ -353,34 +399,45 @@ class SearchTorrentsService {
    				
    				$seeds = intval($seedsText);
    				
-   				$this->logger->debug("[SEARCH-TPB] ====Torrent found: title $torrentName,
+   				$this->logger->debug("[SEARCH-TPB] Torrent found: title $torrentName,
    						size $size, seeds $seeds, date " . $date->format('Y-m-d'));
    				
-   				$torrent = new Torrent();
-   				$torrent->setTorrentName($torrentName);
-   				$torrent->setTitle($torrentName);
-   				$torrent->setMagnetLink($magnetLink);
-   				$torrent->setDate($date);
+   				$torrent = $this->createTorrentSearchResult($torrentName, $torrentName, $magnetLink, null, $date, $size, $seeds);
    				
-   				// Store size in MB
-   				$torrent->setSize($size);
-   				$torrent->setSeeds($seeds);
-   				$torrent->setState("NEW");
-   				
-   				$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($magnetLink);
-   				
-   				if ($existingTorrent !== null) {
-   					$torrent->setState($existingTorrent->getState());
-   				}
-   				$this->logger->debug("[SEARCH-TPB] === Torrent seeds " . $torrent->getSeeds());
    				$torrents[] = $torrent;
    			}
    		}
    	}
    	
-   	return array($torrents, $total, $total);
+   	$currentOffset = $total;
+   	
+   	return array($torrents, $currentOffset, $total);
+   	
    }
    
+   private function createTorrentSearchResult($torrentName, $torrentTitle, $magnetLink, $fileLink, $date, $size, $seeds) {
+   	  
+	   	$torrent = new Torrent();
+	   	$torrent->setTorrentName($torrentName);
+	   	$torrent->setTitle($torrentName);
+	   	$torrent->setMagnetLink($magnetLink);
+	   	$torrent->setTorrentFileLink($fileLink);
+	   	$torrent->setDate($date);
+	   		
+	   	// Store size in MB
+	   	$torrent->setSize($size);
+	   	$torrent->setSeeds($seeds);
+	   	
+	   	$torrent->setState("NEW");
+	   		
+	   	$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($magnetLink !== null ? $magnetLink : $fileLink);
+	   		
+	   	if ($existingTorrent !== null) {
+	   		$torrent->setState($existingTorrent->getState());
+	   	}
+	   	
+	   	return $torrent;
+   }
    
    private function getInitialSearchResultsFromSite($siteId, $siteSection, $searchUrl, $urlEncodedSearchQuery) {
 	   	$resultsPageHtml = $this->getFromCache($siteId, $siteSection, $urlEncodedSearchQuery);
