@@ -52,7 +52,9 @@ class SearchTorrentsApiController extends Controller {
 		$this->logger->debug('Received query to search: '. $searchQuery . " websites is: " . print_r($websitesToSearch,true));
 		
 		list($torrents, $currentOffset, $total) = $this->searchService->searchTorrentsInWebsites($searchQuery, $websitesToSearch, 25, 0);    		
-    		
+
+		$this->logger->debug('Torrents are: ' . print_r($torrents,true));
+		
     	$torrentsInfo =
     				array('torrents' => $torrents, 
     					  'limit' => 25,
