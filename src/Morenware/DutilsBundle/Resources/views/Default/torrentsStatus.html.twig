@@ -1,0 +1,99 @@
+{% extends 'MorenwareDutilsBundle::base.html.twig' %}
+
+{% block body %}
+
+
+<div class="torrentsStatusPage" ng-controller="torrentsStatusController" ng-init="init({{torrents}})">
+   <div class="row">
+	    <div class="col-lg-12">
+	     <h1 class="page-header">Torrents Status</h1>
+	    </div>
+	 </div>
+   <div class="well">
+    	<div class="row status-form-row">
+    		 <div class="pull-left col-sm-8">
+            	<input type="text" class="form-control" ng-model="query" placeholder="Buscar...">
+          </div>
+    	</div>
+
+
+    	<div class="row status-form-row">
+          <div class="pull-left col-sm-2">
+            <select class="form-control" name="category">
+              <option>Today</option>
+              <option>Last week</option>
+              <option>Last month</option>
+              <option>All time</option>
+            </select>
+          </div>
+
+          <div class="pull-left col-sm-2">
+            <select class="form-control" name="category">
+              <option>Comparator</option>
+              <option>Between</option>
+              <option>After</option>
+              <option>Before</option>
+            </select>
+          </div>
+
+          <div class="pull-left col-sm-2">
+            <input type="text" class="form-control col-lg-2" ng-model="dateFrom" placeholder="Date ini...">
+          </div>
+          <div class="pull-left col-sm-2">
+            <input type="text" class="form-control" ng-model="dateTo" placeholder="Date end...">
+          </div>
+
+    	</div>
+
+      <div class="row status-form-row">
+
+        <div class="pull-left">
+        <button type="button" class="btn btn-primary" aria-label="Left Align">
+           Filter
+        </button>
+      </div>
+
+      </div>
+   </div>
+
+
+  <div class="row search-results" role="tabpanel">
+
+    <tabset>
+      <tab heading="Downloading" active="true">
+        <div class="col-lg-10">
+          <torrents-table torrents="torrents"
+              fields="Title,Date,Size,Seeds,PercentDone"
+              actions="start,cancel"
+              filter-state="DOWNLOADING" />
+        </div>
+      </tab>
+      <tab heading="Awaiting download">
+        <torrents-table torrents="torrents"
+            fields="Title,Date,Size,Seeds"
+            actions="restart,delete"
+            filter-state="AWAITING_DOWNLOAD" />
+      </tab>
+      <tab heading="Processing">
+        <torrents-table torrents="torrents"
+            fields="Title,State,Date,Size,Seeds"
+            actions="restart,delete"
+            filter-state="DOWNLOAD_COMPLETED,RENAMING,RENAMING_COMPLETED,FETCHING_SUBTITLES" />
+      </tab>
+      <tab heading="Completed">
+        <torrents-table torrents="torrents"
+            fields="Title,Date,Size,Seeds"
+            actions="restart,delete"
+            filter-state="COMPLETED" />
+      </tab>
+      <tab heading="Failed">
+        <torrents-table torrents="torrents"
+            fields="Title,Date,Size,Seeds"
+            actions="restart,delete"
+            filter-state="COMPLETED_WITH_ERROR,FAILED_DOWNLOAD_ATTEMPT" />
+      </tab>
+    </tabset>
+  </div>
+
+
+{% endblock %}

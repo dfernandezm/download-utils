@@ -61,7 +61,7 @@ class RenameAndMoveCommand extends Command {
 	const PID_FILE_NAME = "renamer.pid";
 
     const FILEBOT_SCRIPTS_PATH = "../components/filebot/scripts";
-	
+
 	/**
 	 * @DI\InjectParams({
 	 *     "logger" = @DI\Inject("logger"),
@@ -75,11 +75,13 @@ class RenameAndMoveCommand extends Command {
 		parent::__construct();
 	}
 
+
 	protected function configure() {
 		$this
 		->setName('dutils:renamer')
 		->setDescription('Rename files after download completion');
 	}
+
 
 	protected function execute(InputInterface $input, OutputInterface $output) {
 
@@ -90,6 +92,7 @@ class RenameAndMoveCommand extends Command {
 		$output->writeln("[RENAMING] Renamer process started with PID $pid");
 
         /** @var  \Morenware\DutilsBundle\Entity\MediaCenterSettings $mediacenterSettings */
+
 		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
 		$processingTempPath = $mediacenterSettings->getProcessingTempPath();
 
@@ -172,11 +175,11 @@ class RenameAndMoveCommand extends Command {
 						}
 
 					} else {
+
 						$polls = 0;
 					}
 
 					$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- continue after renaming...");
-
 					$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename);
 
 				} else {
@@ -208,7 +211,6 @@ class RenameAndMoveCommand extends Command {
 			}
 		}
 	}
-
 
     /**
      * @param $torrentsToRename
@@ -244,6 +246,7 @@ class RenameAndMoveCommand extends Command {
 		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", $libraryBasePath, $scriptContent);
         $scriptContent = str_replace("%AMC_SCRIPT_PATH%", $amcScriptPath, $scriptContent);
 
+
 		if ($xbmcHost != null) {
 			$scriptContent = str_replace("%XBMC_HOSTNAME%", $xbmcHost, $scriptContent);
 		}
@@ -251,8 +254,6 @@ class RenameAndMoveCommand extends Command {
 		$scriptFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename-filebot_$processPid.sh";
 		file_put_contents($scriptFilePath, $scriptContent);
 		file_put_contents($renamerLogFilePath . ".log","");
-		
-
 		return array($scriptFilePath, $renamerLogFilePath . ".log");
 	}
 

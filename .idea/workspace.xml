@@ -92,7 +92,6 @@
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/src/Morenware/DutilsBundle/Service/SettingsService.php" />
         <option value="$PROJECT_DIR$/src/Morenware/DutilsBundle/Util/TransactionService.php" />
-        <option value="$PROJECT_DIR$/src/Morenware/DutilsBundle/Service/TorrentService.php" />
         <option value="$PROJECT_DIR$/app/scripts/multiple-rename-filebot.sh" />
         <option value="$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/SubtitlesCommand.php" />
         <option value="$PROJECT_DIR$/deploy/scripts/provision/install-requirements-raspberry.sh" />
@@ -155,7 +154,6 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -208,6 +206,7 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">

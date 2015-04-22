@@ -21,8 +21,9 @@ do
   do
     TWO_CODE_LANG=$( echo "$LNG" | awk -F '-' '{print $1}')
     THREE_CODE_LANG=$( echo "$LNG" | awk -F '-' '{print $2}')
-    # We do -get-subtitles as if we would have done -get-missing-subtitles, it would only fetch subtitles in case there are no previous ones
+
     FETCH_SUBS_CMD="$FB_EXEC -get-missing-subtitles \"$INPUT_PATH\" --lang $TWO_CODE_LANG --output srt --encoding utf8 -non-strict --log-file \"$LOG_LOCATION\""
+
     echo "Command executed:" >> $LOG_LOCATION
     echo "$FETCH_SUBS_CMD" >> $LOG_LOCATION
     eval $FETCH_SUBS_CMD
@@ -44,8 +45,7 @@ do
 
     echo "Deleting temporary subs $RM_COPIED_CMD"
     eval $RM_COPIED_CMD
-
-
+    
   done
 
 done
