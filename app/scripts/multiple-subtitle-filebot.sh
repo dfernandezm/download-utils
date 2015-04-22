@@ -10,30 +10,38 @@ INPUT_ARRAY=%INPUT_PATHS%
 COUNT=${#INPUT_ARRAY[@]}
 echo "Input Array: ${INPUT_ARRAY[*]}"
 
-for ((i = 0; i < ${#INPUT_ARRAY[@]}; i++)) 
+TMPDIR=/tmp/$RANDOM
+
+mkdir $TMPDIR
+
+for ((i = 0; i < ${#INPUT_ARRAY[@]}; i++))
 do
   INPUT_PATH="${INPUT_ARRAY[$i]}"
   for LANG in $SUBS_LANG
   do
-    # We do -get-subtitles as if we would have done -get-missing-subtitles, it would only fetch subtitles in case there are no previous ones 
-    FETCH_SUBS_CMD="$FB_EXEC -r -get-subtitles \"$INPUT_PATH\" --lang $LANG --output srt --encoding utf8 -non-strict --log-file \"$LOG_LOCATION\""
+    TWO_CODE_LANG=$( echo "$LANG" | awk -F '-' '{print $1}')
+    THREE_CODE_LANG=$( echo "$LANG" | awk -F '-' '{print $2}')
+    # We do -get-subtitles as if we would have done -get-missing-subtitles, it would only fetch subtitles in case there are no previous ones
+    FETCH_SUBS_CMD="$FB_EXEC -r -get-subtitles \"$INPUT_PATH\" --lang $TWO_CODE_LANG --output srt --encoding utf8 -non-strict --log-file \"$LOG_LOCATION\""
     echo "Command executed:" >> $LOG_LOCATION
     echo "$FETCH_SUBS_CMD" >> $LOG_LOCATION
     eval $FETCH_SUBS_CMD
-  done
-   
-  REPLACE1_CMD="$FB_EXEC -r -script fn:replace --log-file $LOG_LOCATION --action move --def \"e=[.](spa|spanish)[.]srt\" \"r=.es.srt\" \"$INPUT_PATH\""
-  echo "Command executed: " >> $LOG_LOCATION
-  echo "$REPLACE1_CMD " >> $LOG_LOCATION
-  eval $REPLACE1_CMD
-  rm -f "$INPUT_PATH/*.spa.srt" 2> /dev/null
 
-  REPLACE2_CMD="$FB_EXEC -r -script fn:replace --log-file $LOG_LOCATION --action move --def \"e=[.](eng|english)[.]srt\" \"r=.en.srt\" \"$INPUT_PATH\""
-  echo "Command executed: " >> $LOG_LOCATION
-  echo "$REPLACE2_CMD " >> $LOG_LOCATION
-  eval $REPLACE2_CMD
-  rm -f "$INPUT_PATH/*.eng.srt" 2> /dev/null
-  exit 0
+    # 3-letter language code to 2-letter language code copy
+    COPY_IN_CMD="cp \"$INPUT_PATH\"/*.$THREE_CODE_LANG.srt $TMPDIR"
+    COPY_BACK_CMD="cp $TMPDIR/*.$TWO_CODE_LANG.srt \"$INPUT_PATH\""
+
+    echo "Executing $COPY_IN_CMD"
+    eval $COPY_IN_CMD
+
+    RENAME_CMD="rename 's/\.$THREE_CODE_LANG\.srt/\.$TWO_CODE_LANG.srt/' $TMPDIR/*.$THREE_CODE_LANG.srt"
+    echo "Executing $RENAME_CMD"
+    eval $RENAME_CMD
+
+    echo "Executing $COPY_BACK_CMD"
+    eval $COPY_BACK_CMD
+
+  done
 
 done
 

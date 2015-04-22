@@ -1,10 +1,14 @@
 #!/bin/sh
 
+set -e
+
 SERVICES_USER=david
 SEVERAL_JAVA_VERSIONS=0
 EXTERNAL_HD_UUID=0
 EXTERNAL_HDD_MOUNT_POINT=/media/external-hdd
 TRANSMISSION_LOG_LOCATION=/data/transmission/logs
+# Indicates if the Media Download Automator runs in a different machine than transmission / XBMC-Kodi
+REMOTE=0
 
 apt-get update
 
@@ -13,6 +17,7 @@ apt-get upgrade
 apt-get install ntfs-3g
 
 sed -i 's/XKBLAYOUT="gb"/XKBLAYOUT="es"' /etc/default/keyboard
+
 
 # Create folders for software
 # useradd david
@@ -42,6 +47,13 @@ apt-get install mysql
 
 # Install and configure transmission
 apt-get install transmission-daemon
+
+# Install mediainfo / libmediainfo
+# In mint LMDE is in path 
+# ./usr/lib/x86_64-linux-gnu/libmediainfo.so.0.0.0
+# ./usr/lib/x86_64-linux-gnu/libmediainfo.so
+# ./usr/lib/x86_64-linux-gnu/libmediainfo.so.0
+apt-get install mediainfo libmediainfo-dev
 
 # Change users for services Apache and Transmission 
 

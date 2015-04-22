@@ -41,6 +41,7 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
     return
 
   save = ->
+    # the parameter 'feed' is the saved value coming from the server
     $scope.feed.$save((feed) ->
       console.log("Feed saved " + feed)
       init()

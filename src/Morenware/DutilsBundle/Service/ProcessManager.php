@@ -126,20 +126,24 @@ class ProcessManager {
 	public function prepareScriptToExecuteNotifyCall() {
 		
 		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
-		$processingPath = $mediacenterSettings->getProcessingTempPath();	
-		$this->logger->debug("Preparing script to notify");
+		
+		//TODO: This is temporary, write the script in the shared path between the server running this app and the 
+		// machine running transmission (which has to be accessible via http, normally http://localhost)
+		$processingPath = $mediacenterSettings->getBaseLibraryPath();	
+		
+		$this->logger->debug("Preparing script to notify...");
 		
 		$appRoot =  $this->kernel->getRootDir();
 		
 		if ($mediacenterSettings->getIsRemote()) {
 			$notifyCallUrl = "http://local-dutils/api/notify/finished";
 			$filePath = $appRoot . "/" . self::TEMPLATE_NOTIFY_SCRIPT_PATH;
-			$this->logger->debug("The template script path is $filePath");
+			$this->logger->debug("The template script for notification is in path $filePath");
 			$scriptContent = file_get_contents($filePath);
 			$scriptContent = str_replace("%NOTIFY_URL%", $notifyCallUrl, $scriptContent);
 		} else {
 			$filePath = $appRoot . "/" . self::TEMPLATE_COMMAND_SCRIPT_PATH;
-			$this->logger->debug("The template script path is $filePath");
+			$this->logger->debug("The template script used for notification is in path $filePath");
 			$scriptContent = file_get_contents($filePath);
 			$appRootPath = str_replace("/app","",$appRoot);
 			$scriptContent = str_replace("%SYMFONY_APP_ROOT%", $appRootPath, $scriptContent);
@@ -189,7 +193,7 @@ class ProcessManager {
 		$process = $this->startProcessAsynchronously($commandLineExecution);
 		
 		if ($waitCallback != null) {
-			// Black magic of arguments, closures, use: manage to pass in the $process to enable the callback to stop it
+			//Monitor the process running using black magic of arguments, closures, use: manage to pass in the $process to enable the callback to stop it if needed
 			$process->wait(function($type, $buffer) use ($process, $waitCallback) {
 				$waitCallback($type, $buffer, $process);
 			});
@@ -251,5 +255,63 @@ class ProcessManager {
 		if (!$this->isSubtitleFetchWorkerRunning()) {
 			$this->startSymfonyCommandAsynchronously(CommandType::FETCH_SUBTITLES);
 		}
+	}
+	
+	public function cleanupPidAndTerminatedFiles() {
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		$this->deleteFileUsingWildcard($processingPath . "/*.pid");
+		$this->deleteFileUsingWildcard($processingPath . "/*.terminated");
+	}
+	
+	public function killWorkerProcessesIfRunning() {
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+		
+		$monitorPidFile = $processingPath . "/monitor.pid";
+		$renamerPidFile = $processingPath . "/renamer.pid";
+		$subtitlePidFile = $processingPath . "/subtitles.pid";
+
+		$monitorTerminatedFile = $processingPath . "/monitor.terminated";
+		$renamerTerminatedFile = $processingPath . "/renamer.terminated";
+		$subtitleTerminatedFile = $processingPath . "/subtitles.terminated";
+		
+		//First attempt gracefully kill by touching .terminated file, if still running, execute kill -9
+		
+		$this->logger->debug("Attempt gracefully shutdown of worker processes...");
+		
+		if (file_exists($monitorPidFile)) {
+			$pid = trim(file_get_contents($monitorPidFile));
+			if (file_exists("/proc/$pid")) {
+				touch($monitorTerminatedFile);
+			} else {
+				$this->logger->debug("Monitor process wasn't running, deleting files");
+				unlink($monitorPidFile);
+			}
+		}
+		
+		if (file_exists($renamerPidFile)) {
+			$pid = trim(file_get_contents($renamerPidFile));
+			if (file_exists("/proc/$pid")) {
+				touch($renamerTerminatedFile);
+			} else {
+				$this->logger->debug("Renamer process wasn't running, deleting files");
+				unlink($renamerPidFile);
+			}
+		}
+		
+		if (file_exists($subtitlePidFile)) {
+			$pid = trim(file_get_contents($subtitlePidFile));
+			if (file_exists("/proc/$pid")) {	
+				touch($subtitleTerminatedFile);
+			} else {
+				$this->logger->debug("Subtitle process wasn't running, deleting files");
+				unlink($subtitlePidFile);
+			}
+		}
+	}
+	
+	public function deleteFileUsingWildcard($pathWithWildcard) {
+		array_map('unlink', glob($pathWithWildcard));
 	}
 }

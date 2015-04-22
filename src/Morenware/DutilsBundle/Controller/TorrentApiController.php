@@ -72,28 +72,32 @@ class TorrentApiController {
 	/**
 	 * Start download of the torrent represented for the specified magnet link or torrent file URI
 	 *
-     * @Route("/torrents")
+     * @Route("/torrents/start")
      * @Method("POST")
 	 *
 	 * @ParamConverter("torrent", class="Entity\Torrent", options={"json_property" = "torrent"})
 	 */
-	public function downloadTorrentAction(Torrent $torrent) {
+	
+	public function startDownloadAction(Torrent $torrent) {
 		
 		try {
-			$this->logger->debug("Torrent is " . $torrent->getMagnetLink());
-			if ($torrent->getMagnetLink() != null) {
-				$torrent = $this->torrentService->startDownloadFromMagnetLink($torrent->getMagnetLink());
-			} else if ($torrent->getTorrentFileLink() != null) {
-				$torrent = $this->torrentService->startDownloadFromTorrentFile($torrent->getTorrentFileLink());
+			
+			$this->logger->debug("Torrent to download " . $torrent->getTorrentName() 
+								 . " has magnet: " 
+								 . $torrent->getMagnetLink() 
+					             . " == torrentFile: " . $torrent->getTorrentFileLink());
+			
+			if ($torrent->getMagnetLink() !== null || $torrent->getTorrentFileLink() !== null) {
+				$torrent = $this->torrentService->startTorrentDownload($torrent);
 			} else {
 				return $this->generateErrorResponse("INVALID_TORRENT", 400);
 			}
 			
-			return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent);
+			return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent, 200, "torrent");
 			
 		} catch (\Exception $e) {
-			$this->logger->error("Error: " . str_replace("#", "\n#", $e->getTraceAsString()));	
-			return $this->generateErrorResponse($e->getMessage(), 400);
+			$this->logger->error("Error: " . $e->getMessage() . " -- " . str_replace("#", "\n#", $e->getTraceAsString()));	
+			return $this->generateErrorResponse($e->getMessage(), 500);
 		}
 	}
 	
@@ -122,21 +126,21 @@ class TorrentApiController {
 	 *
 	 * Delete torrent from transmission and database
 	 *
-	 * @Route("/torrents/{hashOrGuid}")
+	 * @Route("/torrents/cancel/{torrentHashOrGuid}")
 	 * @Method("DELETE")
 	 *
 	 */
-	public function deleteTorrentAction($hashOrGuid) {
+	public function cancelTorrentDownloadAction($torrentHashOrGuid) {
 		try {
 			
-			$torrent = $this->torrentService->findTorrentByGuid($hashOrGuid);
+			$torrent = $this->torrentService->findTorrentByGuid($torrentHashOrGuid);
 				
 			if ($torrent == null) {
-				$torrent = $this->torrentService->findTorrentByHash($hashOrGuid);
+				$torrent = $this->torrentService->findTorrentByHash($torrentHashOrGuid);
 			}
 				
-			if ($torrent != null) {
-				$this->torrentService->deleteTorrent($hashOrGuid, true);
+			if ($torrent !== null) {
+				$this->torrentService->deleteTorrent($torrent, true);
 				return ControllerUtils::createJsonResponseForArray(null);
 			} else {
 				return $this->generateErrorResponse("TORRENT_NOT_FOUND", 404);
@@ -146,8 +150,6 @@ class TorrentApiController {
 			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
 		}
 	}
-	
-	
 	
 	
 	private function generateErrorResponse($message, $errorCode) {
