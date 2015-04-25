@@ -558,7 +558,7 @@ class TorrentService {
 		$torrentName = str_replace("+",".",$torrentName);
 		$torrentName = str_replace("?",".",$torrentName);
 
-		$this->logger->debug("[TORRENT-SERVICE] Cleared torrentName is $torrentName")
+		$this->logger->debug("[TORRENT-SERVICE] Cleared torrentName is $torrentName");
 
 		return $torrentName;
 	}
