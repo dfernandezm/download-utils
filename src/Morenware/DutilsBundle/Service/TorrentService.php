@@ -253,12 +253,10 @@ class TorrentService {
 
 				} catch (\Exception $e) {
 					$this->logger->error("Error configuring transmission / relocating torrent -- " . $e->getMessage());
-					$this->monitorLogger->debug("Error configuring transmission / relocating torrent -- " . $e->getMessage());
-					return;
+					$this->monitorLogger->error("Error configuring transmission / relocating torrent -- " . $e->getMessage());
+					return $updatedTorrents;
 				}
 
-				$torrent = new Torrent();
-				$torrent->setFilePath($newLocation);
 				$torrent->setTransmissionId($transmissionId);
 				$torrent->setGuid(GuidGenerator::generate());
 				$torrent->setTorrentName($torrentName);
@@ -353,12 +351,13 @@ class TorrentService {
 						$torrentName = $torrent->getTorrentName();
 
 						//TODO: Get subtitles preference for this Movie/TV Show or apply global
-						$requireSubtitles = GlobalParameters::SUBTITLES_ENABLED;
+						$requireSubtitles = $this->requireSubtitles($newPath);
 						$torrent->setRenamedPath($newPath);
 
 						if ($requireSubtitles) {
 							$torrent->setState(TorrentState::RENAMING_COMPLETED);
 							$this->renamerLogger->debug("[RENAMING] With subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
+
 						} else {
 							$torrent->setState(TorrentState::COMPLETED);
 							$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
@@ -367,6 +366,9 @@ class TorrentService {
 						}
 
 						$this->update($torrent);
+
+						$this->renamerLogger->debug("[RENAMING] Flagging renamer to stop after completion");
+						$this->processManager->killRenamerProcessIfRunning();
 
 					} else {
 						$this->renamerLogger->warn("[RENAMING] Could not find torrent in DB with hash $hash");
@@ -522,5 +524,44 @@ class TorrentService {
 			$this->update($torrent);
 		}
 	}
+
+	private function requireSubtitles($newPath) {
+
+		$noSubtitlesList = array("Castle", "Big Bang Theory");
+		$newPathLower = strtolower($newPath);
+
+		foreach ($noSubtitlesList as $element) {
+			if (strpos($newPathLower, strtolower($element)) !== false) {
+				// is in the list, so no subtitles
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public function clearSpecialChars($torrentName) {
+
+		$torrentName = str_replace("ñ","n",$torrentName);
+		$torrentName = str_replace("Ñ","N",$torrentName);
+		$torrentName = str_replace("á","a",$torrentName);
+		$torrentName = str_replace("é","e",$torrentName);
+		$torrentName = str_replace("í","i",$torrentName);
+		$torrentName = str_replace("ó","o",$torrentName);
+		$torrentName = str_replace("ú","u",$torrentName);
+		$torrentName = str_replace("Á","A",$torrentName);
+		$torrentName = str_replace("É","E",$torrentName);
+		$torrentName = str_replace("Í","I",$torrentName);
+		$torrentName = str_replace("Ó","O",$torrentName);
+		$torrentName = str_replace("Ú","U",$torrentName);
+		$torrentName = str_replace(" ",".",$torrentName);
+		$torrentName = str_replace("+",".",$torrentName);
+		$torrentName = str_replace("?",".",$torrentName);
+
+		$this->logger->debug("[TORRENT-SERVICE] Cleared torrentName is $torrentName")
+
+		return $torrentName;
+	}
+
 
 }

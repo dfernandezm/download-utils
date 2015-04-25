@@ -115,12 +115,15 @@ class TransmissionService {
 	    			$torrent->setTorrentName($nameAdded);
 	    		}
 
-	    		if ($torrent->getTitle() === "Unknown") {
+	    		if ($torrent->getTitle() === "Unknown" || $torrent->getTitle() == null) {
 	    			$torrent->setTitle($nameAdded);
 	    		}
 
+					$torrent->setTitle($this->torrentService->clearSpecialChars($torrent->getTitle()));
+					$torrent->setTorrentName($this->torrentService->clearSpecialChars($torrent->getTorrentName()));
+
 	    		// Relocate based on hash
-	    		$newLocation = $this->relocateTorrent($nameAdded, $hash);
+	    		$newLocation = $this->relocateTorrent($torrent->getTorrentName(), $hash);
 	    		$torrent->setFilePath($newLocation);
 
 	    		$this->createOrUpdateTorrentData($torrent, TorrentState::DOWNLOADING);
@@ -428,8 +431,7 @@ class TransmissionService {
 	}
 
 	private function getTorrentSubfolderPath($torrentName, $torrentHash) {
-		$torrentNameForPath = str_replace("+", ".",str_replace(" ", ".", $torrentName));
-		$newPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir() . "/" . $torrentNameForPath . "_" . $torrentHash;
+		$newPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir() . "/" . $torrentName . "_" . $torrentHash;
 		return $newPath;
 	}
 
@@ -440,4 +442,6 @@ class TransmissionService {
 		$this->transmissionLogger->info("[TRANSMISSION-CONFIGURE] The value for property $sessionProperty is $requestedPropertyPropertyValue");
 		return $requestedPropertyPropertyValue;
 	}
+
+
 }
