@@ -2,7 +2,7 @@ app = window.app = angular.module 'dutilsApp', ['ngRoute', 'ngResource']
 
 app.config ['$routeProvider','$httpProvider','$interpolateProvider', '$compileProvider', ($routeProvider, $httpProvider, $interpolateProvider, $compileProvider) ->
   # Avoid having this header here! - use cookies or token
-  $httpProvider.defaults.headers.common['Authorization'] = 'Basic YWRtaW46YWRtaW5wYXNz'
+  # $httpProvider.defaults.headers.common['Authorization'] = 'Basic YWRtaW46YWRtaW5wYXNz'
   $interpolateProvider.startSymbol('[[').endSymbol(']]')
   $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|magnet):/)
 
