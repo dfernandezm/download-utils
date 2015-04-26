@@ -277,9 +277,10 @@ class SearchTorrentsService {
 					$j++;
 				}
 			}
+		   $currentOffset = $j == 0 ? $j : $j - 1;
 		}
 
-		$currentOffset = $j == 0 ? $j : $j - 1;
+		
 
 		$this->logger->debug("[DIVX-TOTAL] Found " . count($torrents) . " torrents.");
 
