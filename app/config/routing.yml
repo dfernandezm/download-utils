@@ -7,5 +7,7 @@ morenware_dutils_rest:
     resource: "@MorenwareDutilsBundle/Resources/config/routing-rest.yml"
     prefix:   /api
     
+logout:
+  path: /logout
 
 

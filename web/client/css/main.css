@@ -1,3 +1,38 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	
+    background: url('../img/game-of-thrones.jpg') no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+	    opacity: 0.8;
+  
+   
+}  
+
+
+
+body.login {
+	
+    background: url('../img/game-of-thrones.jpg') no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: hidden;
+
+      background-color: rgba(0,0,255,0.7);
+  
+}
+    
+
 .page-header {
 	margin-top: 10px;
 	font-size: 28px;
@@ -34,4 +69,60 @@
 
 .btn {
     margin-right: 4px;
+}
+
+.welcome {
+	margin-top: 60px;
+	padding-left:20px;
+	width: 80%;	
+
+}
+
+
+#page-wrapper {
+	margin: 29px 0 0 250px;
+	border-left: none;
+}
+
+.sidebar {
+	margin-top: 80px;
+	border: 1px solid #e7e7e7;
+}
+
+/* For the login form */
+/* http://stackoverflow.com/questions/22196587/how-to-center-align-vertically-the-container-in-bootstrap */
+.vertical-center {
+  min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
+  min-height: 100vh; /* These two lines are counted as one :-)       */
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  
+}
+
+.vertical-center .container {
+	border: 1px solid #c0c0c0;
+	padding: 20px;
+	padding-top: 10px;
+    opacity:0.85;
+    filter: alpha(opacity=85);   
+	
+}
+
+.col-centered{
+    float: none;
+    margin: 0 auto;
+}
+
+.col-centered h3 {
+	text-align:center;
+	margin-top:10px;
+	margin-bottom:15px;
+	opacity:1;
+    filter: alpha(opacity=100);   
+}
+
+.form-control {
+	opacity:1;
+    filter: alpha(opacity=100);   
 }

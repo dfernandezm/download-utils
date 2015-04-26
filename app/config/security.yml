@@ -22,15 +22,21 @@ security:
             pattern:  ^/client
             security: false
 
-        login:
-            pattern:  ^/demo/secured/login$
-            security: false
-        
         notify:
             pattern: ^/api/notify/.*$
             security: false
 
         secured_area:
-            pattern: ^/api/.*$
-            http_basic:
-                realm: "You should have a user name and password"
+            anonymous: ~
+            provider: in_memory
+            form_login:
+                login_path: login
+                check_path: login_check
+                default_target_path: /
+                always_use_default_target_path: true
+            logout:
+              path: /logout
+              target: /login   
+                
+                
+           
