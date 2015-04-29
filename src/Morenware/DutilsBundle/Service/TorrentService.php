@@ -456,9 +456,9 @@ class TorrentService {
              $this->renamerLogger->debug("[RENAMING] Torrent to process " . $torrent->getFilePath());
            } else if ($renamerOrSubtitles == CommandType::FETCH_SUBTITLES) {
            	 
-           	 // Can be a comma separated value of paths
+           	 // Can be a semicolon separated value of paths
            	 $torrentPath = $torrent->getRenamedPath();
-           	 $paths = explode(",",$torrentPath);
+           	 $paths = explode(";",$torrentPath);
            	 
            	 // pick directory of the first to fetch subtitles
            	 $torrentPath = $paths[0];
