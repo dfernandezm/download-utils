@@ -363,11 +363,11 @@ class TorrentService {
 					} else {
 						// several files in the torrent have been renamed
 						if (!array_key_exists($hash, $moreThanOnePathHashes)) {
-							$moreThanOnePathHashes[$hash] = $numberOfPaths;		
+							$moreThanOnePathHashes[$hash] = $numberOfPaths - 1;		
 						} else {
 							
 							$remainingNumberOfPaths = $moreThanOnePathHashes[$hash];
-	
+							$this->logger->debug("[RENAMING] Remaining paths to process for hash $hash is $remainingNumberOfPaths");
 							if ($remainingNumberOfPaths > 1) {
 								$moreThanOnePathHashes[$hash] = $remainingNumberOfPaths - 1;
 							} else {
@@ -455,7 +455,13 @@ class TorrentService {
              $targetState = TorrentState::RENAMING;
              $this->renamerLogger->debug("[RENAMING] Torrent to process " . $torrent->getFilePath());
            } else if ($renamerOrSubtitles == CommandType::FETCH_SUBTITLES) {
+           	 
+           	 // Can be a comma separated value of paths
            	 $torrentPath = $torrent->getRenamedPath();
+           	 $paths = explode(",",$torrentPath);
+           	 
+           	 // pick directory of the first to fetch subtitles
+           	 $torrentPath = $paths[0];
            	 $targetState = TorrentState::FETCHING_SUBTITLES;
            	 $this->renamerLogger->debug("[SUBTITLES] Torrent to process " . $torrent->getFilePath());
 
@@ -521,7 +527,7 @@ class TorrentService {
 		
 		$renamedPath = $torrent->getRenamedPath();
 		
-		$renamedPathArray = explode(",",$renamedPath);
+		$renamedPathArray = explode(";",$renamedPath);
 		
 		foreach($renamedPathArray as $renamedPath) {
 				
@@ -539,7 +545,7 @@ class TorrentService {
 
 	private function requireSubtitles($newPath) {
 
-		$noSubtitlesList = array("Castle", "Big Bang Theory");
+		$noSubtitlesList = array("Castle", "Big Bang Theory", "La Que Se Avecina");
 		$newPathLower = strtolower($newPath);
 
 		foreach ($noSubtitlesList as $element) {
@@ -615,8 +621,8 @@ class TorrentService {
 				$requireSubtitles = $this->requireSubtitles($renamedPaths[0]);
 				
 				if (count($renamedPaths) > 1) {
-					// Comma separated value of all paths
-					$renamedPath = implode(",",$renamedPaths);
+					// Semicolon separated value of all paths
+					$renamedPath = implode(";",$renamedPaths);
 				} else {
 					$renamedPath = $renamedPaths[0];
 				}

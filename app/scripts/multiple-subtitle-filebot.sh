@@ -17,10 +17,10 @@ mkdir $TMPDIR
 for ((i = 0; i < ${#INPUT_ARRAY[@]}; i++))
 do
   INPUT_PATH="${INPUT_ARRAY[$i]}"
-  for LANG in $SUBS_LANG
+  for LNG in $SUBS_LANG
   do
-    TWO_CODE_LANG=$( echo "$LANG" | awk -F '-' '{print $1}')
-    THREE_CODE_LANG=$( echo "$LANG" | awk -F '-' '{print $2}')
+    TWO_CODE_LANG=$( echo "$LNG" | awk -F '-' '{print $1}')
+    THREE_CODE_LANG=$( echo "$LNG" | awk -F '-' '{print $2}')
     # We do -get-subtitles as if we would have done -get-missing-subtitles, it would only fetch subtitles in case there are no previous ones
     FETCH_SUBS_CMD="$FB_EXEC -r -get-subtitles \"$INPUT_PATH\" --lang $TWO_CODE_LANG --output srt --encoding utf8 -non-strict --log-file \"$LOG_LOCATION\""
     echo "Command executed:" >> $LOG_LOCATION
@@ -30,7 +30,8 @@ do
     # 3-letter language code to 2-letter language code copy
     COPY_IN_CMD="cp \"$INPUT_PATH\"/*.$THREE_CODE_LANG.srt $TMPDIR"
     COPY_BACK_CMD="cp $TMPDIR/*.$TWO_CODE_LANG.srt \"$INPUT_PATH\""
-
+    RM_COPIED_CMD="rm $TMPDIR/*.srt"
+    
     echo "Executing $COPY_IN_CMD"
     eval $COPY_IN_CMD
 
@@ -40,7 +41,11 @@ do
 
     echo "Executing $COPY_BACK_CMD"
     eval $COPY_BACK_CMD
-
+    
+    echo "Deleting temporary subs $RM_COPIED_CMD"
+    eval $RM_COPIED_CMD
+    
+    
   done
 
 done
