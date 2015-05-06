@@ -94,7 +94,7 @@ class Torrent {
 	
 	// Path of this torrent file/s once it is finished/renamed in the destination library
 	/**
-	 * @ORM\Column(name="renamed_path", type="string", length=300, nullable=true)
+	 * @ORM\Column(name="renamed_path", type="string", length=15000, nullable=true)
 	 */
 	private $renamedPath;
 	
