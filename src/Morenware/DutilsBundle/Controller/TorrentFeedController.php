@@ -11,7 +11,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Morenware\DutilsBundle\Util\ControllerUtils;
 use Morenware\DutilsBundle\Util\GuidGenerator;
-use Morenware\DutilsBundle\Entity\JobState;
 use Morenware\DutilsBundle\Entity\Feed;
 
 /**

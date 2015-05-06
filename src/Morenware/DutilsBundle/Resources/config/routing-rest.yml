@@ -1,5 +1,0 @@
-morenware_dutils_rest_Instance:
-    type: rest
-    prefix: /v1
-    resource: "Morenware\DutilsBundle\Controller\InstanceController"
-    name_prefix: api_v1_
