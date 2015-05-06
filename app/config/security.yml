@@ -25,9 +25,10 @@ security:
         notify:
             pattern: ^/api/notify/.*$
             security: false
+        
 
         secured_area:
-            anonymous: ~
+            anonymous: ~ 
             provider: in_memory
             form_login:
                 login_path: login
@@ -37,6 +38,9 @@ security:
             logout:
               path: /logout
               target: /login   
-                
-                
+              
+       
+    access_control:
+        - { path: ^/login, roles: [IS_AUTHENTICATED_ANONYMOUSLY] }
+        - { path: ^/, roles: [ROLE_ADMIN] }         
            

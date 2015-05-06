@@ -632,18 +632,18 @@ class TorrentService {
 				if ($requireSubtitles) {
 					$torrent->setState(TorrentState::RENAMING_COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] With subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
-						
+					$this->renamerLogger->debug("[RENAMING] Flagging renamer to stop after completion");
+					$this->processManager->killRenamerProcessIfRunning();
 				} else {
 					$torrent->setState(TorrentState::COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
 					$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName");
 					$this->clearTorrentFromTransmissionIfSuccessful($torrent);
+					$this->processManager->killWorkerProcessesIfRunning();
+					
 				}
 					
 				$this->update($torrent);
-					
-				$this->renamerLogger->debug("[RENAMING] Flagging renamer to stop after completion");
-				$this->processManager->killRenamerProcessIfRunning();
 										
 		} else {
 			// Not found in DB
