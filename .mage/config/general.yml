@@ -1,0 +1,7 @@
+# global settings
+name: Media Downloader Automator
+email: morenza@gmail.com
+notifications: true
+logging: true
+maxlogs: 30
+ssh_needs_tty: false

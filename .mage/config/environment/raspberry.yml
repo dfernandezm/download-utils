@@ -1,0 +1,27 @@
+#raspberry
+deployment:
+  user: pi
+  from: ./
+  to: /var/www/dutils
+  excludes:
+    - app/cache/*
+    - web/bundles/*
+    - .settings
+    - eclipse
+releases:
+  enabled: true
+  max: 4
+  symlink: current
+  directory: releases
+hosts:
+  - raspbmc
+tasks:
+  pre-deploy:
+    - scm/update
+    - build-client
+  on-deploy:
+    - init-database
+    - symfony2/doctrine-migrate
+    - symfony2/cache-warmup
+  post-release:
+  post-deploy:
