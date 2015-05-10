@@ -1,6 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
+
+pushd `dirname $0` > /dev/null
+PROVISION_DIR=`pwd -P`
+popd > /dev/null
 
 SERVICES_USER=pi
 SEVERAL_JAVA_VERSIONS=0
@@ -92,11 +96,28 @@ OPENSUBTITLES_PASSWORD=ZVCvrasp
 mkdir -p $FILEBOT_HOME
 chmod +rwx -R $FILEBOT_HOME
 chown -R $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME
-wget -qO /tmp/filebot.zip http://sourceforge.net/projects/filebot/files/latest/download
-unzip -qo /tmp/filebot.zip -d $FILEBOT_HOME && rm -f /tmp/filebot.zip
-SED_EXPR="s/java\s-D/$JAVA_EXEC -D/g"
-sed -i "$SED_EXPR" $FILEBOT_HOME/filebot.sh
-ln -s $FILEBOT_HOME/filebot.sh /usr/bin/filebot
+wget -qO /tmp/filebot.ipk http://sourceforge.net/projects/filebot/files/filebot/FileBot_4.5.6/filebot_4.5.6_arm.ipk/download
+cd /tmp
+mkdir -p filebot
+cd filebot
+ar -x /tmp/filebot.ipk
+tar xvf /tmp/control.tar.gz
+tar xvf /tmp/data.tar.gz
+cp -R /tmp/filebot/opt/share/filebot/* $FILEBOT_HOME
+
+cd $PROVISION_DIR
+cp filebot-rpi-template.sh filebot.sh
+#JAVA_EXEC_SED="s/java\s-D/$JAVA_EXEC -D/g"
+JAVA_EXEC_SED="s/%JAVA_EXEC%/$JAVA_EXEC/g"
+FILEBOT_HOME_ESC="${FILEBOT_HOME//\//\\/}"
+FILEBOT_HOME_SED="s/%FILEBOT_HOME%/$FILEBOT_HOME_ESC/g"
+sed -i "$JAVA_EXEC_SED" filebot.sh
+sed -i "$FILEBOT_HOME_SED" filebot.sh
+mv filebot.sh $FILEBOT_HOME/bin
+chmod +x $FILEBOT_HOME/bin/filebot.sh
+chown -R $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME/bin
+ln -s $FILEBOT_HOME/bin/filebot.sh /usr/bin/filebot
+echo "net/filebot/osdb.user=$OPENSUBTITLES_USER\:$OPENSUBTITLES_PASSWORD" >> $FILEBOT_HOME/data/prefs.properties
 echo "net/filebot/osdb.user=$OPENSUBTITLES_USER\:$OPENSUBTITLES_PASSWORD" >> $FILEBOT_HOME/prefs.properties
 mkdir -p $FILEBOT_HOME/cache && chown $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME/cache
 mkdir -p $FILEBOT_HOME/temp && chown $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME/temp
