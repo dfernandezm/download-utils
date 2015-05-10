@@ -136,7 +136,7 @@ class ProcessManager {
 		$appRoot =  $this->kernel->getRootDir();
 
 		if ($mediacenterSettings->getIsRemote()) {
-			$notifyCallUrl = "http://local-dutils/api/notify/finished";
+			$notifyCallUrl = "http://torrents.morenware.com/api/notify/finished";
 			$filePath = $appRoot . "/" . self::TEMPLATE_NOTIFY_SCRIPT_PATH;
 			$this->logger->debug("The template script for notification is in path $filePath");
 			$scriptContent = file_get_contents($filePath);
@@ -270,7 +270,7 @@ class ProcessManager {
 
 		$renamerPidFile = $processingPath . "/renamer.pid";
 		$renamerTerminatedFile = $processingPath . "/renamer.terminated";
-		
+
 		if (file_exists($renamerPidFile)) {
 			$pid = trim(file_get_contents($renamerPidFile));
 			if (file_exists("/proc/$pid")) {

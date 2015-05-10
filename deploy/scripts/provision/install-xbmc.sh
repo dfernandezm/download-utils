@@ -40,4 +40,4 @@ sudo sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/kodi
 sudo sed -i 's/USER=kodi/USER='"$USER"'/g' /etc/default/kodi
 
 # Give enough GPU memory
-sudo echo 'gpu_mem=200' >> /boot/config.txt
+sudo echo 'gpu_mem=280' >> /boot/config.txt

@@ -10,6 +10,7 @@ HDD_MOUNT_POINT=/media/Elements
 HDD_MEDIA_ROOT=$HDD_MOUNT_POINT/$MEDIA_ROOT_DIRECTORY_NAME
 MOVIES_HDD_PATH=$HDD_MEDIA_ROOT/Movies
 TV_SHOWS_HDD_PATH="$HDD_MEDIA_ROOT/TV Shows"
+SERVICES_USER=pi
 
 # RASPBERRY PI symlinks
 MEDIA_CENTER_ROOT_LINK=/mediacenter
@@ -25,18 +26,18 @@ mount -a
 
 echo "Creating necessary directories for mediacenter in HDD..."
 if [ ! -f $HDD_MEDIA_ROOT ]; then
-   mkdir -p $HDD_MEDIA_ROOT	
+   mkdir -p $HDD_MEDIA_ROOT
 fi
 
 if [ ! -f $MOVIES_HDD_PATH ]; then
-   mkdir -p $MOVIES_HDD_PATH	
+   mkdir -p $MOVIES_HDD_PATH
 fi
 
 if [ ! -f $TV_SHOWS_HDD_PATH ]; then
-   mkdir -p $TV_SHOWS_HDD_PATH	
+   mkdir -p $TV_SHOWS_HDD_PATH
 fi
 
-chown -R david $HDD_MEDIA_ROOT
+chown -R $SERVICES_USER:$SERVICES_USER $HDD_MEDIA_ROOT
 
 # Create symbolic links
 echo "Creating symbolic link $HDD_MEDIA_ROOT -> $MEDIA_CENTER_ROOT_LINK"
@@ -47,17 +48,17 @@ ln -s $TV_SHOWS_HDD_PATH $TV_SHOWS_LINK
 
 echo "Creating symbolic link $MOVIES_HDD_PATH -> $MOVIES_LINK"
 ln -s $MOVIES_HDD_PATH $MOVIES_LINK
- 
+
 # Create NFS share for the mediacenter if needed
 if [ "$REMOTE" -eq 1 ]; then
   echo "Preparing NFS share for $MEDIA_CENTER_ROOT_LINK.."
-  
+
   echo "Install NFS server..."
   apt-get -y install nfs-kernel-server portmap nfs-common
 
-  echo "Adding exports..." 
+  echo "Adding exports..."
   echo "$MEDIA_CENTER_ROOT_LINK 192.168.1.0/24(rw,insecure,no_subtree_check,async)"  >>  /etc/exports
-  
+
   /etc/init.d/nfs-kernel-server restart
 
   # To mount the exported system, run on the client:
