@@ -393,7 +393,7 @@ class TransmissionService {
 		$notificationScript = $this->processManager->prepareScriptToExecuteNotifyCall();
 
 		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
-
+		//TODO: remove hardcoded /mediacenter -- use baseLibraryPath
 		$requestPayload = array(
 				"method" => "session-set",
 				"arguments" => array("download-dir" => $baseDownloadsPath,

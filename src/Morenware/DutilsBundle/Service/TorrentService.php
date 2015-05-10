@@ -240,7 +240,7 @@ class TorrentService {
 				$this->monitorLogger->debug("Torrent $torrentName with hash $torrentHash not found in DB, creating and relocating now");
 
 				$torrent = new Torrent();
-				
+
 				// Relocate the torrent to the known subfolder as we are creating it now
 				$newLocation = null;
 
@@ -258,7 +258,7 @@ class TorrentService {
 					$this->monitorLogger->error("Error configuring transmission / relocating torrent -- " . $e->getMessage());
 					return $updatedTorrents;
 				}
-				
+
 				$torrent->setFilePath($newLocation);
 				$torrent->setTransmissionId($transmissionId);
 				$torrent->setGuid(GuidGenerator::generate());
@@ -315,27 +315,21 @@ class TorrentService {
 		$logContent = file_get_contents($renamerLogFilePath);
 
 		$matches = array();
-
+		//TODO: Refactoring of this, it should be better written and handle better the case of multiple files per hash
 		if (preg_match_all($pathMovedPattern, $logContent, $matches)) {
 
 			$originalPathList = $matches[1];
 			$newPathList = $matches[2];
 			$moreThanOnePathHashes = array();
 			$renamedPaths = array();
-			
+
 			$this->renamerLogger->debug("[RENAMING] Matched renamed paths");
 			for ($i = 0; $i < count($originalPathList); $i++) {
 
 				$originalPath = $originalPathList[$i];
 				$newPath = $newPathList[$i];
 
-				$this->renamerLogger->debug("[RENAMING] Detected renamed path: $originalPath ===> $newPath");
-
-				// This is the same as it would be $newPath.endsWith(".srt")
-				if (strrpos($newPath, ".srt", strlen($newPath) - strlen(".srt")) !== false) {
-					// This is a subtitle, move on
-					continue;
-				}
+				$this->renamerLogger->debug("[RENAMING] Detected renamed path: $originalPath ==> $newPath");
 
 				// Get the hash from the original path, it will be something like /path/to/torrentName_hash/torrentfolder/file.mkv|avi|etc
 				// The hash is always 40 characters as it is SHA1
@@ -344,14 +338,14 @@ class TorrentService {
 				$matchesHash = array();
 
 				if(preg_match($hashRegex, $originalPath, $matchesHash)) {
-					
+
 					$hash = $matchesHash[1];
-					
+
 					$numberOfPaths = $this->countNumberOfOccurrencesOfHash($originalPathList,$hash);
 					$this->renamerLogger->debug("[RENAMING] There are $numberOfPaths renamed for torrent with hash $hash");
-						
+
 					$torrent = $this->findTorrentByHash($hash);
-					
+
 					// Add path to list
 					$this->renamerLogger->debug("[RENAMING] Adding renamed path $newPath");
 					$renamedPaths[] = $newPath;
@@ -359,13 +353,13 @@ class TorrentService {
 					if ($numberOfPaths == 1) {
 						// process the torrent -- regular case 1 torrent = 1 file
 						$this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths);
-							
+						$renamedPaths = array();
 					} else {
 						// several files in the torrent have been renamed
 						if (!array_key_exists($hash, $moreThanOnePathHashes)) {
-							$moreThanOnePathHashes[$hash] = $numberOfPaths - 1;		
+							$moreThanOnePathHashes[$hash] = $numberOfPaths - 1;
 						} else {
-							
+
 							$remainingNumberOfPaths = $moreThanOnePathHashes[$hash];
 							$this->logger->debug("[RENAMING] Remaining paths to process for hash $hash is $remainingNumberOfPaths");
 							if ($remainingNumberOfPaths > 1) {
@@ -373,10 +367,11 @@ class TorrentService {
 							} else {
 							   // The last one, process the torrent
 							   $this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths);
+								 $renamedPaths = array();
 							}
 						}
 					}
-					
+
 				} else {
 					$this->renamerLogger->warn("[RENAMING] Could not detect hash in path $originalPath, fix path creation to follow '/path/to/torrentName_hash/torrentName/filename.ext'");
 				}
@@ -455,11 +450,11 @@ class TorrentService {
              $targetState = TorrentState::RENAMING;
              $this->renamerLogger->debug("[RENAMING] Torrent to process " . $torrent->getFilePath());
            } else if ($renamerOrSubtitles == CommandType::FETCH_SUBTITLES) {
-           	 
+
            	 // Can be a semicolon separated value of paths
            	 $torrentPath = $torrent->getRenamedPath();
            	 $paths = explode(";",$torrentPath);
-           	 
+
            	 // pick directory of the first to fetch subtitles
            	 $torrentPath = $paths[0];
            	 $targetState = TorrentState::FETCHING_SUBTITLES;
@@ -487,15 +482,26 @@ class TorrentService {
 		return $torrentsPathsAsBashArray;
 	}
 
-	public function finishProcessingAfterFetchingSubs() {
+	public function finishProcessingAfterFetchingSubs($missingSubsPaths) {
+		$this->monitorLogger->warn("[AFTER-SUBS] Completing processing");
 		$subtitledTorrents = $this->findTorrentsByState(TorrentState::FETCHING_SUBTITLES);
-
+		
 		foreach ($subtitledTorrents as $torrent) {
-			$torrent->setState(TorrentState::COMPLETED);
-			$this->update($torrent);
+					
+			$allSubtitlesPresent = $this->areSubtitlesPresentForRenamedPath($torrent->getRenamedPath(),$missingSubsPaths);
+			
 			$torrentName = $torrent->getTorrentName();
-			$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName after fetching subtitles");
+			
+			if (!$allSubtitlesPresent) {
+				$this->monitorLogger->warn("[WORKFLOW-FINISHED] Torrent $torrentName has missing subtitles, fall back RENAMING_COMPLETED");
+				$torrent->setState(TorrentState::RENAMING_COMPLETED);
+			} else {
+				$torrent->setState(TorrentState::COMPLETED);
+				$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName after fetching subtitles");
+			}
+			
 			$this->clearTorrentFromTransmissionIfSuccessful($torrent);
+			$this->update($torrent);
 		}
 
 		$this->monitorLogger->info("[WORKFLOW-FINISHED] Processing of torrents finished");
@@ -524,23 +530,24 @@ class TorrentService {
 
 	public function clearTorrentFromTransmissionIfSuccessful($torrent) {
 		//TODO: if remote, the path could not be accessible for the server this app is running (ensure it is mounted)
-		
+
 		$renamedPath = $torrent->getRenamedPath();
-		
+
 		$renamedPathArray = explode(";",$renamedPath);
-		
+
 		foreach($renamedPathArray as $renamedPath) {
-				
+
 			if (!file_exists($renamedPath)) {
 				$this->monitorLogger->warn("[MONITOR-WARNING] The processed torrent ". $torrent->getTorrentName()
 						. " does not have a valid renamed path or cannot be accessed -- $renamedPath");
 				$torrent->setState(TorrentState::COMPLETED_WITH_ERROR);
 				$this->update($torrent);
 				return;
-			}	
+			}
 		}
-	
-		$this->transmissionService->deleteTorrent($torrent->getHash());	
+		
+		//TODO: What happens if it was already deleted
+		$this->transmissionService->deleteTorrent($torrent->getHash());
 	}
 
 	private function requireSubtitles($newPath) {
@@ -580,15 +587,15 @@ class TorrentService {
 
 		return $torrentName;
 	}
-	
+
 	public function sanitizeFileNames($filePath) {
-	
+
 		if (is_dir($filePath)) {
 			$fh = opendir($filePath);
 			while (($file = readdir($fh)) !== false) {
 				// skip hidden files and dirs and recursing if necessary
 				if (strpos($file, '.') === 0) continue;
-	
+
 				$currentFilePath = $filePath . '/' . $file;
 				if ( is_dir($currentFilePath) ) {
 					$newName = $this->clearSpecialChars($currentFilePath);
@@ -604,31 +611,31 @@ class TorrentService {
 			closedir($fh);
 		}
 	}
-	
-	
+
+
 	private function processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths) {
-		
+
 		if ($torrent !== null &&
 			$torrent->getState()  == TorrentState::RENAMING &&
 			$torrent->getState() !== TorrentState::RENAMING_COMPLETED &&
 			$torrent->getState() !== TorrentState::COMPLETED) {
-	
-					
+
+
 				// regular case: 1 Path per torrent
 				$torrentName = $torrent->getTorrentName();
-					
+
 				//TODO: Get subtitles preference for this Movie/TV Show or apply global
 				$requireSubtitles = $this->requireSubtitles($renamedPaths[0]);
-				
+
 				if (count($renamedPaths) > 1) {
 					// Semicolon separated value of all paths
 					$renamedPath = implode(";",$renamedPaths);
 				} else {
 					$renamedPath = $renamedPaths[0];
 				}
-				
+
 				$torrent->setRenamedPath($renamedPath);
-					
+
 				if ($requireSubtitles) {
 					$torrent->setState(TorrentState::RENAMING_COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] With subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
@@ -640,27 +647,53 @@ class TorrentService {
 					$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName");
 					$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 					$this->processManager->killWorkerProcessesIfRunning();
-					
 				}
-					
+
 				$this->update($torrent);
-										
+
 		} else {
 			// Not found in DB
 			$this->renamerLogger->warn("[RENAMING] Torrent not found in DB: $hash");
 		}
 	}
-	
-	
-	
+
+
+
 	private function countNumberOfOccurrencesOfHash($originalPathList, $hash) {
-		
+
 		$ocurrences = 0;
-		
+
 		foreach($originalPathList as $path) {
 			$ocurrences = $ocurrences + substr_count($path, $hash);
 		}
 
 		return $ocurrences;
 	}
+	
+	private function areSubtitlesPresentForRenamedPath($renamedPath, $missingSubsPaths) {
+		
+		if ($missingSubsPaths == null) {
+			return true;
+		}
+		
+		$renamedPathsArray = explode(";",$renamedPath);
+		
+		if (count($renamedPathsArray) > 1) {
+			// Multiple paths per torrent, check if any is missing
+			foreach ($renamedPathsArray as $path) {
+				
+				if (in_array($path, $missingSubsPaths)) {
+					// It is in the array of missing, so flag as missing for this torrent
+					return false;
+				}	
+			}
+			
+			return true;
+
+		} else { 
+			// Regular case, 1 path per torrent: if that path is NOT in missing paths array, no missing subs
+			return !in_array($renamedPath, $missingSubsPaths);
+		}
+	}
+	
 }

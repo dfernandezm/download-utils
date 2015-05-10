@@ -21,7 +21,7 @@ REMOTE=0
 
 # Check HDD UUID, Add entry to fstab for that, mount all
 echo "Adding HDD mount to /etc/fstab, UUID: $HDD_UUID, mount point: $HDD_MOUNT_POINT"
-echo "UUID=$HDD_UUID $HDD_MOUNT_POINT ntfs-3g defaults,uid=pi,gid=pi 0 0" >> /etc/fstab
+echo "UUID=$HDD_UUID $HDD_MOUNT_POINT ntfs-3g defaults,uid=pi,gid=pi,exec 0 0" >> /etc/fstab
 mount -a
 
 echo "Creating necessary directories for mediacenter in HDD..."

@@ -119,7 +119,7 @@ class SubtitlesCommand extends Command {
 					$guid = GuidGenerator::generate();
 
 					// Perform substitutions in the template renamer script
-					list($scriptToExecute, $renamerLogFilePath) = $this->prepareSubtitleScriptToExecute($torrentsToFetchSubs, $mediacenterSettings, $pid . "_" . $guid);
+					list($scriptToExecute, $subtitlesLogFilePath) = $this->prepareSubtitleScriptToExecute($torrentsToFetchSubs, $mediacenterSettings, $pid . "_" . $guid);
 
 					$this->renamerLogger->debug("[SUBTITLES] The script to execute is $scriptToExecute");
 					$renamerLogger = $this->renamerLogger;
@@ -147,13 +147,41 @@ class SubtitlesCommand extends Command {
 					$renamerLogger->error("[SUBTITLES] Subtitles process exitCode is $exitCodeText ==> $exitCode");
 
 					if (intval($exitCode) !== 0) {
-						$renamerLogger->error("[SUBTITLES] Error executing fetching subs process with PID $pid, non-zero exit value");
-						throw new \Exception("[SUBTITLES] Error executing fetching subs process PID $pid", $exitCode, null);
+
+						$subtitlesLogText = file_get_contents($subtitlesLogFilePath);
+
+						// i=case insensitive, m=treat as lines instead of whole string
+						$subsNotFoundPattern = '/^No\s+matching\s+subtitles\s+found:(.*)$/im';
+						$matches = array();
+						$missingSubsPaths = array();
+
+						if (preg_match_all($subsNotFoundPattern,$subtitlesLogText,$matches)) {
+
+							$subsNotFoundMatchedPaths = $matches[1];
+
+							foreach ($subsNotFoundMatchedPaths as $path) {
+								$path = trim($path);
+								if (!in_array($path, $missingSubsPaths)) {
+									$missingSubsPaths[] = $path;
+								}
+							}
+						}
+
+						//$wholeLine = substr($subtitlesLogText, $pos, strpos($subtitlesLogText, PHP_EOL, $pos)-$pos);
+
+						if (count($missingSubsPaths) > 0) {
+							$renamerLogger->warn("[SUBTITLES] Missing subtitles for paths");
+							$this->torrentService->finishProcessingAfterFetchingSubs($missingSubsPaths);
+						} else {
+							$renamerLogger->error("[SUBTITLES] Error executing fetching subs process with PID $pid, non-zero exit value");
+							throw new \Exception("[SUBTITLES] Error executing fetching subs process PID $pid", $exitCode, null);
+						}
+
+					} else {
+						$renamerLogger->debug("[SUBTITLES] Subtitle fetcher with PID $pid finished processing");
+						$this->torrentService->finishProcessingAfterFetchingSubs(null);
 					}
 
-					$renamerLogger->debug("[SUBTITLES] Subtitle fetcher with PID $pid finished processing");
-
-					$this->torrentService->finishProcessingAfterFetchingSubs();
 
 				} else {
 					$this->renamerLogger->debug("[SUBTITLES] no torrents in RENAMING_COMPLETED state found");
