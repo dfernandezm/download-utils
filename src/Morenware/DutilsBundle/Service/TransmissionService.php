@@ -393,12 +393,12 @@ class TransmissionService {
 		$notificationScript = $this->processManager->prepareScriptToExecuteNotifyCall();
 
 		$baseDownloadsPath = $this->settingsService->getDefaultTransmissionSettings()->getBaseDownloadsDir();
-
+		//TODO: remove hardcoded /mediacenter -- use baseLibraryPath
 		$requestPayload = array(
 				"method" => "session-set",
 				"arguments" => array("download-dir" => $baseDownloadsPath,
 						             "script-torrent-done-enabled" => true,
-									 "script-torrent-done-filename" => "/home/pi/notify.sh")
+									 "script-torrent-done-filename" => "/mediacenter/notify.sh")
 		);
 
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);

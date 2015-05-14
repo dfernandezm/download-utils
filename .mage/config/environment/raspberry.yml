@@ -1,0 +1,29 @@
+#raspberry
+deployment:
+  user: pi
+  from: ./
+  to: /var/www/dutils
+  excludes:
+    - app/cache/*
+    - web/bundles/*
+    - node_modules
+    - app/logs/*
+    - .settings
+    - eclipse
+releases:
+  enabled: true
+  max: 4
+  symlink: current
+  directory: releases
+hosts:
+  - raspbmc
+tasks:
+  pre-deploy:
+    - build-client
+  on-deploy:
+    - configure-web-layer: {environ: raspberry, serverName: torrents.morenware.com, documentRoot: "/var/www/dutils/current/web"}
+    - init-database
+    - symfony2/doctrine-migrate
+    - symfony2/cache-warmup
+  post-release:
+  post-deploy:

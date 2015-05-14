@@ -25,7 +25,7 @@ class DefaultController extends Controller
 	/**
 	 * Home.
 	 *
-	 * @Route("/home")
+	 * @Route("/")
 	 * @Method("GET")
 	 *
 	 */

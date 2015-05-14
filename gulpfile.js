@@ -21,6 +21,34 @@ gulp.task("dev", ["coffeelint", "webpack-dev"], function() {
     // sudo sysctl fs.inotify.max_user_watches=100000 to prevent failure
 });
 
+gulp.task("prod", ["coffeelint","webpack-prod"], function() { });
+
+
+gulp.task("webpack-prod", function(callback) {
+	// modify some webpack config options
+	var myConfig = Object.create(webpackConfig);
+	myConfig.plugins = myConfig.plugins.concat(
+		new webpack.DefinePlugin({
+			"process.env": {
+				// This has effect on the react lib size
+				"NODE_ENV": JSON.stringify("production")
+			}
+		}),
+		new webpack.optimize.DedupePlugin(),
+		new webpack.optimize.UglifyJsPlugin()
+	);
+
+	// run webpack
+	webpack(myConfig, function(err, stats) {
+		if(err) throw new gutil.PluginError("webpack-prod", err);
+		gutil.log("[webpack-build]", stats.toString({
+			colors: true
+		}));
+		callback();
+	});
+});
+
+
 // modify some webpack config options
 var myDevConfig = Object.create(webpackConfig);
 myDevConfig.devtool = "sourcemap";

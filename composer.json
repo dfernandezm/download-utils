@@ -1,8 +1,8 @@
 {
-	"name" : "Download Utils Organiser",
+	"name" : "Media Download Automator",
 	"license" : "MIT",
 	"type" : "project",
-	"description" : "Tool to organise and automate downloads",
+	"description" : "Tool to organise and automate media downloads",
 	"autoload" : {
 		"psr-0" : {
 			"" : "src/",
@@ -32,7 +32,8 @@
 		"symfony/css-selector" : "2.6.1"
 	},
 	"require-dev" : {
-		"sensio/generator-bundle" : "~2.3"
+		"sensio/generator-bundle" : "~2.3",
+		"andres-montanez/magallanes": "1.0.*"
 	},
 	"scripts" : {
 		"post-install-cmd" : [
