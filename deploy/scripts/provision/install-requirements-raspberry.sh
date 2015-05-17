@@ -53,7 +53,7 @@ sudo update-alternatives --install /usr/bin/$JAVA_EXEC $JAVA_EXEC /opt/software/
 sudo update-alternatives --config $JAVA_EXEC
 
 # Install PHP 5.5+
-sudo apt-get install php5 php-pear libyaml-dev make
+sudo apt-get install php5 php-pear libyaml-dev make php5-dev php5-curl
 sudo pecl install yaml
 # add extension=yaml.so to php.ini
 
