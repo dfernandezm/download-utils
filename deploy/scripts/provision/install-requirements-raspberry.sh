@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check processes with more memory
+
+# Need to be root for this.
+[ `whoami` = root ] || echo "This script needs to run as root -- please enter root password: "
+[ `whoami` = root ] || exec su -c $0 root
+
 set -e
 
 pushd `dirname $0` > /dev/null
@@ -101,8 +107,8 @@ cd /tmp
 mkdir -p filebot
 cd filebot
 ar -x /tmp/filebot.ipk
-tar xvf /tmp/control.tar.gz
-tar xvf /tmp/data.tar.gz
+tar xvf /tmp/filebot/control.tar.gz
+tar xvf /tmp/filebot/data.tar.gz
 cp -R /tmp/filebot/opt/share/filebot/* $FILEBOT_HOME
 
 cd $PROVISION_DIR
@@ -117,6 +123,7 @@ mv filebot.sh $FILEBOT_HOME/bin
 chmod +x $FILEBOT_HOME/bin/filebot.sh
 chown -R $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME/bin
 ln -s $FILEBOT_HOME/bin/filebot.sh /usr/bin/filebot
+mkdir -p $FILEBOT_HOME/data
 echo "net/filebot/osdb.user=$OPENSUBTITLES_USER\:$OPENSUBTITLES_PASSWORD" >> $FILEBOT_HOME/data/prefs.properties
 echo "net/filebot/osdb.user=$OPENSUBTITLES_USER\:$OPENSUBTITLES_PASSWORD" >> $FILEBOT_HOME/prefs.properties
 mkdir -p $FILEBOT_HOME/cache && chown $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME/cache

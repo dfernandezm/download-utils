@@ -27,7 +27,7 @@ sudo sh -c "echo 'SUBSYSTEM==\"vchiq\",  GROUP=\"video\", MODE=\"0660\"' >> /etc
 
 # Add current user to groups
 #$USER=`awk -F: "/:$(id -u):/{print $1}" /etc/passwd`
-$USER=pi
+USER=pi
 sudo usermod -a -G audio $USER
 sudo usermod -a -G video $USER
 sudo usermod -a -G input $USER
@@ -40,4 +40,9 @@ sudo sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/kodi
 sudo sed -i 's/USER=kodi/USER='"$USER"'/g' /etc/default/kodi
 
 # Give enough GPU memory
-sudo echo 'gpu_mem=280' >> /boot/config.txt
+sudo echo 'gpu_mem=200' >> /boot/config.txt
+
+# Further instructions:
+# 1. Install Aeon Nox
+# 2. Remove screensaver
+# 3. Create MediaCenter

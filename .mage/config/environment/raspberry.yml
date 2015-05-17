@@ -16,7 +16,7 @@ releases:
   symlink: current
   directory: releases
 hosts:
-  - raspbmc
+  - 192.168.1.42
 tasks:
   pre-deploy:
     - build-client
