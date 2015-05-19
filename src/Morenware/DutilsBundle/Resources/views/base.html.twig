@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html ng-app="dutilsApp">
-<head>   
+<head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,16 +8,16 @@
     <meta name="author" content="">
 
     <title>Download Utils Manager</title>
-    
+
       	{% block stylesheets %}
-      	
+
           <link href="client/css/bootstrap.min.css" rel="stylesheet" />
           <link href="client/css/metis-menu.css" rel="stylesheet" />
           <link href="client/css/sb-admin-2.css" rel="stylesheet" />
           <link href="client/css/main.css" rel="stylesheet" />
           <link href="client/font-awesome-4.1.0/css/font-awesome.min.css" rel="stylesheet" />
 
-            
+
         {% endblock %}
 
 
@@ -30,11 +30,11 @@
 
 </head>
     <body>
-       <div id="wrapper">
+       <div id="container-fluid">
 
-		{% include 'MorenwareDutilsBundle::nav.html.twig' %}
-		
-        <div id="page-wrapper">
+		   {% include 'MorenwareDutilsBundle::nav.html.twig' %}
+
+        <div id="page-wrapper" class="container-fluid">
       		  {% block body %}{% endblock %}
         </div>
         <!-- /#page-wrapper -->
@@ -42,13 +42,13 @@
     <!-- /#wrapper -->
 
     {% block javascripts  %}
-		
+
 	    <script type="text/javascript" src="client/js/lib/jquery.js"></script>
 	    <script type="text/javascript" src="client/js/lib/bootstrap.min.js"></script>
 	    <script type="text/javascript" src="client/js/plugins/metisMenu/metisMenu.min.js"></script>
 	    <script type="text/javascript" src="client/js/sb-admin-2.js"></script>
 		<script type="text/javascript" src="client/js/app/init.js"></script>
-		
+
 
     {% endblock %}
 

@@ -73,11 +73,20 @@ class TransmissionService {
 			throw new \Exception($message, 400, null);
 		}
 
-	    $addTorrentJson = "{\"method\":\"torrent-add\",\"arguments\":{\"paused\":false,\"filename\":\"$filenameParameter\"} }";
+	    //$addTorrentJson = "{\"method\":\"torrent-add\",\"arguments\":{\"paused\":false, \"filename\": \"$filenameParameter\" } }";
+
+			// Add the torrent
+			$requestPayload = array(
+					"method" => "torrent-add",
+					"arguments" => array("paused" => false, "filename" => $filenameParameter)
+			);
+
+			$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+			$this->transmissionLogger->debug("[TRANSMISSION-TORRENT-ADD] The payload to send to transmission API is $jsonRequest");
 
 	    try {
 
-	    	$result = $this->executeTransmissionApiCall($addTorrentJson);
+	    	$result = $this->executeTransmissionApiCall($jsonRequest);
 	    	// Need to do this to be able to access the property with PHP -> operator
 	    	$result = str_replace("torrent-added", "torrentadded", json_encode($result));
 	    	$resultAsArray = json_decode($result);
@@ -347,6 +356,18 @@ class TransmissionService {
 		$this->logger->debug("Torrent $torrentName successfully RELOCATED in $newLocation");
 		$this->transmissionLogger->debug("[TRANSMISSION-RELOCATE] Torrent $torrentName successfully RELOCATED in $newLocation");
 
+
+		// Start the torrent again, as it could have been paused
+		$requestPayload = array(
+				"method" => "torrent-start-now",
+				"arguments" => array("ids" => array($torrentHash))
+		);
+
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		$this->transmissionLogger->debug("[TRANSMISSION-START-NOW] The payload to send to transmission API is $jsonRequest");
+
+		$result = $this->executeTransmissionApiCall($jsonRequest);
+
 		return $newLocation;
 	}
 
@@ -398,7 +419,8 @@ class TransmissionService {
 				"method" => "session-set",
 				"arguments" => array("download-dir" => $baseDownloadsPath,
 						             "script-torrent-done-enabled" => true,
-									 "script-torrent-done-filename" => "/mediacenter/notify.sh")
+									 "script-torrent-done-filename" => "/mediacenter/notify.sh",
+									 "start-added-torrents" => true)
 		);
 
 		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);

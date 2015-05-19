@@ -22,6 +22,7 @@ framework:
     session:
         # handler_id set to null will use default session handler from php.ini
         handler_id:  ~
+        cookie_lifetime: 25200
     fragments:       ~
     http_method_override: true
 
@@ -47,8 +48,8 @@ doctrine:
     orm:
         auto_generate_proxy_classes: "%kernel.debug%"
         auto_mapping: true
-        
-        
+
+
 doctrine_migrations:
     dir_name: "%kernel.root_dir%/DoctrineMigrations"
     namespace: Application\Migrations
@@ -62,7 +63,7 @@ swiftmailer:
     username:  "%mailer_user%"
     password:  "%mailer_password%"
     spool:     { type: memory }
-    
+
 sensio_framework_extra:
     view:
         annotations: false
@@ -72,7 +73,7 @@ jms_di_extra:
     locations:
         all_bundles: false
         bundles: [MorenwareDutilsBundle]
-        
+
     automatic_controller_injections:
         properties:
             request: "@request"
@@ -80,14 +81,14 @@ jms_di_extra:
         method_calls:
             setRouter: ["@router"]
 
-# Converts arguments of controllers to Json   
+# Converts arguments of controllers to Json
 services:
     json_converter:
         class: Morenware\DutilsBundle\Util\JsonParamConverter
         arguments: ["@jms_serializer"]
         tags:
             - { name: request.param_converter, priority: 10, converter: json_converter }
-            
+
 # Overrides default naming of properties in classes -> otherwise translates camel case to underscore separated words
 parameters:
     jms_serializer.serialized_name_annotation_strategy.class: JMS\Serializer\Naming\IdenticalPropertyNamingStrategy
@@ -98,7 +99,7 @@ leezy_pheanstalk:
       primary:
         server: localhost
         default: true
-        
+
 monolog:
   channels: ["monitor", "renamer", "transmission"]
   handlers:
@@ -123,6 +124,3 @@ monolog:
       type: stream
       path: "%kernel.logs_dir%/renamer.log"
       channels: [renamer]
-  
-            
-        
