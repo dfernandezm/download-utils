@@ -136,7 +136,7 @@ class ProcessManager {
 		$appRoot =  $this->kernel->getRootDir();
 
 		if ($mediacenterSettings->getIsRemote()) {
-			$notifyCallUrl = "http://media.morenware.com/api/notify/finished";
+			$notifyCallUrl = "http://local-dutils/api/notify/finished";
 			$filePath = $appRoot . "/" . self::TEMPLATE_NOTIFY_SCRIPT_PATH;
 			$this->logger->debug("The template script for notification is in path $filePath");
 			$scriptContent = file_get_contents($filePath);
@@ -281,6 +281,25 @@ class ProcessManager {
 			}
 		}
 
+	}
+	
+	public function killSubtitlesProcessIfRunning() {
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+	
+		$renamerPidFile = $processingPath . "/subtitles.pid";
+		$renamerTerminatedFile = $processingPath . "/subtitles.terminated";
+	
+		if (file_exists($renamerPidFile)) {
+			$pid = trim(file_get_contents($renamerPidFile));
+			if (file_exists("/proc/$pid")) {
+				touch($renamerTerminatedFile);
+			} else {
+				$this->logger->debug("Subtitles process wasn't running, deleting files");
+				unlink($renamerPidFile);
+			}
+		}
+	
 	}
 
 	public function killWorkerProcessesIfRunning() {

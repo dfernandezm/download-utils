@@ -110,14 +110,18 @@ class RenameAndMoveCommand extends Command {
 		
 		try {
 			
+			$polls = 0;
+			$failedPolls = 0;
+			
 			while (!$terminated) {
 				$this->renamerLogger->debug("[RENAMING] Checking if there are any torrents to rename...");
 				$this->printMemoryUsage();
 				$torrentsToRename = $this->torrentService->findTorrentsByState(TorrentState::DOWNLOAD_COMPLETED);
 				
 				if (count($torrentsToRename) > 0) {
+					
 					$guid = GuidGenerator::generate();	
-					$this->renamerLogger->debug("[RENAMING] Detected torrents to rename");
+					$this->renamerLogger->debug("[RENAMING] Detected torrents to rename in DOWNLOAD COMPLETED STATE");
 					
 					// Perform substitutions in the template renamer script
 					list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($torrentsToRename, $mediacenterSettings, $pid . "_" . $guid, $mediacenterSettings->getXbmcHostOrIp());
@@ -148,8 +152,17 @@ class RenameAndMoveCommand extends Command {
 						
 					if (intval($exitCode) !== 0) {
 						$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code");
-						$this->logger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code from filebot, continue polling....");
+						$this->logger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code from filebot, continue polling -- polls = $polls");
 						
+						$failedPolls++;
+						$polls++;
+						
+						if ($polls > 10 && $failedPolls > 3) {
+							$this->processManager->killRenamerProcessIfRunning();
+						}
+						
+					} else {
+						$polls = 0;
 					}
 						
 					$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- continue after renaming...");
@@ -157,7 +170,14 @@ class RenameAndMoveCommand extends Command {
 					$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
 							
 				} else {
-					$this->renamerLogger->debug("[RENAMER] No torrents in DOWNLOAD_COMPLETED state found");
+					$this->renamerLogger->debug("[RENAMER] No torrents in DOWNLOAD_COMPLETED state found -- polls = $polls");
+					
+					$polls++;
+						
+					if ($polls > 10) {
+						$this->processManager->killRenamerProcessIfRunning();
+					}
+					
 				}
 				
 				if (file_exists($terminatedFile)) {

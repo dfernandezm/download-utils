@@ -108,14 +108,16 @@ class SubtitlesCommand extends Command {
 				$terminated = true;
 			}
 
-
+			$polls = 0;
+			$failedPolls = 0;
+			
 			while (!$terminated) {
 				$this->renamerLogger->debug("[SUBTITLES] Checking if there are any torrents for subtitle fetching...");
 				$this->printMemoryUsage();
 				$torrentsToFetchSubs = $this->torrentService->findTorrentsByState(TorrentState::RENAMING_COMPLETED);
 
 				if (count($torrentsToFetchSubs) > 0) {
-
+					
 					$guid = GuidGenerator::generate();
 
 					// Perform substitutions in the template renamer script
@@ -170,21 +172,39 @@ class SubtitlesCommand extends Command {
 						//$wholeLine = substr($subtitlesLogText, $pos, strpos($subtitlesLogText, PHP_EOL, $pos)-$pos);
 
 						if (count($missingSubsPaths) > 0) {
-							$renamerLogger->warn("[SUBTITLES] Missing subtitles for paths");
-							$this->torrentService->finishProcessingAfterFetchingSubs($missingSubsPaths);
+							$renamerLogger->warn("[SUBTITLES] Missing subtitles for paths --- " . print_r($missingSubsPaths, true));
 						} else {
 							$renamerLogger->error("[SUBTITLES] Error executing fetching subs process with PID $pid, non-zero exit value");
-							throw new \Exception("[SUBTITLES] Error executing fetching subs process PID $pid", $exitCode, null);
+						}
+						
+						$this->torrentService->finishProcessingAfterFetchingSubs();
+
+						
+						$renamerLogger->error("[SUBTITLES] Finishing after error detected -- polls = $polls");
+						
+						$failedPolls++;
+						$polls++;
+							
+						if ($polls > 10 && $failedPolls > 3) {
+							$this->processManager->killSubtitlesProcessIfRunning();
 						}
 
 					} else {
 						$renamerLogger->debug("[SUBTITLES] Subtitle fetcher with PID $pid finished processing");
-						$this->torrentService->finishProcessingAfterFetchingSubs(null);
+						$this->torrentService->finishProcessingAfterFetchingSubs();
+						$polls = 0;
 					}
 
 
 				} else {
-					$this->renamerLogger->debug("[SUBTITLES] no torrents in RENAMING_COMPLETED state found");
+					
+					$this->renamerLogger->debug("[SUBTITLES] no torrents in RENAMING_COMPLETED state found -- polls = $polls");
+					
+					$polls++;
+					
+					if ($polls > 10) {
+						$this->processManager->killSubtitlesProcessIfRunning();
+					}
 				}
 
 				if (file_exists($terminatedFile)) {

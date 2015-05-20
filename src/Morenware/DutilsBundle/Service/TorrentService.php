@@ -371,6 +371,8 @@ class TorrentService {
 							}
 						}
 					}
+					
+					$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 
 				} else {
 					$this->renamerLogger->warn("[RENAMING] Could not detect hash in path $originalPath, fix path creation to follow '/path/to/torrentName_hash/torrentName/filename.ext'");
@@ -482,30 +484,28 @@ class TorrentService {
 		return $torrentsPathsAsBashArray;
 	}
 
-	public function finishProcessingAfterFetchingSubs($missingSubsPaths) {
+	public function finishProcessingAfterFetchingSubs() {
 		$this->monitorLogger->warn("[AFTER-SUBS] Completing processing");
 		$subtitledTorrents = $this->findTorrentsByState(TorrentState::FETCHING_SUBTITLES);
 		
 		foreach ($subtitledTorrents as $torrent) {
 					
-			$allSubtitlesPresent = $this->areSubtitlesPresentForRenamedPath($torrent->getRenamedPath(),$missingSubsPaths);
+			$allSubtitlesPresent = $this->areSubtitlesPresentForRenamedPath($torrent->getRenamedPath());
 			
 			$torrentName = $torrent->getTorrentName();
 			
 			if (!$allSubtitlesPresent) {
-				$this->monitorLogger->warn("[WORKFLOW-FINISHED] Torrent $torrentName has missing subtitles, fall back RENAMING_COMPLETED");
+				$this->monitorLogger->warn("[WORKFLOW-FINISHED] Torrent $torrentName has missing or failed subtitles, fall back RENAMING_COMPLETED");
 				$torrent->setState(TorrentState::RENAMING_COMPLETED);
 			} else {
 				$torrent->setState(TorrentState::COMPLETED);
 				$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName after fetching subtitles");
 			}
 			
-			$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 			$this->update($torrent);
 		}
 
 		$this->monitorLogger->info("[WORKFLOW-FINISHED] Processing of torrents finished");
-		$this->processManager->killWorkerProcessesIfRunning();
 	}
 
 	public function findTorrentByMagnetOrFile($magnetOrTorrentFile) {
@@ -538,7 +538,7 @@ class TorrentService {
 		foreach($renamedPathArray as $renamedPath) {
 
 			if (!file_exists($renamedPath)) {
-				$this->monitorLogger->warn("[MONITOR-WARNING] The processed torrent ". $torrent->getTorrentName()
+				$this->renamerLogger->warn("[TORRENT-ERROR] The processed torrent ". $torrent->getTorrentName()
 						. " does not have a valid renamed path or cannot be accessed -- $renamedPath");
 				$torrent->setState(TorrentState::COMPLETED_WITH_ERROR);
 				$this->update($torrent);
@@ -546,7 +546,6 @@ class TorrentService {
 			}
 		}
 		
-		//TODO: What happens if it was already deleted
 		$this->transmissionService->deleteTorrent($torrent->getHash());
 	}
 
@@ -640,7 +639,6 @@ class TorrentService {
 					$torrent->setState(TorrentState::RENAMING_COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] With subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
 					$this->renamerLogger->debug("[RENAMING] Flagging renamer to stop after completion");
-					$this->processManager->killRenamerProcessIfRunning();
 				} else {
 					$torrent->setState(TorrentState::COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
@@ -670,30 +668,44 @@ class TorrentService {
 		return $ocurrences;
 	}
 	
-	private function areSubtitlesPresentForRenamedPath($renamedPath, $missingSubsPaths) {
+	private function areSubtitlesPresentForRenamedPath($renamedPath) {
 		
-		if ($missingSubsPaths == null) {
-			return true;
-		}
+		$res = true;
 		
 		$renamedPathsArray = explode(";",$renamedPath);
 		
 		if (count($renamedPathsArray) > 1) {
+			
 			// Multiple paths per torrent, check if any is missing
-			foreach ($renamedPathsArray as $path) {
-				
-				if (in_array($path, $missingSubsPaths)) {
-					// It is in the array of missing, so flag as missing for this torrent
-					return false;
-				}	
+			foreach ($renamedPathsArray as $path) {				
+				$res = $res && $this->checkSubtitlesPresenceForPath($path);
 			}
 			
-			return true;
-
+			return $res;
+			
 		} else { 
 			// Regular case, 1 path per torrent: if that path is NOT in missing paths array, no missing subs
-			return !in_array($renamedPath, $missingSubsPaths);
+			return $this->checkSubtitlesPresenceForPath($renamedPath);
 		}
+	}
+	
+	// Filebot uses 3-letters language code, our script generates the others
+	private function checkSubtitlesPresenceForPath($path) {
+		$subtitleLanguagesToCheck = array("eng","spa");
+		$pathInfo = pathinfo($path);
+		
+		$baseFilename = $pathInfo['filename'];
+		$dirname = $pathInfo['dirname'];
+		
+		foreach ($subtitleLanguagesToCheck as $lang) {
+			$subtitleFilename =  $dirname . "/" .$baseFilename . ".$lang." . "srt";
+			$this->renamerLogger->debug("[SUBTITLES-CHECK] Checking file $subtitleFilename");
+			if (!file_exists($subtitleFilename)) {
+				$this->renamerLogger->warn("[SUBTITLES-CHECK] $subtitleFilename does not exist");
+				return false;
+			}
+		}
+		return true;
 	}
 	
 }
