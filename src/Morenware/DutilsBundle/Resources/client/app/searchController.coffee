@@ -14,7 +14,7 @@ app.controller 'searchController', ['$scope', 'searchFactory', 'utilsService', '
   # http://stackoverflow.com/questions/939032/jquery-pass-more-parameters-into-callback/939206#939206
   # http://stackoverflow.com/questions/24963151/passing-parameters-to-promises-callback-in-angularjs
   startTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
-    return (responseData, status, hearders, config) ->
+    return (responseData, status, headers, config) ->
       responseData.torrent.state = _str.capitalize responseData.torrent.state?.toLowerCase()
       responseData.torrent.date = moment(responseData.torrent.date).format('YYYY-MM-DD')
       _.extend torrentDefinition, responseData.torrent
@@ -23,10 +23,16 @@ app.controller 'searchController', ['$scope', 'searchFactory', 'utilsService', '
       return
 
   cancelTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
-    return (responseData, status, hearders, config) ->
+    return (responseData, status, headers, config) ->
       torrentDefinition.state = "New"
       torrentDefinition.buttonText = "Download"
       return
+
+  successCallbackForSearch = ->
+    return (responseData, status, headers, config) ->
+      populateScopeWithTorrents(responseData.torrentsInfo)
+      return
+
 
   $scope.search = ->
 
@@ -47,8 +53,8 @@ app.controller 'searchController', ['$scope', 'searchFactory', 'utilsService', '
 
       # Loading
       $scope.loading = true
-      promise = searchFactory.searchTorrent searchQuery, sitesParam, onSuccess, onError
-      utilsService.resolvePromiseWithCallbacks promise, onSuccess, onError, null, null
+      successCallback = successCallbackForSearch()
+      searchFactory.searchTorrent searchQuery, sitesParam, successCallback, onError
     return
 
   # When loading the page - injected JSON

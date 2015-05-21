@@ -178,7 +178,7 @@ class SearchTorrentsService {
 		$partialSearchUrl = str_replace("{baseUrl}", $baseUrl, $divxTotalSite->getSearchUrl());
 		$searchUrl = str_replace("{searchQuery}", $searchQuery, $partialSearchUrl);
 
-		$this->logger->debug("[SEARCH-DIVXTOTAL] Searching using main url $searchUrl");
+		$this->logger->info("[SEARCH-DIVXTOTAL] Searching using main url $searchUrl");
 
 		$torrents = array();
 		$total = 0;
@@ -282,7 +282,7 @@ class SearchTorrentsService {
 
 		
 
-		$this->logger->debug("[DIVX-TOTAL] Found " . count($torrents) . " torrents.");
+		$this->logger->info("[DIVX-TOTAL] Found " . count($torrents) . " torrents.");
 
 		return array($torrents, $currentOffset, $total);
 	}
@@ -298,7 +298,7 @@ class SearchTorrentsService {
      $partialSearchUrl = str_replace("{baseUrl}", $baseUrl, $kickassSite->getSearchUrl());
      $searchUrl = str_replace("{searchQuery}", $searchQuery, $partialSearchUrl);
 
-     $this->logger->debug("Connecting to site for searching $searchUrl");
+     $this->logger->info("Connecting to site for searching $searchUrl");
 
      $torrents = array();
      $total = 0;
@@ -377,7 +377,7 @@ class SearchTorrentsService {
    	$partialSearchUrl = str_replace("{baseUrl}",$mainUrl, $pirateBaySite->getSearchUrl());
    	$searchUrl = str_replace("{searchQuery}", $searchQuery, $partialSearchUrl);
 
-   	$this->logger->debug("[SEARCH-TPB] Searching using $searchUrl");
+   	$this->logger->info("[SEARCH-TPB] Searching using $searchUrl");
 
    	$torrents = array();
    	$currentOffset = 0;
@@ -466,10 +466,25 @@ class SearchTorrentsService {
 
 	   	$torrent->setState("NEW");
 
-	   	$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($magnetLink !== null ? $magnetLink : $fileLink);
-
+	   	$hash = null;
+	   	
+	   	if ($magnetLink !== null) {
+	   		
+	   		$hashPattern = '/urn:btih:(.*)&dn=/';
+	   		$matches = array();
+	   		
+	   		if (preg_match($hashPattern, $magnetLink, $matches)) {
+	   			$hash = $matches[1];
+	   			$existingTorrent = $this->torrentService->findTorrentByHash($hash);
+	   		}
+	   			   		
+	   	} else {
+	   		$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($fileLink);		
+	   	}
+	   
 	   	if ($existingTorrent !== null) {
-	   		$torrent->setState($existingTorrent->getState());
+	   		$this->logger->warn("[SEARCH-TORRENTS-MATCH] Matched torrent $torrentName " . $existingTorrent->getHash());
+	   		return $existingTorrent;
 	   	}
 
 	   	return $torrent;

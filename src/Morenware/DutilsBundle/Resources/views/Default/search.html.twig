@@ -62,16 +62,18 @@
                                         <button
                                          ng-show="torrent.state == 'New'"
                                          ng-click="startDownload(torrent)"
-                                         class="btn btn-sm btn-primary col-lg-2"
+                                         class="btn btn-sm btn-primary"
                                          ng-disabled="torrent.state !== 'New'">
                                           [[torrent.buttonText]]
                                          </button>
 
-                                        <button ng-show="torrent.state == 'Downloading' || torrent.state == 'Download_completed'" ng-click="cancelDownload(torrent)" target="_blank" class="btn btn-sm btn-primary col-lg-2">[[torrent.buttonText]]</button>
+                                        <button ng-show="torrent.state == 'Downloading' || torrent.state == 'Download_completed'" ng-click="cancelDownload(torrent)" target="_blank" class="btn btn-sm btn-primary">
+                                          [[torrent.buttonText]]
+                                        </button>
 
-                                        <a ng-show="torrent.torrentFileLink" href="[[torrent.torrentFileLink]]" target="_blank" class="btn btn-sm btn-info col-lg-2">Torrent file</a>
+                                        <a ng-show="torrent.torrentFileLink" href="[[torrent.torrentFileLink]]" target="_blank" class="btn btn-sm btn-info">Torrent file</a>
 
-                                        <a ng-show="torrent.magnetLink" href="[[torrent.magnetLink]]" target="_blank" class="btn btn-sm btn-info col-lg-2">Magnet</a>
+                                        <a ng-show="torrent.magnetLink" href="[[torrent.magnetLink]]" target="_blank" class="btn btn-sm btn-info">Magnet</a>
 
                                     </td>
                                 </tr>
