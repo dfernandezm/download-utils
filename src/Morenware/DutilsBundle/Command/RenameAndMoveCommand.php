@@ -167,7 +167,7 @@ class RenameAndMoveCommand extends Command {
 						
 					$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- continue after renaming...");
 						
-					$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath);
+					$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename);
 							
 				} else {
 					$this->renamerLogger->debug("[RENAMER] No torrents in DOWNLOAD_COMPLETED state found -- polls = $polls");

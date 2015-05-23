@@ -307,15 +307,18 @@ class TorrentService {
 	 *
 	 * @param unknown $renamerLogFilePath
 	 */
-	public function processTorrentsAfterRenaming($renamerLogFilePath) {
+	public function processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename) {
 
 		$this->logger->info("[RENAMING] Starting state update of torrents / subtitle fetching after renaming using renamer log file $renamerLogFilePath");
 
 		$pathMovedPattern = '/\[MOVE\]\s+Rename\s+(.*)to\s+\[(.*)\]/';
+		$pathSkippedPattern = "/Skipped\s+\[(.*)\]\s+because\s+\[(.*)\]/";
+		$hashRegex = "/_([\w]{40})/";
+		
 		$logContent = file_get_contents($renamerLogFilePath);
 
 		$matches = array();
-		//TODO: Refactoring of this, it should be better written and handle better the case of multiple files per hash
+		
 		if (preg_match_all($pathMovedPattern, $logContent, $matches)) {
 
 			$originalPathList = $matches[1];
@@ -333,7 +336,7 @@ class TorrentService {
 
 				// Get the hash from the original path, it will be something like /path/to/torrentName_hash/torrentfolder/file.mkv|avi|etc
 				// The hash is always 40 characters as it is SHA1
-				$hashRegex = "/_([\w]{40})/";
+				
 
 				$matchesHash = array();
 
@@ -367,7 +370,7 @@ class TorrentService {
 							} else {
 							   // The last one, process the torrent
 							   $this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths);
-								 $renamedPaths = array();
+							   $renamedPaths = array();
 							}
 						}
 					}
@@ -379,7 +382,78 @@ class TorrentService {
 				}
 			}
 		} else {
+			
 			$this->renamerLogger->debug("[RENAMING] No torrents were detected in renamer log file $renamerLogFilePath");
+			$this->renamerLogger->debug("[RENAMING] Checking for errors in the log file and if files were moved or not -- $renamerLogFilePath");
+
+			// This is a boundary case, the file still exists in the original path and can exist in the moved path
+			if (preg_match_all($pathSkippedPattern, $logContent, $matches)) {
+				
+				$skippedOriginalPathList = $matches[1];
+				$skippedNewPathList = $matches[2];
+				
+				
+				for ($i = 0; $i < count($skippedOriginalPathList); $i++) {
+					
+					$skippedOriginalPath = $skippedOriginalPathList[$i];
+					$skippedNewPath = $skippedNewPathList[$i];
+
+					$this->renamerLogger->debug("[RENAMING-SKIPPED] Skipped path detected $skippedOriginalPath ==> $skippedNewPath");
+					
+					$matchesHash = array();
+					
+					if(preg_match($hashRegex, $skippedOriginalPath, $matchesHash)) {
+						
+						$hash = $matchesHash[1];
+						$torrent = $this->findTorrentByHash($hash);
+						
+						$this->renamerLogger->debug("[RENAMING-SKIPPED] Skipped torrent detected with hash $hash -- " . $torrent->getTorrentName());
+						
+						//TODO: Does not check for multiple renamed paths yet
+						$torrent->setRenamedPath($skippedNewPath);
+						
+						// Try to clear this torrent from transmission if successful: This could happen, as
+						// Filebot can potentially left the file in both places (old and new, needs investigation
+						// but happened once). So we can clear the torrent and new and old paths. 
+						
+						// This process can leave the torrent in two states:
+						// 1. COMPLETED_WITH_ERROR if the target path does not exist
+						//    Go back to DOWNLOAD_COMPLETED if the original path exists
+						// 2. The original state, RENAMING
+						//    Move to RENAMING_COMPLETED if the target path exists
+
+						$this->clearTorrentFromTransmissionIfSuccessful($torrent);
+						
+						if ($torrent->getState() == TorrentState::COMPLETED_WITH_ERROR) {
+							
+							// Check if the original path exists
+							if (file_exists($skippedOriginalPath)) {
+								// The original path is still there, so leave this for the next renaming attempts
+								$torrent->setState(TorrentState::DOWNLOAD_COMPLETED);
+								$this->renamerLogger->warn("[RENAMING-SKIPPED] Skipped torrent renamed path does not exist but original path is still there, flag back to DOWNLOAD_COMPLETED");
+								
+							} else {
+								// The file does not exist in the original path, and does not exist in the new path
+								// We need to check manually where the file is (maybe Unsorted), flag this as error
+								$this->renamerLogger->error("[RENAMING-SKIPPED] Skipped torrent paths are missing -- check manually where the file is $hash -- " . $torrent->getTorrentName());
+							}
+							
+							// No file in destination, renamedPath is null
+							$torrent->setRenamedPath(null);
+							$this->update($torrent);
+						} else {
+							
+							// The torrent has been successfully cleared from transmission and checked the renamed path exists, we can flag
+							// it as successful
+							$renamedPaths = array();
+							$renamedPaths[] = $torrent->getRenamedPath();
+							$this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths, true);
+						}
+					} else {
+						$this->renamerLogger->warn("[RENAMING-SKIPPED] No torrent detected in skipped path $skippedOriginalPath");
+					}	
+				}	
+			}
 		}
 	}
 
@@ -612,7 +686,7 @@ class TorrentService {
 	}
 
 
-	private function processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths) {
+	private function processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths, $alreadyCleared = false) {
 
 		if ($torrent !== null &&
 			$torrent->getState()  == TorrentState::RENAMING &&
@@ -643,7 +717,11 @@ class TorrentService {
 					$torrent->setState(TorrentState::COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
 					$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName");
-					$this->clearTorrentFromTransmissionIfSuccessful($torrent);
+					
+					if (!$alreadyCleared) {
+						$this->clearTorrentFromTransmissionIfSuccessful($torrent);
+					}
+					
 					$this->processManager->killWorkerProcessesIfRunning();
 				}
 
