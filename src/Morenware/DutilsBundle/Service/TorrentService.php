@@ -361,21 +361,21 @@ class TorrentService {
 						// several files in the torrent have been renamed
 						if (!array_key_exists($hash, $moreThanOnePathHashes)) {
 							$moreThanOnePathHashes[$hash] = $numberOfPaths - 1;
+							$this->renamerLogger->debug("[RENAMING] Computing number of paths for hash $hash, currently " . $moreThanOnePathHashes[$hash]);
 						} else {
 
 							$remainingNumberOfPaths = $moreThanOnePathHashes[$hash];
-							$this->logger->debug("[RENAMING] Remaining paths to process for hash $hash is $remainingNumberOfPaths");
+							$this->renamerLogger->debug("[RENAMING] Remaining paths to process for hash $hash is $remainingNumberOfPaths");
 							if ($remainingNumberOfPaths > 1) {
 								$moreThanOnePathHashes[$hash] = $remainingNumberOfPaths - 1;
 							} else {
 							   // The last one, process the torrent
 							   $this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths);
 							   $renamedPaths = array();
+							   $moreThanOnePathHashes = array();
 							}
 						}
 					}
-					
-					$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 
 				} else {
 					$this->renamerLogger->warn("[RENAMING] Could not detect hash in path $originalPath, fix path creation to follow '/path/to/torrentName_hash/torrentName/filename.ext'");
@@ -729,7 +729,7 @@ class TorrentService {
 
 		} else {
 			// Not found in DB
-			$this->renamerLogger->warn("[RENAMING] Torrent not found in DB: $hash");
+			$this->renamerLogger->warn("[RENAMING] Torrent not found in DB with expected state: $hash, current state is " . $torrent->getState());
 		}
 	}
 
