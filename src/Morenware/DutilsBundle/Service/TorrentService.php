@@ -355,7 +355,7 @@ class TorrentService {
 
 					if ($numberOfPaths == 1) {
 						// process the torrent -- regular case 1 torrent = 1 file
-						$this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths);
+						$this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths, false);
 						$renamedPaths = array();
 					} else {
 						// several files in the torrent have been renamed
@@ -370,7 +370,8 @@ class TorrentService {
 								$moreThanOnePathHashes[$hash] = $remainingNumberOfPaths - 1;
 							} else {
 							   // The last one, process the torrent
-							   $this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths);
+							   $this->renamerLogger->debug("[RENAMING] Multiple renamed paths, last path -- processing torrent with hash $hash");
+							   $this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths, false);
 							   $renamedPaths = array();
 							   $moreThanOnePathHashes = array();
 							}
@@ -717,15 +718,15 @@ class TorrentService {
 					$torrent->setState(TorrentState::COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
 					$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName");
-					
-					if (!$alreadyCleared) {
-						$this->clearTorrentFromTransmissionIfSuccessful($torrent);
-					}
-					
 					$this->processManager->killWorkerProcessesIfRunning();
 				}
 
 				$this->update($torrent);
+				
+				if (!$alreadyCleared) {
+					$this->clearTorrentFromTransmissionIfSuccessful($torrent);
+				}
+					
 
 		} else {
 			// Not found in DB
