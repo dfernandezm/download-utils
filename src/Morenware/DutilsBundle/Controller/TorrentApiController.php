@@ -113,11 +113,13 @@ class TorrentApiController {
 	 *
 	 */
 	//TODO: add state parameter to exclude some states and some sorting; Add dateAdded, dateStarted, dateFinished to Torrent
-	public function torrentsStatusAction(Request $request) {
+	public function torrentsStatusAction() {
 		try {	
-			$updatedTorrents = $this->transmissionService->checkTorrentsStatus();
-			return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $updatedTorrents, 200, "torrents");
+			$this->transmissionService->checkTorrentsStatus();
+			$torrents = $this->torrentService->getAllNonCompletedOrderedByDate();
+			return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $torrents, 200, "torrents");
 		} catch(\Exception $e)  {
+			$this->logger->error("Error: " . $e->getMessage() . " -- " . str_replace("#", "\n#", $e->getTraceAsString()));
 			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
 		}
 	}
@@ -152,6 +154,105 @@ class TorrentApiController {
 	}
 	
 	
+	/**
+	 *
+	 * Pause torrent in transmission
+	 *
+	 * @Route("/torrents/pause/{torrentHashOrGuid}")
+	 * @Method("PUT")
+	 *
+	 */
+	public function pauseTorrentDownloadAction($torrentHashOrGuid) {
+		
+		try {
+			
+			$torrent = $this->torrentService->findTorrentByGuid($torrentHashOrGuid);
+			
+			if ($torrent == null) {
+				$torrent = $this->torrentService->findTorrentByHash($torrentHashOrGuid);
+			}
+			
+			if ($torrent !== null) {
+				//Validate Torrent not in correct state	
+				$torrent = $this->torrentService->pauseTorrent($torrent);
+				return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent, 200, "torrent");
+			}  else {
+				return $this->generateErrorResponse("TORRENT_NOT_FOUND", 404);
+			}			
+			
+		} catch(\Exception $e)  {
+			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
+		}
+		
+	}
+	
+	/**
+	 *
+	 * Resume torrent in transmission
+	 *
+	 * @Route("/torrents/resume/{torrentHashOrGuid}")
+	 * @Method("PUT")
+	 *
+	 */
+	public function resumeTorrentDownloadAction($torrentHashOrGuid) {
+	
+		try {
+				
+			$torrent = $this->torrentService->findTorrentByGuid($torrentHashOrGuid);
+				
+			if ($torrent == null) {
+				$torrent = $this->torrentService->findTorrentByHash($torrentHashOrGuid);
+			}
+				
+			if ($torrent !== null) {
+				//Validate Torrent not in correct state
+				$torrent = $this->torrentService->resumeTorrent($torrent);
+				return ControllerUtils::createJsonResponseForDto($this->serializer, $torrent, 200, "torrent");
+			}  else {
+				return $this->generateErrorResponse("TORRENT_NOT_FOUND", 404);
+			}
+				
+		} catch(\Exception $e)  {
+			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
+		}
+	
+	}
+	
+	/**
+	 *
+	 * Start renaming process if not running
+	 *
+	 * @Route("/torrents/rename")
+	 * @Method("PUT")
+	 *
+	 */
+	public function renameTorrentsAction() {
+		try {
+			$this->processManager->startRenamerWorker();
+			return ControllerUtils::createJsonResponseForArray(null);
+		} catch(\Exception $e)  {
+			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
+		}
+	}
+	
+	/**
+	 *
+	 * Start subtitle process if not running
+	 *
+	 * @Route("/torrents/subtitles")
+	 * @Method("PUT")
+	 *
+	 */
+	public function fetchSubtitleTorrentsAction() {
+		try {
+			$this->processManager->startSubtitleFetchWorker();
+			return ControllerUtils::createJsonResponseForArray(null);
+		} catch(\Exception $e)  {
+			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
+		}
+	}
+	
+
 	private function generateErrorResponse($message, $errorCode) {
 		$error = array(
 				"error" => "There was an error processing call: " . $message,

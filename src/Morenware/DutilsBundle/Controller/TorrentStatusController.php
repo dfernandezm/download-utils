@@ -30,16 +30,9 @@ class TorrentStatusController extends Controller
      *
      */
     public function torrentStatusAction(Request $request) {
-
-			//$torrents = $this->torrentService->findTorrentsByState("COMPLETED");
 			$torrents = $this->torrentService->getAllOrderedByDate();
-			$torrentsJson = ControllerUtils::createJsonStringForDto($this->serializer,
-					array('torrents' => $torrents
-			));
-
-			$this->logger->debug("STATUS == torrents json is ". $torrentsJson);
-
-    	return $this->render('MorenwareDutilsBundle:Default:torrentsStatus.html.twig', array('torrents' => $torrentsJson));
+			$torrentsJson = ControllerUtils::createJsonStringForDto($this->serializer, $torrents);
+    		return $this->render('MorenwareDutilsBundle:Default:torrentsStatus.html.twig', array('torrents' => $torrentsJson));
 
     }
 }

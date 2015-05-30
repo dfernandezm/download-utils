@@ -727,6 +727,15 @@ class SearchTorrentsService {
 
    private function sortByDate($torrents) {
    	$dateSort = function ($torrentA, $torrentB) {
+   		
+   		if ($torrentB->getDate() == null) {
+   			return -1;
+   		} 
+   		
+   		if ($torrentA->getDate() == null) {
+   			return 1;
+   		}
+   		
    		$timeA = $torrentA->getDate()->getTimestamp();
    		$timeB = $torrentB->getDate()->getTimestamp();
 

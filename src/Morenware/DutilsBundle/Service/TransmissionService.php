@@ -176,6 +176,30 @@ class TransmissionService {
 
 		return $updatedTorrents;
 	}
+	
+	public function pauseTorrent($torrentHash) {
+		// Pause torrent {"method":"torrent-stop","arguments":{"ids":[48]}}
+		$requestPayload = array(
+				"method" => "torrent-stop",
+				"arguments" => array("ids" => array($torrentHash))
+		);
+		
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		$this->transmissionLogger->debug("[TRANSMISSION-STOP] The payload to send to transmission API (STOP) is $jsonRequest");
+		$this->executeTransmissionApiCall($jsonRequest);
+	}
+	
+	public function resumeTorrent($torrentHash) {
+		// Resume paused torrent {"method":"torrent-stop","arguments":{"ids":[48]}}
+		$requestPayload = array(
+				"method" => "torrent-start",
+				"arguments" => array("ids" => array($torrentHash))
+		);
+		
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		$this->transmissionLogger->debug("[TRANSMISSION-RESUME] The payload to send to transmission API (RESUME) is $jsonRequest");
+		$this->executeTransmissionApiCall($jsonRequest);
+	}
 
 
 	public function executeTransmissionApiCall($jsonPayload) {

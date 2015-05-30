@@ -103,6 +103,22 @@ class TorrentService {
 	public function getAllOrderedByDate() {
 		return $this->getRepository()->findBy(array(), array('date' => 'DESC'));
 	}
+	
+	public function getAllNonCompletedOrderedByDate() {
+		
+		$upperDate = new \DateTime();
+		$lowerDate = new \DateTime();
+		$interval = \DateInterval::createFromDateString("-5 years");
+		$lowerDate = $lowerDate->add($interval);
+		
+		$q = $this->em->createQuery("select t from MorenwareDutilsBundle:Torrent t " . 
+				                    "where t.date between :lowerDate and :upperDate " . 
+				                    "order by t.date DESC")
+		                            ->setParameter("lowerDate", $lowerDate->format("Y-m-d"))
+		                            ->setParameter("upperDate", $upperDate->format("Y-m-d"));
+		$torrents = $q->getResult();
+		return $torrents;	
+	}
 
 
 	public function delete($torrent) {
@@ -642,6 +658,20 @@ class TorrentService {
 		}
 
 		$this->transmissionService->deleteTorrent($torrent->getHash());
+	}
+	
+	public function pauseTorrent($torrent) {
+		$this->transmissionService->pauseTorrent($torrent->getHash());
+		$torrent->setState(TorrentState::PAUSED);
+		$this->update($torrent);
+		return $torrent;
+	}
+	
+	public function resumeTorrent($torrent) {
+		$this->transmissionService->resumeTorrent($torrent->getHash());
+		$torrent->setState(TorrentState::DOWNLOADING);
+		$this->update($torrent);
+		return $torrent;
 	}
 
 	private function requireSubtitles($newPath) {

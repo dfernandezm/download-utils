@@ -8,10 +8,10 @@
          </tr>
        </thead>
        <tbody>
-           <tr ng-repeat="torrent in torrents.torrents | torrentsByState:filterState track by $index">
+           <tr ng-repeat="torrent in torrents | torrentsByState:filterState track by $index">
              <td ng-bind="offset+$index+1"></td>
-             <td ng-repeat="fieldLabel in fieldLabels track by $index" ng-bind="processField(torrent,fieldLabel)"></td>
-             <td>the actions</td>
+             <td ng-repeat="fieldLabel in fieldLabels track by $index" ng-bind-html="processField(torrent,fieldLabel)"></td>
+             <td class="col-sm-5"><torrent-actions torrent="torrent" /></td>
            </tr>
        </tbody>
    </table>

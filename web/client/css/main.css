@@ -157,3 +157,8 @@ body.login form { }
 	margin-right: 5px;
 	padding-left: 2px;
 }
+
+
+.progress-bar-success {
+	text-align: center;
+}

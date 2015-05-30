@@ -41,14 +41,6 @@ class ProcessManager {
 		return 10 * 60;
 	}
 
-	public function startDownloadsMonitoring() {
-
-		if (!$this->isMonitorDownloadsRunning()) {
-			return $this->startSymfonyCommandAsynchronously(CommandType::MONITOR_DOWNLOADS);
-		} else {
-			$this->logger->debug("There is already one monitoring process running");
-		}
-	}
 
 	/**
 	 * Starts a Symfony Command in a separate process which is run asynchronously.
@@ -250,7 +242,13 @@ class ProcessManager {
 			$this->startSymfonyCommandAsynchronously(CommandType::RENAME_DOWNLOADS);
 		}
 	}
-
+	
+	public function startDownloadsMonitoring() {
+		if (!$this->isMonitorDownloadsRunning()) {
+			return $this->startSymfonyCommandAsynchronously(CommandType::MONITOR_DOWNLOADS);
+		}
+	}
+	
 	public function startSubtitleFetchWorker() {
 		if (!$this->isSubtitleFetchWorkerRunning()) {
 			$this->startSymfonyCommandAsynchronously(CommandType::FETCH_SUBTITLES);
@@ -312,8 +310,27 @@ class ProcessManager {
 				unlink($renamerPidFile);
 			}
 		}
-	
 	}
+	
+	public function killDownloadsMonitoringProcessIfRunning() {
+		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
+		$processingPath = $mediacenterSettings->getProcessingTempPath();
+	
+		$monitorPidFile = $processingPath . "/monitor.pid";
+		$monitorTerminatedFile = $processingPath . "/monitor.terminated";
+	
+		if (file_exists($monitorPidFile)) {
+			$pid = trim(file_get_contents($monitorPidFile));
+			if (file_exists("/proc/$pid")) {
+				touch($monitorTerminatedFile);
+			} else {
+				$this->logger->debug("Monitor process wasn't running, deleting files");
+				unlink($monitorPidFile);
+			}
+		}
+	}
+	
+	
 
 	public function killWorkerProcessesIfRunning() {
 		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
