@@ -11,13 +11,14 @@ class CreateBuildProperties extends AbstractTask {
   public function run() {
     
     $commandForBranch = "git status | grep -o \"origin/.*'\"";
-    $output = $this->runCommandLocal($commandForBranch);
+    $output = "";
+    $this->runCommandLocal($commandForBranch, $output);
     $branch = str_replace("'", "", $output);
     
     $date = new \DateTime();
     
-    $commandForCommit = 'git rev-parse HEAD';
-    $output = $this->runCommandLocal($commandForCommit);
+    $commandForCommit = "git rev-parse HEAD";
+    $result = $this->runCommandLocal($commandForCommit, $output);
     $commit = $output;
         
     $fileContent = "branch=$branch\n" . "commit=$commit\n" . "date=" . $date->format("d/m/Y H:i") ."\n";
