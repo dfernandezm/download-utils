@@ -418,10 +418,10 @@ class TorrentService {
 						// but happened once). So we can clear the torrent and new and old paths. 
 						
 						// This process can leave the torrent in two states:
-						// 1. COMPLETED_WITH_ERROR if the target path does not exist
-						//    Go back to DOWNLOAD_COMPLETED if the original path exists
+						// 1. COMPLETED_WITH_ERROR if the target path does not exist so,
+						//    -> Go back to DOWNLOAD_COMPLETED if the original path (files) still exist
 						// 2. The original state, RENAMING
-						//    Move to RENAMING_COMPLETED if the target path exists
+						//    -> Move to RENAMING_COMPLETED if the target path exists
 
 						$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 						
@@ -454,6 +454,14 @@ class TorrentService {
 						$this->renamerLogger->warn("[RENAMING-SKIPPED] No torrent detected in skipped path $skippedOriginalPath");
 					}	
 				}	
+			} else {
+				//TODO: Treat here exclusions "Exclude ..." as skipped. This will depend on why Filebot excluded here (post in forum pending)
+				$this->renamerLogger->error("[RENAMING-ERRORED] No torrents with skipped paths detected -- it is likely an error ocurred, move torrents back to DOWNLOAD_COMPLETED to attempt next time");
+				foreach ($torrentsToRename as $torrent) {
+					$torrent->setState(TorrentState::DOWNLOAD_COMPLETED);
+					$this->update($torrent);
+					$this->renamerLogger->warn("[RENAMING-ERRORED] Torrent " . $torrent->getTitle() . " with hash ". $torrent->getHash() . " moved back to DOWNLOAD_COMPLETED");
+				}		
 			}
 		}
 	}
@@ -608,6 +616,14 @@ class TorrentService {
 
 		$renamedPath = $torrent->getRenamedPath();
 
+		if ($renamedPath == null) {
+			$this->renamerLogger->warn("[TORRENT-ERROR] The processed torrent ". $torrent->getTorrentName()
+				   . " does not have a valid renamed path or cannot be accessed -- $renamedPath");
+			$torrent->setState(TorrentState::COMPLETED_WITH_ERROR);
+			$this->update($torrent);
+			return;
+		}
+		
 		$renamedPathArray = explode(";",$renamedPath);
 
 		foreach($renamedPathArray as $renamedPath) {
