@@ -6,4 +6,4 @@ parameters:
   morenware_dutils.transmissionsettings.class:  Morenware\DutilsBundle\Entity\TransmissionSettings
   morenware_dutils.mediacentersettings.class:  Morenware\DutilsBundle\Entity\MediaCenterSettings
   morenware_dutils.torrentfeed.service.class: Morenware\DutilsBundle\Service\TorrentFeedService
- 
+  morenware_dutils.automatedsearchconfig.class:  Morenware\DutilsBundle\Entity\AutomatedSearchConfig

@@ -119,7 +119,14 @@ class Torrent {
 	 * @ORM\Column(name="seeds", type="integer", nullable=true)
 	 */
 	private $seeds;
-	
+
+    /**
+     * @ORM\Column(name="automated_search_id", type="integer", nullable=true)
+     * /**
+     * @ManyToOne(targetEntity="AutomatedSearchConfig", fetch="LAZY")
+     */
+    private $automatedSearchId;
+
 
 	public function getTitle() {
 		return $this->title;
