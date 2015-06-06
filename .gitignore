@@ -10,3 +10,4 @@ web/client/js/init.js
 web/client/js/init.js.map
 .mage/logs/
 /deploy/dist/
+build.properties
