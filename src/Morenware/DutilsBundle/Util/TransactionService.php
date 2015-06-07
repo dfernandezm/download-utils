@@ -10,20 +10,26 @@ use JMS\DiExtraBundle\Annotation\Service;
 /** @Service("transaction.service") */
 class TransactionService {
 
-	/** @DI\Inject("doctrine.orm.entity_manager") */
+	/** @DI\Inject("doctrine.orm.entity_manager")
+     * @var \Doctrine\ORM\EntityManager $em
+     */
 	public $em;
 	
-	/** @DI\Inject("monolog.logger") */
+	/** @DI\Inject("monolog.logger")
+     * @var \Monolog\Logger $logger
+     */
 	public $logger;
 	
 	
 	/**
+     * This is not used at the moment, look at executeInTransactionWithRetryUsingProvidedEm
+     *
 	 * Executes the runnable block in a transaction using the injected entity manager, which is passed to the block
 	 * @param unknown $runnable
 	 * @throws Exception
 	 * @return unknown
 	 */
-	public function executeInTransaction($runnable) {
+	public function executeInTransaction(callable $runnable) {
 		// If there is already a transaction in progress then this
 		// sub-transaction can only be attempted once ...
 		if ($this->em->getConnection()->isTransactionActive()) {
@@ -78,7 +84,7 @@ class TransactionService {
 	
 	
 	/**
-	 * Executes runnable in the context of a transaction created in the Entity Manager passed as parameter.
+	 * Executes runnable in the context of a transaction created through the Entity Manager passed as parameter.
 	 * The transaction retries 5 times and gives up after that throwing the last exception supplied
 	 * 
 	 * @param unknown $em

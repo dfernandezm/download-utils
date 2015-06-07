@@ -60,7 +60,7 @@ class RenameAndMoveCommand extends Command {
 	// one is currently running
 	const PID_FILE_NAME = "renamer.pid";
 
-	const AMC_SCRIPT_RELATIVE_PATH = "../components/filebot/scripts/amc.groovy";
+    const FILEBOT_SCRIPTS_PATH = "../components/filebot/scripts";
 	
 	/**
 	 * @DI\InjectParams({
@@ -210,17 +210,25 @@ class RenameAndMoveCommand extends Command {
 	}
 
 
-	public function prepareRenameScriptToExecute($torrentsToRename, MediaCenterSettings $mediacenterSettings, $processPid, $xbmcHost = null) {
+    /**
+     * @param $torrentsToRename
+     * @param MediaCenterSettings $mediacenterSettings
+     * @param $processPid
+     * @param null $xbmcHost
+     * @return array
+     */
+    public function prepareRenameScriptToExecute($torrentsToRename, MediaCenterSettings $mediacenterSettings, $processPid, $xbmcHost = null) {
 
 		$appRoot = $this->kernel->getRootDir();
 		$filePath = $appRoot . "/" . self::RENAME_SCRIPT_PATH;
-		$amcScriptPath = $appRoot . self::AMC_SCRIPT_RELATIVE_PATH;
+        $filebotScriptsPath =  $appRoot . "/" . self::FILEBOT_SCRIPTS_PATH;
 
-        $this->renamerLogger->debug("[RENAMING] Copying AMC groovy custom script to temp path -- $amcScriptPath");
-        copy($amcScriptPath, $mediacenterSettings->getProcessingTempPath() . "/amc.groovy");
+        $this->renamerLogger->debug("[RENAMING] Symlinking custom Filebot scripts -- lib and AMC to temp path -- $filebotScriptsPath");
+        $amcScriptPath = $mediacenterSettings->getProcessingTempPath() . "/amc.groovy";
+        symlink($filebotScriptsPath . "/amc.groovy",  $amcScriptPath);
+        symlink($filebotScriptsPath . "/lib", $mediacenterSettings->getProcessingTempPath() . "/lib");
 
 		$this->renamerLogger->debug("[RENAMING] The renamer template script path is $filePath");
-
 		$scriptContent = file_get_contents($filePath);
 
 		$renamerLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename_$processPid";
@@ -232,6 +240,7 @@ class RenameAndMoveCommand extends Command {
 		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathAsBashArray, $scriptContent);
 		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", $libraryBasePath, $scriptContent);
+        $scriptContent = str_replace("%AMC_SCRIPT_PATH%", $amcScriptPath, $scriptContent);
 
 		if ($xbmcHost != null) {
 			$scriptContent = str_replace("%XBMC_HOSTNAME%", $xbmcHost, $scriptContent);

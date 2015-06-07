@@ -556,6 +556,7 @@ class TorrentService {
 		   if (is_dir($torrentPath)) {
 		   	 $torrentDir = $torrentPath;
 		   } else {
+             $this->renamerLogger->debug("The torrentPath $torrentPath is directly a file, getting directory");
 		   	 $torrentDir = dirname($torrentPath);
 		   }
 
@@ -777,6 +778,7 @@ class TorrentService {
 	
 	/** Filebot uses 3-letters language code, our script generates the others */
 	private function checkSubtitlesPresenceForPath($path) {
+
 		$subtitleLanguagesToCheck = array("eng","spa");
 		$pathInfo = pathinfo($path);
 		
@@ -791,7 +793,23 @@ class TorrentService {
 				return false;
 			}
 		}
+
 		return true;
 	}
+
+    public function findTorrentByMagnetOrFile($magnetOrTorrentFile) {
+
+        $torrent = null;
+
+        if ($this->endsWith($magnetOrTorrentFile,".torrent")) {
+            // It is a torrent file link
+            $torrent = $this->findTorrentByFileLink($magnetOrTorrentFile);
+        } else {
+            // Assume a magnet link
+            $torrent = $this->findTorrentByMagnetLink($magnetOrTorrentFile);
+        }
+
+        return $torrent;
+    }
 	
 }
