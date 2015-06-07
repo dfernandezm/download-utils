@@ -6,9 +6,8 @@ ACTION=move
 # Bash array - needs a substitution with a string like ==> ("path/to/files/1" "/path/to/files/2" ...), values separated by spaces
 INPUT_ARRAY=%INPUT_PATHS%
 COUNT=${#INPUT_ARRAY[@]}
-# echo "Input Array: ${INPUT_ARRAY[*]} - COUNT"
 OUTPUT=%VIDEO_LIBRARY_BASE_PATH%
-TITLE_ESCAPED="{t.replaceAll(/[é]/,'e').replaceAll(/[á]/,'a').replaceAll(/[í]/,'i').replaceAll(/[ó]/,'o').replaceAll(/[ú]/,'ú'}"
+TITLE_ESCAPED="{t.replaceAll(/[é]/,'e').replaceAll(/[á]/,'a').replaceAll(/[í]/,'i').replaceAll(/[ó]/,'o').replaceAll(/[ú]/,'u')}"
 for ((i = 0; i < ${#INPUT_ARRAY[@]}; i++))
 do
   INPUT_PATH="${INPUT_ARRAY[$i]}"
