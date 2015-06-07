@@ -131,12 +131,15 @@ class RenameAndMoveCommand extends Command {
 					$this->renamerLogger->debug("[RENAMING] Detected torrents to rename in DOWNLOAD COMPLETED STATE");
 
 					// Perform substitutions in the template renamer script
-					list($scriptToExecute, $renamerLogFilePath) = $this->prepareRenameScriptToExecute($torrentsToRename, $mediacenterSettings, $pid . "_" . $guid, $mediacenterSettings->getXbmcHostOrIp());
+					list($scriptToExecute, $renamerLogFilePath) =
+                        $this->prepareRenameScriptToExecute($torrentsToRename, $mediacenterSettings,
+                                                            $pid . "_" . $guid,
+                                                            $mediacenterSettings->getXbmcHostOrIp());
 					$this->renamerLogger->debug("[RENAMING] The script to execute is $scriptToExecute");
 					$renamerLogger = $this->renamerLogger;
 
 					// Define callback function to monitor real time output of the process
-					$waitCallback = function ($type, $buffer, $process) use ($renamerLogger, $terminatedFile) {
+					$waitCallback = function ($type, $buffer, Process $process) use ($renamerLogger, $terminatedFile) {
 
 						$renamerLogger->debug("[RENAMING] ==> $buffer");
 

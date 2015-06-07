@@ -2,7 +2,7 @@
 namespace Morenware\DutilsBundle\Util;
 
 use Doctrine\Common\Persistence\ObjectManager;
-use Morenware\DutilsBundle\Form\InstanceType;
+use Doctrine\ORM\EntityManager;
 use Morenware\DutilsBundle\Entity\Instance;
 use JMS\DiExtraBundle\Annotation as DI;
 use JMS\DiExtraBundle\Annotation\Service;
@@ -85,7 +85,7 @@ class TransactionService {
 	 * @param unknown $runnable
 	 * @throws Exception
 	 */
-	public function executeInTransactionWithRetryUsingProvidedEm($em, $runnable) {
+	public function executeInTransactionWithRetryUsingProvidedEm(EntityManager $em, callable $runnable) {
 	
 		$success = false;
 		$retryCount = 0;

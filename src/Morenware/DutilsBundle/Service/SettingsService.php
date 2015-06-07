@@ -7,20 +7,17 @@ use Doctrine\Common\Persistence\ObjectManager;
 /** @Service("settings.service") */
 class SettingsService {
 	
-	/** @DI\Inject("doctrine.orm.entity_manager") */
-    /** @var EntityManager $em */
+	/** @DI\Inject("doctrine.orm.entity_manager")
+     *  @var \Doctrine\ORM\EntityManager $em
+     */
 	public $em;
 	
-	private $transmissionRepository;
-	private $mediacenterRepository;
-	
 	private $transmissionSettingsClass;
-	private $mediacenterSettingsClass;
-	
-	
+
+    private $mediacenterSettingsClass;
+
 	private $logger;
 
-	
 	/**
 	 * @DI\InjectParams({
 	 *     "logger" = @DI\Inject("logger"),
