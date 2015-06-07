@@ -8,6 +8,7 @@ use Doctrine\Common\Persistence\ObjectManager;
 class SettingsService {
 	
 	/** @DI\Inject("doctrine.orm.entity_manager") */
+    /** @var EntityManager $em */
 	public $em;
 	
 	private $transmissionRepository;
@@ -34,7 +35,7 @@ class SettingsService {
 		$this->mediacenterSettingsClass = $mediacenterSettingsClass;
 		$this->transmissionSettingsClass = $transmissionSettingsClass;
 	}
-	
+
 	public function getRepository($entityClass) {
 		return $this->em->getRepository($entityClass);
 	}
@@ -77,16 +78,5 @@ class SettingsService {
 	public function getDefaultTransmissionSettings() {
 		return $this->getTransmissionRepository()->find(1);
 	}
-	
-	
-		
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
 }

@@ -12,7 +12,7 @@ TITLE_ESCAPED="{t.replaceAll(/[é]/,'e').replaceAll(/[á]/,'a').replaceAll(/[í]
 for ((i = 0; i < ${#INPUT_ARRAY[@]}; i++))
 do
   INPUT_PATH="${INPUT_ARRAY[$i]}"
-  FILEBOT_AMC_CMD="$FB_EXEC -script fn:amc --output \"$OUTPUT\" --log-file $LOG_LOCATION --action $ACTION -non-strict \"$INPUT_PATH\" --def clean=y --conflict auto --def skipExtract=y"
+  FILEBOT_AMC_CMD="$FB_EXEC -script ./amc.groovy --output \"$OUTPUT\" --log-file $LOG_LOCATION --action $ACTION -non-strict \"$INPUT_PATH\" --def clean=y --conflict auto --def skipExtract=y"
   FILEBOT_AMC_CMD="$FILEBOT_AMC_CMD --def unsorted=y --def \"seriesFormat=TV Shows/{n.upperInitial()}/{episode.special ? 'Specials':'Season '+s}/{n.upperInitial()} {episode.special ? '0xSpecial '+special.pad(2) : sxe.pad(2)} $TITLE_ESCAPED\" \"movieFormat=Movies/{n} ({y})/{n}\""
   let c=$COUNT-1
 
