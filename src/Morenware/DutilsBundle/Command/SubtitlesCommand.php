@@ -185,7 +185,7 @@ class SubtitlesCommand extends Command {
 						$failedPolls++;
 						$polls++;
 							
-						if ($polls > 10 && $failedPolls > 3) {
+						if ($polls > 5 && $failedPolls > 3) {
 							$this->processManager->killSubtitlesProcessIfRunning();
 						}
 
@@ -201,11 +201,11 @@ class SubtitlesCommand extends Command {
 					$this->renamerLogger->debug("[SUBTITLES] no torrents in RENAMING_COMPLETED state found -- polls = $polls");
 					
 					$polls++;
-					
-					if ($polls > 10) {
-						$this->processManager->killSubtitlesProcessIfRunning();
-					}
 				}
+
+                if ($polls > 5) {
+                    $this->processManager->killSubtitlesProcessIfRunning();
+                }
 
 				if (file_exists($terminatedFile)) {
 					$this->renamerLogger->debug("[SUBTITLES] .terminated file found -- terminating execution");

@@ -102,6 +102,7 @@ OPENSUBTITLES_PASSWORD=ZVCvrasp
 mkdir -p $FILEBOT_HOME
 chmod +rwx -R $FILEBOT_HOME
 chown -R $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME
+# Need to update this to the latest version -- use the portable JAR!
 wget -qO /tmp/filebot.ipk http://sourceforge.net/projects/filebot/files/filebot/FileBot_4.5.6/filebot_4.5.6_arm.ipk/download
 cd /tmp
 mkdir -p filebot
