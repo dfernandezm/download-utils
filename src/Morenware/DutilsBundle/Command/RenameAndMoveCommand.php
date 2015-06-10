@@ -225,7 +225,9 @@ class RenameAndMoveCommand extends Command {
 
         $this->renamerLogger->debug("[RENAMING] Symlinking custom Filebot scripts -- lib and AMC to temp path -- $filebotScriptsPath");
         $amcScriptPath = $mediacenterSettings->getProcessingTempPath() . "/amc.groovy";
+        $cleanerScriptPath = $mediacenterSettings->getProcessingTempPath() . "/cleaner.groovy";
         symlink($filebotScriptsPath . "/amc.groovy",  $amcScriptPath);
+        symlink($filebotScriptsPath . "/cleaner.groovy",  $cleanerScriptPath);
         symlink($filebotScriptsPath . "/lib", $mediacenterSettings->getProcessingTempPath() . "/lib");
 
 		$this->renamerLogger->debug("[RENAMING] The renamer template script path is $filePath");
