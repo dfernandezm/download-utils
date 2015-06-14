@@ -110,12 +110,14 @@ class TorrentService {
 		$lowerDate = new \DateTime();
 		$interval = \DateInterval::createFromDateString("-5 years");
 		$lowerDate = $lowerDate->add($interval);
+//        $interval = \DateInterval::createFromDateString("+1 hour");
+//        $upperDate = $upperDate->add($interval);
 		
 		$q = $this->em->createQuery("select t from MorenwareDutilsBundle:Torrent t " . 
-				                    "where t.date between :lowerDate and :upperDate " . 
-				                    "order by t.date DESC")
-		                            ->setParameter("lowerDate", $lowerDate->format("Y-m-d"))
-		                            ->setParameter("upperDate", $upperDate->format("Y-m-d"));
+				                    "where t.dateStarted between :lowerDate and :upperDate " .
+				                    "order by t.dateStarted DESC")
+		                            ->setParameter("lowerDate", $lowerDate->format("Y-m-d H:i"))
+		                            ->setParameter("upperDate", $upperDate->format("Y-m-d H:i"));
 		$torrents = $q->getResult();
 		return $torrents;	
 	}
@@ -207,6 +209,7 @@ class TorrentService {
 			$torrentHash = $torrentResponse->hashString;
 			$magnetLink = $torrentResponse->magnetLink;
 
+            /* Torrent $existingTorrent */
 			$existingTorrent = $this->findTorrentByHash($torrentHash);
 
 			$this->monitorLogger->debug("[UPDATE-TORRENTS] Torrent HASH is $torrentHash");
@@ -237,7 +240,7 @@ class TorrentService {
 
 					$existingTorrent->setPercentDone($percentDone);
 
-					if ($torrentState == TorrentState::DOWNLOADING) {
+					if ($torrentState !== TorrentState::DOWNLOADING && $torrentState !== TorrentState::PAUSED) {
 						$existingTorrent->setState(TorrentState::DOWNLOADING);
 						$this->monitorLogger->debug("Torrent $torrentName found in DB, setting as DOWNLOADING");
 					}
@@ -246,6 +249,8 @@ class TorrentService {
 
 					$existingTorrent->setPercentDone($percentDone);
 					$existingTorrent->setState(TorrentState::DOWNLOAD_COMPLETED);
+                    $existingTorrent->setDateFinished(new \DateTime());
+
 					$this->monitorLogger->info("[UPDATE-TORRENTS] Torrent $torrentName finished downloading, percent $percentDone, starting renaming process");
 					$this->logger->info("[UPDATE-TORRENTS] Torrent $torrentName finished downloading, starting renaming process");
 					$finishedTorrents[] = $existingTorrent;
@@ -288,6 +293,7 @@ class TorrentService {
 				$torrent->setTransmissionId($transmissionId);
 				$torrent->setGuid(GuidGenerator::generate());
 				$torrent->setTorrentName($torrentName);
+                $torrent->setDateStarted(new \DateTime());
 
 			    if ($percentDone > 0 && $percentDone < 100) {
 					$torrent->setState(TorrentState::DOWNLOADING);
@@ -296,13 +302,14 @@ class TorrentService {
 					$torrent->setState(TorrentState::DOWNLOAD_COMPLETED);
 					$this->monitorLogger->info("[UPDATE-TORRENTS] Torrent $torrentName finished downloading, percent $percentDone, starting renaming process");
 					$this->logger->info("[UPDATE-TORRENTS] Torrent $torrentName finished downloading, starting renaming process");
+                    $existingTorrent->setDateFinished(new \DateTime());
 					$finished = true;
 				}
 
 				$torrent->setTitle($torrentName);
 				$torrent->setHash($torrentHash);
 
-				$torrent->setContentType(TorrentContentType::TV_SHOW);
+				$torrent->setContentType(null);
 				$torrent->setPercentDone($percentDone);
 				$torrent->setMagnetLink($magnetLink);
 
@@ -523,12 +530,15 @@ class TorrentService {
 
 		$downloadingTorrent = null;
 
-		if ($existingTorrent == null) {
+		if ($existingTorrent == null || $existingTorrent->getState() == TorrentState::AWAITING_DOWNLOAD || $existingTorrent->getState() == TorrentState::NEW_DOWNLOAD) {
 
-			$torrent->setGuid(GuidGenerator::generate());
+            if ($existingTorrent == null) {
+                $torrent->setGuid(GuidGenerator::generate());
+            }
+
 			$downloadingTorrent = $this->transmissionService->startDownload($torrent, $fromFile);
 		} else {
-			if ($force || $existingTorrent->getState() == TorrentState::AWAITING_DOWNLOAD || $existingTorrent->getState() == null) {
+			if ($force || $existingTorrent->getState() == null) {
 				$this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em,
 				 function() use ($existingTorrent, $torrent, $fromFile, $downloadingTorrent) {
 					$this->deleteTorrent($existingTorrent, true);

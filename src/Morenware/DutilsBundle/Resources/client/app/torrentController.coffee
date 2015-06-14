@@ -6,8 +6,8 @@ app.controller 'torrentController', ['$scope', 'torrentFactory', ($scope, torren
   startTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
     return (responseData, status, headers, config) ->
       responseData.torrent.date = moment(responseData.torrent.date).format('YYYY-MM-DD')
+
       _.extend torrentDefinition, responseData.torrent
-      torrentDefinition.buttonText = 'Cancel'
       return
 
   cancelTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
@@ -19,11 +19,13 @@ app.controller 'torrentController', ['$scope', 'torrentFactory', ($scope, torren
   pauseTorrentSuccessCallbackCreator = (torrentDefinition) ->
     return (responseData, status, headers, config) ->
       _.extend torrentDefinition, responseData.torrent
+      $scope.renderState(torrentDefinition)
       return
 
   resumeTorrentSuccessCallbackCreator = (torrentDefinition) ->
     return (responseData, status, headers, config) ->
       _.extend torrentDefinition, responseData.torrent
+      $scope.renderState(torrentDefinition)
       return
 
   $scope.startDownload = (torrentDefinition) ->
@@ -67,6 +69,32 @@ app.controller 'torrentController', ['$scope', 'torrentFactory', ($scope, torren
     successCallback = pauseTorrentSuccessCallbackCreator(torrentDefinition)
     torrentFactory.torrentAction "RENAME",torrentDefinition,successCallback,onError
     return
+
+  $scope.renderState = (torrentDefinition) ->
+    # || scope.$parent.torrent.state
+    torrentState = torrentDefinition?.state
+    stateText = torrentState.replace(/_/g," ")
+
+    if torrentState is 'DOWNLOADING'
+      cssClass = "label-success"
+    else if torrentState is 'AWAITING_DOWNLOAD'
+      cssClass = "label-default"
+    else if torrentState is 'PAUSED'
+      cssClass = "label-info"
+    else if torrentState is 'RENAMING' or torrentState is 'RENAMING_COMPLETED' or torrentState is 'FETCHING_SUBTITLES' or torrentState is 'DOWNLOAD_COMPLETED'
+      cssClass = "label-warning"
+    else if torrentState is 'FAILED_DOWNLOAD_ATTEMPT' or torrentState is 'COMPLETED_WITH_ERROR'
+      cssClass = "label-danger"
+    else
+      cssClass = "label-primary"
+
+    $scope.cssClass = cssClass
+    console.log "The state is " + stateText
+    $scope.stateText = stateText
+    return
+
+  $scope.getClass = ->
+    return $scope.cssClass
 
   onError = (responseData) ->
     $scope.errors = "Error in request"

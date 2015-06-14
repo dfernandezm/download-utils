@@ -1,6 +1,7 @@
 <?php
 namespace Morenware\DutilsBundle\Controller;
 
+use Morenware\DutilsBundle\Service\TorrentService;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Morenware\DutilsBundle\Entity\Instance;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,7 +34,9 @@ class TorrentApiController {
 	/** @DI\Inject("processmanager.service") */
 	public $processManager;
 	
-	/** @DI\Inject("torrent.service") */
+	/** @DI\Inject("torrent.service")
+     *  @var \Morenware\DutilsBundle\Service\TorrentService $torrentService
+     */
 	public $torrentService;
 
 	

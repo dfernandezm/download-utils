@@ -49,11 +49,10 @@ class TransmissionService {
 
 	//TODO: Add support for starting multiple downloads at the same time, like the upload feature in the WebInterface
 	// of Transmission - Check RPC api or WebInterface code
-	//TODO: !!!!!This should execute in a transaction block -- make all methods not doing flush, commits!!!!
-	public function startDownload($torrent, $isFromFile = false) {
+	//TODO: This should execute in a transaction block -- make all methods not doing flush, commits
+	public function startDownload(Torrent $torrent, $isFromFile = false) {
 
 		// Ensure transmission has the right configuration (cache this to not call every time)
-
 		if (!$this->transmissionConfigured) {
 			$this->configureTransmission();
 			$this->transmissionConfigured = true;
@@ -73,20 +72,19 @@ class TransmissionService {
 			throw new \Exception($message, 400, null);
 		}
 
-	    //$addTorrentJson = "{\"method\":\"torrent-add\",\"arguments\":{\"paused\":false, \"filename\": \"$filenameParameter\" } }";
+	 	// Add the torrent
+		$requestPayload = array(
+				"method" => "torrent-add",
+				"arguments" => array("paused" => false, "filename" => $filenameParameter)
+		);
 
-			// Add the torrent
-			$requestPayload = array(
-					"method" => "torrent-add",
-					"arguments" => array("paused" => false, "filename" => $filenameParameter)
-			);
-
-			$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
-			$this->transmissionLogger->debug("[TRANSMISSION-TORRENT-ADD] The payload to send to transmission API is $jsonRequest");
+		$jsonRequest = json_encode($requestPayload, JSON_UNESCAPED_SLASHES);
+		$this->transmissionLogger->debug("[TRANSMISSION-TORRENT-ADD] The payload to send to transmission API is $jsonRequest");
 
 	    try {
 
 	    	$result = $this->executeTransmissionApiCall($jsonRequest);
+
 	    	// Need to do this to be able to access the property with PHP -> operator
 	    	$result = str_replace("torrent-added", "torrentadded", json_encode($result));
 	    	$resultAsArray = json_decode($result);
@@ -103,7 +101,7 @@ class TransmissionService {
 
 	    		$torrentInfo = $resultAsArray->arguments->torrentadded;
 	    		$nameAdded = str_replace('+', '.', $torrentInfo->name);
-	    		$nameAdded = str_replace(' ', '.', $torrentInfo->name);
+	    		$nameAdded = str_replace(' ', '.', $nameAdded);
 	    		$transmissionId = $torrentInfo->id;
 	    		$hash = $torrentInfo->hashString;
 
@@ -111,7 +109,6 @@ class TransmissionService {
 	    		$existingTorrent = $this->torrentService->findTorrentByHash($hash);
 
 	    		if ($existingTorrent !== null) {
-
 	    			$torrent = $existingTorrent;
 	    			$this->logger->info("[STARTING-DOWNLOAD] Found torrent already in DB with the hash $hash -- " . $existingTorrent->getTorrentName());
 
@@ -119,6 +116,7 @@ class TransmissionService {
 
 	    		$torrent->setHash($hash);
 	    		$torrent->setTransmissionId($transmissionId);
+                $torrent->setDateStarted(new \DateTime());
 
 	    		if ($torrent->getTorrentName() == null) {
 	    			$torrent->setTorrentName($nameAdded);
@@ -128,8 +126,8 @@ class TransmissionService {
 	    			$torrent->setTitle($nameAdded);
 	    		}
 
-					$torrent->setTitle($this->torrentService->clearSpecialChars($torrent->getTitle()));
-					$torrent->setTorrentName($this->torrentService->clearSpecialChars($torrent->getTorrentName()));
+                $torrent->setTitle($this->torrentService->clearSpecialChars($torrent->getTitle()));
+                $torrent->setTorrentName($this->torrentService->clearSpecialChars($torrent->getTorrentName()));
 
 	    		// Relocate based on hash
 	    		$newLocation = $this->relocateTorrent($torrent->getTorrentName(), $hash);
