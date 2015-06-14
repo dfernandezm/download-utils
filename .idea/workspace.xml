@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2f02599b-b7c9-4523-8bb7-92f7de8c7d08" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/RenameAndMoveCommand.php" afterPath="$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/RenameAndMoveCommand.php" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="download-utils.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -42,7 +42,7 @@
       <file leaf-file-name="SubtitlesCommand.php" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/SubtitlesCommand.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-41.875" vertical-offset="1860" max-vertical-offset="3855">
+            <state vertical-scroll-proportion="0.0" vertical-offset="1860" max-vertical-offset="3855">
               <caret line="203" column="17" selection-start-line="203" selection-start-column="17" selection-end-line="203" selection-end-column="17" />
               <folding />
             </state>
@@ -52,7 +52,7 @@
       <file leaf-file-name="install-requirements-raspberry.sh" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/deploy/scripts/provision/install-requirements-raspberry.sh">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="730" max-vertical-offset="2265">
+            <state vertical-scroll-proportion="0.0" vertical-offset="1560" max-vertical-offset="2265">
               <caret line="104" column="68" selection-start-line="104" selection-start-column="68" selection-end-line="104" selection-end-column="68" />
               <folding />
             </state>
@@ -333,6 +333,9 @@
       <BehatRunner />
       <method />
     </configuration>
+    <configuration default="true" type="PhpUnitRemoteRunConfigurationType" factoryName="PHPUnit on Server" server_id="0c9bd63d-8a0d-4f5d-9929-9f9a70cdd329" server_name="Local">
+      <method />
+    </configuration>
     <configuration default="true" type="js.build_tools.gulp" factoryName="Gulp.js">
       <node-options />
       <gulpfile />
@@ -340,9 +343,6 @@
       <arguments />
       <pass-parent-envs>true</pass-parent-envs>
       <envs />
-      <method />
-    </configuration>
-    <configuration default="true" type="PhpUnitRemoteRunConfigurationType" factoryName="PHPUnit on Server" server_id="0c9bd63d-8a0d-4f5d-9929-9f9a70cdd329" server_name="Local">
       <method />
     </configuration>
     <list size="0" />
@@ -361,8 +361,8 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1920" height="1055" extended-state="0" />
-    <editor active="true" />
+    <frame x="0" y="0" width="1920" height="1055" extended-state="1" />
+    <editor active="false" />
     <layout>
       <window_info id="Gulp" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -373,19 +373,19 @@
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Symfony2" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Framework" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.1922675" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.20428422" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32987553" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32987553" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
   <component name="Vcs.Log.UiProperties">
@@ -409,6 +409,82 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/RenameAndMoveCommand.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="4125">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#49#63#0#PHP" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/SubtitlesCommand.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="1860" max-vertical-offset="3855">
+          <caret line="203" column="17" selection-start-line="203" selection-start-column="17" selection-end-line="203" selection-end-column="17" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/deploy/scripts/provision/install-requirements-raspberry.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="1560" max-vertical-offset="2265">
+          <caret line="104" column="68" selection-start-line="104" selection-start-column="68" selection-end-line="104" selection-end-column="68" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Service/ProcessManager.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="1653" max-vertical-offset="5340">
+          <caret line="138" column="58" selection-start-line="138" selection-start-column="30" selection-end-line="138" selection-end-column="69" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Service/TorrentService.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="7616" max-vertical-offset="12165">
+          <caret line="555" column="38" selection-start-line="555" selection-start-column="38" selection-end-line="555" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/NotifyCommand.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="525" max-vertical-offset="660">
+          <caret line="42" column="4" selection-start-line="42" selection-start-column="4" selection-end-line="42" selection-end-column="4" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Service/TransmissionService.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="5253" max-vertical-offset="6990">
+          <caret line="380" column="20" selection-start-line="380" selection-start-column="20" selection-end-line="380" selection-end-column="20" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Util/TransactionService.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="360" max-vertical-offset="1890">
+          <caret line="24" column="91" selection-start-line="24" selection-start-column="91" selection-end-line="24" selection-end-column="91" />
+          <folding>
+            <element signature="e#46#92#0#PHP" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/scripts/multiple-rename-filebot.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="105" max-vertical-offset="525">
+          <caret line="7" column="32" selection-start-line="7" selection-start-column="32" selection-end-line="7" selection-end-column="32" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/RenameAndMoveCommand.php">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="2102" max-vertical-offset="4095">
@@ -439,7 +515,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="8643" max-vertical-offset="15885">
           <caret line="597" column="9" selection-start-line="597" selection-start-column="9" selection-end-line="597" selection-end-column="9" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -668,7 +743,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="8643" max-vertical-offset="15885">
           <caret line="597" column="9" selection-start-line="597" selection-start-column="9" selection-end-line="597" selection-end-column="9" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -698,7 +772,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Morenware/DutilsBundle/Command/SubtitlesCommand.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-41.875" vertical-offset="1860" max-vertical-offset="3855">
+        <state vertical-scroll-proportion="0.0" vertical-offset="1860" max-vertical-offset="3855">
           <caret line="203" column="17" selection-start-line="203" selection-start-column="17" selection-end-line="203" selection-end-column="17" />
           <folding />
         </state>
