@@ -162,3 +162,22 @@ body.login form { }
 .progress-bar-success {
 	text-align: center;
 }
+
+.list-group {
+	margin-top: 15px;
+	min-height: 20px;
+}
+
+.list-group-item {
+	margin-top: 10px;
+	min-height: 20px;
+}
+
+span.label {
+	margin-right: 10px;
+	padding: 4px;
+}
+
+.no-padding {
+	padding: 0
+}

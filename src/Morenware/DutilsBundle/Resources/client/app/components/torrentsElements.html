@@ -1,0 +1,12 @@
+<div class="list-group container-fluid">
+  <div class="list-group-item" ng-repeat="torrent in torrents | torrentsByState:filterState track by $index">
+    <div class="row">
+      <div class="pull-left col-lg-1">
+        [[$index+1]]
+      </div>
+     <div class="pull-left col-lg-11">
+      <torrent-element torrent="torrent" />
+    </div>
+  </div>
+  </div>
+</div>

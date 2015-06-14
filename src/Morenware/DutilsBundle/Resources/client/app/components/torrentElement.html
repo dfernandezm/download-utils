@@ -1,0 +1,19 @@
+<div class="row-fluid">
+
+   <div class="row">
+     <h4 class="list-group-item-heading pull-left col-sm-6 no-padding">[[torrent.title]]</h4>
+     <render-torrent-state torrent="torrent" class="pull-right" />
+   </div>
+
+   <div class="row no-padding">
+     <div class="list-group-item-text pull-left col-sm-2 no-padding">
+      [[fieldFormat('date')]] &nbsp; | &nbsp; [[fieldFormat('size')]]
+     </div>
+     <progress-bar ng-hide="torrent.state != 'DOWNLOADING' && torrent.state != 'PAUSED'" percent="torrent.percentDone || 0" class="pull-left col-sm-4 no-padding" />
+   </div>
+
+   <div class="row">
+     <torrent-actions torrent="torrent" class="pull-left"/>
+   </div>
+
+</div>
