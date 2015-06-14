@@ -2,9 +2,9 @@
 
 {% block body %}
 
-<div class="torrentsStatusPage" ng-controller="torrentsStatusController" ng-init="init({{torrents}})">
-   <div class="row">
-	    <div class="col-lg-12">
+<div class="torrentsStatusPage container-fluid" ng-controller="torrentsStatusController" ng-init="init({{torrents}})">
+   <div class="row-fluid clearfix">
+	    <div class="col-lg-12 col-xs-12">
 	     <h1 class="page-header">Torrents Status</h1>
 	    </div>
 	 </div>
@@ -30,22 +30,22 @@
     	</div>
    </div>
 
-  <div class="row pull-right">
-    <button type="button" class="btn btn-primary" ng-click="startPolling()" ng-show="!isPolling">
-       Start polling
-    </button>
-    <button type="button" class="btn btn-primary" ng-click="stopPolling()" ng-show="isPolling">
-       Stop polling
-    </button>
+  <div class="row-fluid clearfix">
+    <div class="col-lg-5 col-xs-5 col-xs-offset-8 col-lg-offset-11">
+      <button type="button" class="btn btn-primary" ng-click="startPolling()" ng-show="!isPolling">
+         Start polling
+      </button>
+      <button type="button" class="btn btn-primary" ng-click="stopPolling()" ng-show="isPolling">
+         Stop polling
+      </button>
+   </div>
   </div>
 
-  <div class="row search-results" role="tabpanel">
+  <div class="row-fluid search-results clearfix" role="tabpanel">
 
     <tabset>
       <tab heading="Downloading" active="true">
-
           <torrents-elements torrents="torrents" filter-state="DOWNLOADING,PAUSED" />
-
       </tab>
       <tab heading="Awaiting download">
         <torrents-elements torrents="torrents" filter-state="AWAITING_DOWNLOAD" />
@@ -62,5 +62,5 @@
     </tabset>
   </div>
 
-
+</div>
 {% endblock %}

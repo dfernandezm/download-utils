@@ -12,3 +12,4 @@ web/client/js/init.js.map
 /deploy/dist/
 build.properties
 /components/filebot/scripts/
+/.vagrant/

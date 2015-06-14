@@ -72,13 +72,17 @@ body.login {
 
 /* This is a desktop */
 /* @media only screen and (min-width : 480px) { */
-@media only screen and (min-width : 480px) {
+@media (min-width : 480px) {
 	.sidebar {
 		border: 1px solid #e7e7e7;
 	}
 
 	.navbar-header {
 		 float: none;
+	}
+
+	h4 {
+		font-size: 24px;
 	}
 }
 
@@ -92,17 +96,8 @@ body.login {
 		margin: 10px;
 		border: 1px solid #e7e7e7;
 	}
-}
-
-@media (min-width: @screen-sm-min) {
 
 }
-
-@media (min-width: @screen-md-min) {
-
-
-}
-
 
 
 /* For the login form */
@@ -171,13 +166,20 @@ body.login form { }
 .list-group-item {
 	margin-top: 10px;
 	min-height: 20px;
+	padding: 5px;
+	margin-right: 0;
 }
 
 span.label {
-	margin-right: 10px;
+	margin-right: 0px;
 	padding: 4px;
+	float: right;
 }
 
 .no-padding {
 	padding: 0
+}
+
+.torrent-title {
+	margin-top: 10px;
 }
