@@ -69,7 +69,7 @@ class SearchTorrentsService {
 		// The Pirate Bay
 		$pirateBay = new SearchWebsite();
 		$pirateBay->setName("The Pirate Bay");
-		$pirateBay->setMainUrl("http://pirateproxy.sx");
+		$pirateBay->setMainUrl("https://pirateproxy.sx");
 		$pirateBay->setSiteId(self::PIRATE_BAY_ID);
 		$pirateBay->setStructureType(SearchWebsiteType::LIST_TYPE);
 		$pirateBay->setTorrentDateType(TorrentDateType::DATE);
