@@ -85,7 +85,7 @@ class SearchTorrentsService {
 		// Kickass Torrents
 		$kickassTorrents = new SearchWebsite();
 		$kickassTorrents->setName("Kickass torrents");
-		$kickassTorrents->setMainUrl("http://katproxy.com");
+		$kickassTorrents->setMainUrl("http://kickass-torrents.nl");
 		$kickassTorrents->setSiteId(self::KICKASS_TORRENTS_ID);
 		$kickassTorrents->setStructureType(SearchWebsiteType::LIST_TYPE);
 		$kickassTorrents->setTorrentDateType(TorrentDateType::AGE);
