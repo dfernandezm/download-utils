@@ -238,7 +238,7 @@ class ProcessManager {
 		$subtitleFetchPidFile = $processingPath . "/subtitles.pid";
 
 		if (file_exists($subtitleFetchPidFile)) {
-			$this->logger->info("[SUBTITLES] There is already one subtitle fetcher process running");
+			$this->renamerLogger->info("[SUBTITLES] There is already one subtitle fetcher process running");
 			return true;
 		} else {
 			return false;
@@ -254,6 +254,19 @@ class ProcessManager {
 	public function startSubtitleFetchWorker() {
 		if (!$this->isSubtitleFetchWorkerRunning()) {
 			$this->startSymfonyCommandAsynchronously(CommandType::FETCH_SUBTITLES);
+
+            $times = 0;
+            while(!$this->isSubtitleFetchWorkerRunning()) {
+                $this->renamerLogger->debug("[SUBTITLES] Polling for subtitles process startup --> $times");
+                $times++;
+                sleep(2);
+
+                if ($times > 10) {
+                    $this->renamerLogger->error("[SUBTITLES] Timeout polling for subtitles process startup -- ERROR");
+                }
+
+            }
+
 		}
 	}
 

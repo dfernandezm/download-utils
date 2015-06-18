@@ -117,6 +117,7 @@ if [ "$REMOTE" -eq 1 ]; then
   echo "Adding exports..."
   echo "$MEDIA_CENTER_ROOT_LINK 192.168.1.0/24(rw,insecure,no_subtree_check,async,exec)"  >>  /etc/exports
 
+  service rpcbind restart
   /etc/init.d/nfs-kernel-server restart
 
   # To mount the exported system, run on the client:
