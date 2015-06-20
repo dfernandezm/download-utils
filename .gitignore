@@ -18,3 +18,4 @@ deploy/local/.vagrant/
 deploy/local/*.box
 /.idea/
 .idea
+*.box

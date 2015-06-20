@@ -19,8 +19,14 @@ class ConfigureWebLayer extends SymfonyAbstractTask {
       $apacheVhostsPath = "/etc/apache2/sites-enabled";
     }
 
+    if ($environ === "local") {
+      $reloadCmd = "sudo service apache2 reload";
+      $apacheVhostsPath = "/etc/apache2/sites-enabled";
+    }
+
     $command = "cd deploy/templates && bash fill-vhost-template.sh $serverName \"$documentRoot\" $apacheVhostsPath \"$reloadCmd\"";
-    $result = $this->runCommandRemote($command);
+
+    $result = ($environ == "local") ? $this->runCommandLocal($command) : $this->runCommandRemote($command);
     return $result;
   }
 }

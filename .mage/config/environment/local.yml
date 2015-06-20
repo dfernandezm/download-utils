@@ -1,0 +1,27 @@
+#raspberry
+deployment:
+  user: pi
+  from: ./
+  to: /var/www/dutils
+  excludes:
+    - app/cache/*
+    - web/bundles/*
+    - node_modules
+    - app/logs/*
+    - .settings
+    - eclipse
+releases:
+  enabled: true
+  max: 1
+  symlink: current
+  directory: releases
+hosts:
+  - localhost
+tasks:
+  pre-deploy:
+    - create-build-properties
+    - configure-web-layer: {environ: local, serverName: localhost, documentRoot: "/var/www/dutils/current/web"}
+    - init-database
+  on-deploy:
+  post-release:
+  post-deploy:
