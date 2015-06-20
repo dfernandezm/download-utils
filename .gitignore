@@ -13,3 +13,5 @@ web/client/js/init.js.map
 build.properties
 /components/filebot/scripts/
 /.vagrant/
+*.DS_Store
+*.box

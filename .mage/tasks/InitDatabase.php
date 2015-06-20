@@ -18,7 +18,7 @@ class InitDatabase extends SymfonyAbstractTask {
     $dbUser = $parameters['parameters']['database_user'];
     $dbPassword = $parameters['parameters']['database_password'];
     $command = "cd deploy/scripts/database && sh install-db.sh $dbHost $dbName $dbUser $dbPassword";
-    $result = $this->runCommandRemote($command);
+    $result = $this->runCommandLocal($command);
     return $result;
   }
 }
