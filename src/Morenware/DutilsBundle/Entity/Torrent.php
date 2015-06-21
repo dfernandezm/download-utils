@@ -48,6 +48,18 @@ class Torrent {
 	 * 
 	 */
 	private $date;
+
+    /**
+     * @ORM\Column(type="datetime", nullable=true)
+     *
+     */
+    private $dateStarted;
+
+    /**
+     * @ORM\Column(type="datetime", nullable=true)
+     *
+     */
+    private $dateFinished;
 	
 	/**
 	 * @ORM\Column(type="string", length=300, nullable=true)
@@ -235,7 +247,23 @@ class Torrent {
 		$this->seeds = $seeds;
 		return $this;
 	}
-	
+
+    public function getDateStarted() {
+        return $this->dateStarted;
+    }
+
+    public function setDateStarted($dateStarted) {
+        $this->dateStarted = $dateStarted;
+    }
+
+    public function getDateFinished() {
+        return $this->dateFinished;
+    }
+
+    public function setDateFinished($dateFinished) {
+        $this->dateFinished = $dateFinished;
+    }
+
 // 	public function cmpSeeds($torrentA, $torrentB) {
    	 	
 // 		$seedsA = $torrentA->getSeeds();

@@ -97,8 +97,31 @@ class TorrentService {
 	}
 
 	public function getAll() {
-		return $this->repository->findAll();
+		return $this->getRepository()->findAll();
 	}
+
+	public function getAllOrderedByDate() {
+		return $this->getRepository()->findBy(array(), array('date' => 'DESC'));
+	}
+	
+	public function getAllNonCompletedOrderedByDate() {
+		
+		$upperDate = new \DateTime();
+		$lowerDate = new \DateTime();
+		$interval = \DateInterval::createFromDateString("-5 years");
+		$lowerDate = $lowerDate->add($interval);
+//        $interval = \DateInterval::createFromDateString("+1 hour");
+//        $upperDate = $upperDate->add($interval);
+		
+		$q = $this->em->createQuery("select t from MorenwareDutilsBundle:Torrent t " . 
+				                    "where t.dateStarted between :lowerDate and :upperDate " .
+				                    "order by t.dateStarted DESC")
+		                            ->setParameter("lowerDate", $lowerDate->format("Y-m-d H:i"))
+		                            ->setParameter("upperDate", $upperDate->format("Y-m-d H:i"));
+		$torrents = $q->getResult();
+		return $torrents;	
+	}
+
 
 	public function delete($torrent) {
 		$this->em->remove($torrent);
@@ -138,7 +161,7 @@ class TorrentService {
 	}
 
 	public function findTorrentsByState($torrentState) {
-		$torrents = $this->getRepository()->findBy(array('state' => $torrentState));
+		$torrents = $this->getRepository()->findBy(array('state' => $torrentState), array('date' => 'DESC'));
 		$this->em->flush();
 		$this->em->clear();
 		return $torrents;
@@ -186,6 +209,7 @@ class TorrentService {
 			$torrentHash = $torrentResponse->hashString;
 			$magnetLink = $torrentResponse->magnetLink;
 
+            /* Torrent $existingTorrent */
 			$existingTorrent = $this->findTorrentByHash($torrentHash);
 
 			$this->monitorLogger->debug("[UPDATE-TORRENTS] Torrent HASH is $torrentHash");
@@ -216,7 +240,7 @@ class TorrentService {
 
 					$existingTorrent->setPercentDone($percentDone);
 
-					if ($torrentState == TorrentState::DOWNLOADING) {
+					if ($torrentState !== TorrentState::DOWNLOADING && $torrentState !== TorrentState::PAUSED) {
 						$existingTorrent->setState(TorrentState::DOWNLOADING);
 						$this->monitorLogger->debug("Torrent $torrentName found in DB, setting as DOWNLOADING");
 					}
@@ -225,6 +249,8 @@ class TorrentService {
 
 					$existingTorrent->setPercentDone($percentDone);
 					$existingTorrent->setState(TorrentState::DOWNLOAD_COMPLETED);
+                    $existingTorrent->setDateFinished(new \DateTime());
+
 					$this->monitorLogger->info("[UPDATE-TORRENTS] Torrent $torrentName finished downloading, percent $percentDone, starting renaming process");
 					$this->logger->info("[UPDATE-TORRENTS] Torrent $torrentName finished downloading, starting renaming process");
 					$finishedTorrents[] = $existingTorrent;
@@ -267,6 +293,7 @@ class TorrentService {
 				$torrent->setTransmissionId($transmissionId);
 				$torrent->setGuid(GuidGenerator::generate());
 				$torrent->setTorrentName($torrentName);
+                $torrent->setDateStarted(new \DateTime());
 
 			    if ($percentDone > 0 && $percentDone < 100) {
 					$torrent->setState(TorrentState::DOWNLOADING);
@@ -275,13 +302,14 @@ class TorrentService {
 					$torrent->setState(TorrentState::DOWNLOAD_COMPLETED);
 					$this->monitorLogger->info("[UPDATE-TORRENTS] Torrent $torrentName finished downloading, percent $percentDone, starting renaming process");
 					$this->logger->info("[UPDATE-TORRENTS] Torrent $torrentName finished downloading, starting renaming process");
+                    $existingTorrent->setDateFinished(new \DateTime());
 					$finished = true;
 				}
 
 				$torrent->setTitle($torrentName);
 				$torrent->setHash($torrentHash);
 
-				$torrent->setContentType(TorrentContentType::TV_SHOW);
+				$torrent->setContentType(null);
 				$torrent->setPercentDone($percentDone);
 				$torrent->setMagnetLink($magnetLink);
 
@@ -317,6 +345,7 @@ class TorrentService {
 		$pathMovedPattern = '/\[MOVE\]\s+Rename\s+(.*)to\s+\[(.*)\]/';
 		$pathSkippedPattern = "/Skipped\s+\[(.*)\]\s+because\s+\[(.*)\]/";
 		$hashRegex = "/_([\w]{40})/";
+
 		$logContent = file_get_contents($renamerLogFilePath);
 		$matches = array();
 
@@ -357,6 +386,7 @@ class TorrentService {
 						// process the torrent -- regular case 1 torrent = 1 file
 						$this->processSingleTorrentWithRenamedData($torrent, $hash, $renamedPaths, false);
 						$renamedPaths = array();
+
 					} else {
 						// several files in the torrent have been renamed
 						if (!array_key_exists($hash, $moreThanOnePathHashes)) {
@@ -383,38 +413,39 @@ class TorrentService {
 				}
 			}
 		} else {
-			
+
 			$this->renamerLogger->debug("[RENAMING] No torrents were detected in renamer log file $renamerLogFilePath");
 			$this->renamerLogger->debug("[RENAMING] Checking for errors in the log file and if files were moved or not -- $renamerLogFilePath");
 
 			// This is a boundary case, the file still exists in the original path and can exist in the moved path
 			if (preg_match_all($pathSkippedPattern, $logContent, $matches)) {
-				
+
 				$skippedOriginalPathList = $matches[1];
 				$skippedNewPathList = $matches[2];
 
 				for ($i = 0; $i < count($skippedOriginalPathList); $i++) {
-					
+
 					$skippedOriginalPath = $skippedOriginalPathList[$i];
 					$skippedNewPath = $skippedNewPathList[$i];
 
 					$this->renamerLogger->debug("[RENAMING-SKIPPED] Skipped path detected $skippedOriginalPath ==> $skippedNewPath");
+
 					$matchesHash = array();
-					
+
 					if(preg_match($hashRegex, $skippedOriginalPath, $matchesHash)) {
-						
+
 						$hash = $matchesHash[1];
 						$torrent = $this->findTorrentByHash($hash);
-						
+
 						$this->renamerLogger->debug("[RENAMING-SKIPPED] Skipped torrent detected with hash $hash -- " . $torrent->getTorrentName());
-						
+
 						//TODO: Does not check for multiple renamed paths yet
 						$torrent->setRenamedPath($skippedNewPath);
-						
+
 						// Try to clear this torrent from transmission if successful: This could happen, as
 						// Filebot can potentially left the file in both places (old and new, needs investigation
-						// but happened once). So we can clear the torrent and new and old paths. 
-						
+						// but happened once). So we can clear the torrent and new and old paths.
+
 						// This process can leave the torrent in two states:
 						// 1. COMPLETED_WITH_ERROR if the target path does not exist so,
 						//    -> Go back to DOWNLOAD_COMPLETED if the original path (files) still exist
@@ -422,26 +453,26 @@ class TorrentService {
 						//    -> Move to RENAMING_COMPLETED if the target path exists
 
 						$this->clearTorrentFromTransmissionIfSuccessful($torrent);
-						
+
 						if ($torrent->getState() == TorrentState::COMPLETED_WITH_ERROR) {
-							
+
 							// Check if the original path exists
 							if (file_exists($skippedOriginalPath)) {
 								// The original path is still there, so leave this for the next renaming attempts
 								$torrent->setState(TorrentState::DOWNLOAD_COMPLETED);
 								$this->renamerLogger->warn("[RENAMING-SKIPPED] Skipped torrent renamed path does not exist but original path is still there, flag back to DOWNLOAD_COMPLETED");
-								
+
 							} else {
 								// The file does not exist in the original path, and does not exist in the new path
 								// We need to check manually where the file is (maybe Unsorted), flag this as error
 								$this->renamerLogger->error("[RENAMING-SKIPPED] Skipped torrent paths are missing -- check manually where the file is $hash -- " . $torrent->getTorrentName());
 							}
-							
+
 							// No file in destination, renamedPath is null
 							$torrent->setRenamedPath(null);
 							$this->update($torrent);
 						} else {
-							
+
 							// The torrent has been successfully cleared from transmission and checked the renamed path exists, we can flag
 							// it as successful
 							$renamedPaths = array();
@@ -450,8 +481,8 @@ class TorrentService {
 						}
 					} else {
 						$this->renamerLogger->warn("[RENAMING-SKIPPED] No torrent detected in skipped path $skippedOriginalPath");
-					}	
-				}	
+					}
+				}
 			} else {
 				//TODO: Treat here exclusions "Exclude ..." as skipped. This will depend on why Filebot excluded here (post in forum pending)
 				$this->renamerLogger->error("[RENAMING-ERRORED] No torrents with skipped paths detected -- it is likely an error ocurred, move torrents back to DOWNLOAD_COMPLETED to attempt next time");
@@ -499,12 +530,15 @@ class TorrentService {
 
 		$downloadingTorrent = null;
 
-		if ($existingTorrent == null) {
+		if ($existingTorrent == null || $existingTorrent->getState() == TorrentState::AWAITING_DOWNLOAD || $existingTorrent->getState() == TorrentState::NEW_DOWNLOAD) {
 
-			$torrent->setGuid(GuidGenerator::generate());
+            if ($existingTorrent == null) {
+                $torrent->setGuid(GuidGenerator::generate());
+            }
+
 			$downloadingTorrent = $this->transmissionService->startDownload($torrent, $fromFile);
 		} else {
-			if ($force || $existingTorrent->getState() == TorrentState::AWAITING_DOWNLOAD || $existingTorrent->getState() == null) {
+			if ($force || $existingTorrent->getState() == null) {
 				$this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em,
 				 function() use ($existingTorrent, $torrent, $fromFile, $downloadingTorrent) {
 					$this->deleteTorrent($existingTorrent, true);
@@ -582,11 +616,11 @@ class TorrentService {
          * @var Torrent $torrent
          */
 		foreach ($subtitledTorrents as $torrent) {
-					
+
 			$allSubtitlesPresent = $this->areSubtitlesPresentForRenamedPath($torrent->getRenamedPath());
-			
+
 			$torrentName = $torrent->getTorrentName();
-			
+
 			if (!$allSubtitlesPresent) {
 				$this->monitorLogger->warn("[WORKFLOW-FINISHED] Torrent $torrentName has missing or failed subtitles, fall back RENAMING_COMPLETED");
 				$torrent->setState(TorrentState::RENAMING_COMPLETED);
@@ -594,7 +628,7 @@ class TorrentService {
 				$torrent->setState(TorrentState::COMPLETED);
 				$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName after fetching subtitles");
 			}
-			
+
 			$this->update($torrent);
 		}
 
@@ -619,7 +653,7 @@ class TorrentService {
 			$this->update($torrent);
 			return;
 		}
-		
+
 		$renamedPathArray = explode(";",$renamedPath);
 
 		foreach($renamedPathArray as $renamedPath) {
@@ -632,8 +666,22 @@ class TorrentService {
 				return;
 			}
 		}
-		
+
 		$this->transmissionService->deleteTorrent($torrent->getHash());
+	}
+	
+	public function pauseTorrent($torrent) {
+		$this->transmissionService->pauseTorrent($torrent->getHash());
+		$torrent->setState(TorrentState::PAUSED);
+		$this->update($torrent);
+		return $torrent;
+	}
+	
+	public function resumeTorrent($torrent) {
+		$this->transmissionService->resumeTorrent($torrent->getHash());
+		$torrent->setState(TorrentState::DOWNLOADING);
+		$this->update($torrent);
+		return $torrent;
 	}
 
 	private function requireSubtitles($newPath) {
@@ -738,7 +786,7 @@ class TorrentService {
 				}
 
 				$this->update($torrent);
-				
+
 				if (!$alreadyCleared) {
 					$this->clearTorrentFromTransmissionIfSuccessful($torrent);
 				}
@@ -749,7 +797,6 @@ class TorrentService {
 		}
 	}
 
-
 	private function countNumberOfOccurrencesOfHash($originalPathList, $hash) {
 
 		$ocurrences = 0;
@@ -759,20 +806,20 @@ class TorrentService {
 
 		return $ocurrences;
 	}
-	
+
 	private function areSubtitlesPresentForRenamedPath($renamedPath) {
-		
+
 		$res = true;
-		
+
 		$renamedPathsArray = explode(";",$renamedPath);
-		
+
 		if (count($renamedPathsArray) > 1) {
-			
+
 			// Multiple paths per torrent, check if any is missing
-			foreach ($renamedPathsArray as $path) {				
+			foreach ($renamedPathsArray as $path) {
 				$res = $res && $this->checkSubtitlesPresenceForPath($path);
 			}
-			
+
 			return $res;
 			
 		} else { 
@@ -786,10 +833,10 @@ class TorrentService {
 
 		$subtitleLanguagesToCheck = array("eng","spa");
 		$pathInfo = pathinfo($path);
-		
+
 		$baseFilename = $pathInfo['filename'];
 		$dirname = $pathInfo['dirname'];
-		
+
 		foreach ($subtitleLanguagesToCheck as $lang) {
 			$subtitleFilename =  $dirname . "/" .$baseFilename . ".$lang." . "srt";
 			$this->renamerLogger->debug("[SUBTITLES-CHECK] Checking file $subtitleFilename");
@@ -816,5 +863,5 @@ class TorrentService {
 
         return $torrent;
     }
-	
+
 }

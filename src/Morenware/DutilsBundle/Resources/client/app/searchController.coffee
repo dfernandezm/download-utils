@@ -93,6 +93,26 @@ app.controller 'searchController', ['$scope', 'searchFactory', 'utilsService', '
 
     return
 
+  $scope.pauseDownload = (torrentDefinition) ->
+    torrentDefinition.buttonText = "Pausing..."
+    searchFactory.pauseTorrentDownload torrentDefinition.hash, successCallback, onError
+    return
+
+  $scope.resumeDownload = (torrentDefinition) ->
+    torrentDefinition.buttonText = "Resuming..."
+    searchFactory.pauseTorrentDownload torrentDefinition.hash, successCallback, onError
+    return
+
+  $scope.fetchSubtitles = (torrentDefinition) ->
+    torrentDefinition.buttonText = "Fetching subtitles in progress"
+    searchFactory.fetchSubtitles torrentDefinition.hash, successCallback, onError
+    return
+
+  $scope.rename = (torrentDefinition) ->
+    torrentDefinition = "Renaming..."
+    searchFactory.rename torrentDefinition.hash, successCallback, onError
+    return
+
   populateScopeWithTorrents = (torrentsInfo) ->
     _.map torrentsInfo.torrents, (torrent) ->
       torrent.buttonText = if torrent.state == 'NEW' then "Download" else "Cancel"

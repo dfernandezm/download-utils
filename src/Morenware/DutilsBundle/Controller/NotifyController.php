@@ -12,35 +12,35 @@ use Morenware\DutilsBundle\Entity\Torrent;
 
 /**
  * This controller is used to receive (push) notifications from external services
- * 
+ *
  * @Route("/api")
  */
 class NotifyController {
-	
+
 	/** @DI\Inject("transmission.service") */
 	public $transmissionService;
-	
+
 	/** @DI\Inject("torrent.service") */
 	public $torrentService;
-	
+
 	/** @DI\Inject("processmanager.service") */
 	public $processManager;
-	
+
 	/** @DI\Inject("logger") */
 	private $logger;
-	
-	
+
+
 	/**
 	 * Notification from transmission that a download has finished. This will trigger a single
 	 * poll for status in transmission and only a subset of torrents will be updated and renamed.
 	 *
      * @Route("/notify/finished")
      * @Method("PUT")
-     * 
+     *
 	 */
-	public function putTransmissionNotificationAction() {			
+	public function putTransmissionNotificationAction() {
 		try {
-			$this->logger->error("Notifying from transmission finished download");
+			$this->logger->info("Notifying from transmission finished download");
 			$this->transmissionService->checkTorrentsStatus();
 			$this->processManager->startRenamerWorker();
 			$this->processManager->startSubtitleFetchWorker();
@@ -50,7 +50,7 @@ class NotifyController {
 			$error = array(
 					"error" => "There was an error notifying from transmission ".$e->getMessage(),
 					"errorCode" => 500);
-			
+
 			return ControllerUtils::createJsonResponseForArray($error, 500);
 		}
 	}
