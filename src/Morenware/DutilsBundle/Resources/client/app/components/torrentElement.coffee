@@ -8,8 +8,7 @@ app.directive 'torrentElement', [ "$sce", ($sce) ->
     torrent: '='
   },
   link: (scope, iElement, iAttrs, controller) ->
-    torrent = scope.torrent
-    scope.fieldFormat = (field) ->
+    scope.fieldFormat = (field,torrent) ->
       if field is 'size'
         processedField = if torrent.size? then torrent.size + " MB" else ""
       else if field is 'seeds'
@@ -17,7 +16,7 @@ app.directive 'torrentElement', [ "$sce", ($sce) ->
       else if field is 'date'
         processedField = moment(torrent.date, 'YYYY-MM-DD').format('YYYY-MM-DD')
       else if field is 'title'
-        processedField = _str.prune(torrent.title, 25)
+        processedField = torrent.title
       else
         processedField = torrent[field]
       return processedField

@@ -12,7 +12,7 @@ app.directive 'renderTorrentState', [ ->
       torrentState = torrent?.state
       stateText = torrentState.replace(/_/g," ")
       if torrentState is 'DOWNLOADING'
-        cssClass = "label-success"
+        cssClass = "label-primary"
       else if torrentState is 'AWAITING_DOWNLOAD'
         cssClass = "label-default"
       else if torrentState is 'PAUSED'
@@ -22,7 +22,7 @@ app.directive 'renderTorrentState', [ ->
       else if torrentState is 'FAILED_DOWNLOAD_ATTEMPT' or torrentState is 'COMPLETED_WITH_ERROR'
         cssClass = "label-danger"
       else
-        cssClass = "label-primary"
+        cssClass = "label-success"
       return {
         cssClass: cssClass
         stateText: stateText

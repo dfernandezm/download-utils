@@ -82,7 +82,7 @@ body.login {
 	}
 
 	h4 {
-		font-size: 24px;
+		font-size: 18px;
 	}
 }
 
@@ -161,25 +161,50 @@ body.login form { }
 .list-group {
 	margin-top: 15px;
 	min-height: 20px;
+
 }
 
 .list-group-item {
 	margin-top: 10px;
+	margin-bottom: 5px;
 	min-height: 20px;
 	padding: 5px;
+	padding-bottom: 10px;
 	margin-right: 0;
+	border: none;
+	border-bottom: 1px solid #eee;
+}
+
+.list-group-item-text {
+	margin-top: 5px;
+	margin-bottom: 10px;
+	padding-left: 0;
 }
 
 span.label {
-	margin-right: 0px;
-	padding: 4px;
-	float: right;
+	word-break: break-all;
 }
 
-.no-padding {
-	padding: 0
+.progress {
+	margin-bottom: 3px;
+	padding-left:0;
+	padding-right:0;
 }
 
-.torrent-title {
-	margin-top: 10px;
+.torrent-state {
+	margin-bottom: 10px;
+}
+
+.nav li.header a {
+    cursor: default;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.nav li.header a:hover {
+    cursor: default;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
 }
