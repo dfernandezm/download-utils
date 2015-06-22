@@ -231,6 +231,7 @@ class TorrentService {
 				}
 
 				if ($percentDone != null && $percentDone > 0 && $percentDone < 100 &&
+                    $existingTorrentPercent != 100 &&
 					$torrentState !== TorrentState::DOWNLOAD_COMPLETED &&
 					$torrentState !== TorrentState::RENAMING &&
 					$torrentState !== TorrentState::RENAMING_COMPLETED &&
@@ -567,34 +568,36 @@ class TorrentService {
          */
 		foreach ($torrents as $torrent) {
 
-           $torrentPath = "";
            $targetState = "";
            if ($renamerOrSubtitles == CommandType::RENAME_DOWNLOADS) {
+
              $torrentPath = $torrent->getFilePath();
              $this->sanitizeFileNames($torrentPath);
              $targetState = TorrentState::RENAMING;
              $this->renamerLogger->debug("[RENAMING] Torrent to process " . $torrent->getFilePath());
+             $torrentsPathsAsBashArray = $this->addTorrentPathToBashArray($torrentPath, $torrentsPathsAsBashArray);
+
            } else if ($renamerOrSubtitles == CommandType::FETCH_SUBTITLES) {
 
-           	 // Can be a semicolon separated value of paths
-           	 $torrentPath = $torrent->getRenamedPath();
-           	 $paths = explode(";",$torrentPath);
+               // Can be a semicolon separated value of paths
+               $torrentPath = $torrent->getRenamedPath();
+               $paths = explode(";", $torrentPath);
 
-           	 // pick directory of the first to fetch subtitles
-           	 $torrentPath = $paths[0];
-           	 $targetState = TorrentState::FETCHING_SUBTITLES;
-           	 $this->renamerLogger->debug("[SUBTITLES] Torrent to process " . $torrent->getFilePath());
+               if (count($paths) > 1) {
+                   // Loop through all the paths and extract directories
+                   foreach ($paths as $path) {
+                       $torrentsPathsAsBashArray = $this->addTorrentPathToBashArray($path, $torrentsPathsAsBashArray);
+                   }
+               } else {
+                   // Pick directory of the first to fetch subtitles
+                   $torrentPath = $paths[0];
+                   $torrentsPathsAsBashArray = $this->addTorrentPathToBashArray($torrentPath, $torrentsPathsAsBashArray);
+               }
 
+               $targetState = TorrentState::FETCHING_SUBTITLES;
+               $this->renamerLogger->debug("[SUBTITLES] Torrent to process " . $torrent->getFilePath());
            }
 
-		   if (is_dir($torrentPath)) {
-		   	 $torrentDir = $torrentPath;
-		   } else {
-             $this->renamerLogger->debug("The torrentPath $torrentPath is directly a file, getting directory");
-		   	 $torrentDir = dirname($torrentPath);
-		   }
-
-		   $torrentsPathsAsBashArray = $torrentsPathsAsBashArray . "\"" . $torrentDir . "\" ";
 		   $torrent->setState($targetState);
 		   $this->update($torrent);
 		}
@@ -605,6 +608,24 @@ class TorrentService {
 
 		return $torrentsPathsAsBashArray;
 	}
+
+
+    private function addTorrentPathToBashArray($torrentPath, $torrentsPathsAsBashArray) {
+
+        if (is_dir($torrentPath)) {
+            $torrentDir = $torrentPath;
+        } else {
+            $this->renamerLogger->debug("The torrentPath $torrentPath is directly a file, getting directory");
+            $torrentDir = dirname($torrentPath);
+        }
+
+        // if the torrentDir is already in the bash array, return; add it otherwise
+        if (strpos($torrentsPathsAsBashArray, $torrentDir) !== false) {
+            return $torrentsPathsAsBashArray;
+        } else {
+            return $torrentsPathsAsBashArray . "\"" . $torrentDir . "\" ";
+        }
+    }
 
 
 	public function finishProcessingAfterFetchingSubs() {

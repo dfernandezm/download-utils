@@ -90,14 +90,12 @@ class SubtitlesCommand extends Command {
 
 			// Check race condition, only one rename at a time
 			if (file_exists($pidFile)) {
-				$logger->info("[SUBTITLES] There is already one subtitle fetcher process running -- exiting");
+				$logger->info("[SUBTITLES-STOP] There is already one subtitle fetcher process running -- exiting");
 				return;
 			}
 
 			// Write pid file
-			$handle = fopen($pidFile, "w");
-			fwrite($handle, $pid);
-			fclose($handle);
+            file_put_contents($pidFile, $pid);
 
 			$terminated = false;
 
