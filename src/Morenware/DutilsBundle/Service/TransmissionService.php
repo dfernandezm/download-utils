@@ -8,6 +8,7 @@ use Morenware\DutilsBundle\Entity\TorrentOrigin;
 use Morenware\DutilsBundle\Entity\TorrentContentType;
 use Morenware\DutilsBundle\Entity\TorrentState;
 use Morenware\DutilsBundle\Entity\Feed;
+use Morenware\DutilsBundle\Entity\TransmissionSettings;
 use Morenware\DutilsBundle\Util\GuidGenerator;
 use Symfony\Component\Validator\Constraints\Length;
 
@@ -311,7 +312,7 @@ class TransmissionService {
 		unset($this->sessionIdHeader);
 	}
 
-	public function getSessionIdHeader($transmissionSettings, $forceRenewal = false) {
+	public function getSessionIdHeader(TransmissionSettings $transmissionSettings, $forceRenewal = false) {
 		//TODO: use memcached here!
 		if (!isset($this->sessionIdHeader) || $forceRenewal) {
 
