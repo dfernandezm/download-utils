@@ -225,12 +225,7 @@ class RenameAndMoveCommand extends Command {
 		$filePath = $appRoot . "/" . self::RENAME_SCRIPT_PATH;
         $filebotScriptsPath =  $appRoot . "/" . self::FILEBOT_SCRIPTS_PATH;
 
-        $this->renamerLogger->debug("[RENAMING] Symlinking custom Filebot scripts -- lib and AMC to temp path -- $filebotScriptsPath");
-        $amcScriptPath = $mediacenterSettings->getProcessingTempPath() . "/amc.groovy";
-        $cleanerScriptPath = $mediacenterSettings->getProcessingTempPath() . "/cleaner.groovy";
-        symlink($filebotScriptsPath . "/amc.groovy",  $amcScriptPath);
-        symlink($filebotScriptsPath . "/cleaner.groovy",  $cleanerScriptPath);
-        symlink($filebotScriptsPath . "/lib", $mediacenterSettings->getProcessingTempPath() . "/lib");
+        $this->symlinkCustomScripts($filebotScriptsPath, $mediacenterSettings->getProcessingTempPath());
 
 		$this->renamerLogger->debug("[RENAMING] The renamer template script path is $filePath");
 		$scriptContent = file_get_contents($filePath);
@@ -256,6 +251,25 @@ class RenameAndMoveCommand extends Command {
 		file_put_contents($renamerLogFilePath . ".log","");
 		return array($scriptFilePath, $renamerLogFilePath . ".log");
 	}
+
+    private function symlinkCustomScripts($filebotScriptsPath, $processingTempPath) {
+
+        $this->renamerLogger->debug("[RENAMING] Symlinking custom Filebot scripts -- lib and AMC to temp path -- $filebotScriptsPath");
+        $amcScriptPath = $processingTempPath . "/amc.groovy";
+        $cleanerScriptPath = $processingTempPath . "/cleaner.groovy";
+        $libScriptsPath = $processingTempPath . "/lib";
+
+        // Ensure we delete them first, as they can be stale paths
+        unlink($amcScriptPath);
+        unlink($cleanerScriptPath);
+        unlink($libScriptsPath);
+
+        // Create symlinks
+        symlink($filebotScriptsPath . "/amc.groovy",  $amcScriptPath);
+        symlink($filebotScriptsPath . "/cleaner.groovy",  $cleanerScriptPath);
+        symlink($filebotScriptsPath . "/lib", $libScriptsPath);
+    }
+
 
 	/**
      * Utility to delete files like /path/to/somename*
