@@ -225,7 +225,7 @@ class RenameAndMoveCommand extends Command {
 		$filePath = $appRoot . "/" . self::RENAME_SCRIPT_PATH;
         $filebotScriptsPath =  $appRoot . "/" . self::FILEBOT_SCRIPTS_PATH;
 
-        $this->symlinkCustomScripts($filebotScriptsPath, $mediacenterSettings->getProcessingTempPath());
+        $amcScriptPath = $this->symlinkCustomScripts($filebotScriptsPath, $mediacenterSettings->getProcessingTempPath());
 
 		$this->renamerLogger->debug("[RENAMING] The renamer template script path is $filePath");
 		$scriptContent = file_get_contents($filePath);
@@ -241,7 +241,6 @@ class RenameAndMoveCommand extends Command {
 		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", $libraryBasePath, $scriptContent);
         $scriptContent = str_replace("%AMC_SCRIPT_PATH%", $amcScriptPath, $scriptContent);
 
-
 		if ($xbmcHost != null) {
 			$scriptContent = str_replace("%XBMC_HOSTNAME%", $xbmcHost, $scriptContent);
 		}
@@ -249,6 +248,7 @@ class RenameAndMoveCommand extends Command {
 		$scriptFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename-filebot_$processPid.sh";
 		file_put_contents($scriptFilePath, $scriptContent);
 		file_put_contents($renamerLogFilePath . ".log","");
+        
 		return array($scriptFilePath, $renamerLogFilePath . ".log");
 	}
 
@@ -268,6 +268,8 @@ class RenameAndMoveCommand extends Command {
         symlink($filebotScriptsPath . "/amc.groovy",  $amcScriptPath);
         symlink($filebotScriptsPath . "/cleaner.groovy",  $cleanerScriptPath);
         symlink($filebotScriptsPath . "/lib", $libScriptsPath);
+
+        return $amcScriptPath;
     }
 
 
