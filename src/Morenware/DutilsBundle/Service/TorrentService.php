@@ -706,16 +706,6 @@ class TorrentService {
 	}
 
 	private function requireSubtitles(Torrent $torrent) {
-//
-//		$noSubtitlesList = array("Castle", "Big Bang Theory", "La Que Se Avecina");
-//		$newPathLower = strtolower($newPath);
-//
-//		foreach ($noSubtitlesList as $element) {
-//			if (strpos($newPathLower, strtolower($element)) !== false) {
-//				// is in the list, so no subtitles
-//				return false;
-//			}
-//		}
 
 		return $this->findLanguageOfTorrent($torrent) !== "es";
 	}

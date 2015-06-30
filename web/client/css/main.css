@@ -208,3 +208,10 @@ span.label {
     font-weight: bold;
     text-transform: uppercase;
 }
+
+.torrent-title {
+	word-break: break-all;
+}
+
+/* ensure ng-cloak hides temporary angular template */
+.ng-cloak { display:none !important; }
