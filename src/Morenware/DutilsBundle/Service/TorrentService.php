@@ -705,19 +705,19 @@ class TorrentService {
 		return $torrent;
 	}
 
-	private function requireSubtitles($newPath) {
+	private function requireSubtitles(Torrent $torrent) {
+//
+//		$noSubtitlesList = array("Castle", "Big Bang Theory", "La Que Se Avecina");
+//		$newPathLower = strtolower($newPath);
+//
+//		foreach ($noSubtitlesList as $element) {
+//			if (strpos($newPathLower, strtolower($element)) !== false) {
+//				// is in the list, so no subtitles
+//				return false;
+//			}
+//		}
 
-		$noSubtitlesList = array("Castle", "Big Bang Theory", "La Que Se Avecina");
-		$newPathLower = strtolower($newPath);
-
-		foreach ($noSubtitlesList as $element) {
-			if (strpos($newPathLower, strtolower($element)) !== false) {
-				// is in the list, so no subtitles
-				return false;
-			}
-		}
-
-		return true;
+		return $this->findLanguageOfTorrent($torrent) !== "es";
 	}
 
 	public function clearSpecialChars($torrentName) {
@@ -778,7 +778,7 @@ class TorrentService {
 				// regular case: 1 Path per torrent
 				$torrentName = $torrent->getTorrentName();
 
-				$requireSubtitles = $this->requireSubtitles($renamedPaths[0]);
+				$requireSubtitles = $this->requireSubtitles($torrent);
 
 				if (count($renamedPaths) > 1) {
 					// Semicolon separated value of all paths
@@ -883,6 +883,53 @@ class TorrentService {
         }
 
         return $torrent;
+    }
+
+
+    /*
+     * Get bash array with torrents languages
+     */
+    public function findLanguagesForTorrents($torrents) {
+
+        $langs = array();
+
+        foreach ($torrents as $torrent) {
+
+            $langs[] = "\"" . $this->findLanguageOfTorrent($torrent) . "\"";
+
+        }
+
+        return "(" . implode(" ",$langs) . ")";
+    }
+
+
+    public function findLanguageOfTorrent($torrent) {
+
+        if ($torrent->getTorrentFileLink() !== null) {
+            $canonicalString = $torrent->getTorrentFileLink();
+        } else {
+            $canonicalString = $torrent->getTorrentName();
+        }
+
+        return $this->findLanguageOfContent($canonicalString);
+    }
+
+
+    public function findLanguageOfContent($torrentTitleOrMagnetLink) {
+
+        $spanishIndicators = array("divxtotal", "spanish", "español", "espanol", "elitetorrent", "mejortorrent");
+
+        $normalizedString = trim(strtolower($torrentTitleOrMagnetLink));
+
+        foreach ($spanishIndicators as $indicator) {
+            if (strpos($normalizedString,$indicator) !== false) {
+                return "es";
+            }
+        }
+
+        // Assume english
+        return "en";
+
     }
 
 }

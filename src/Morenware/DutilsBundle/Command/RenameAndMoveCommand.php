@@ -236,10 +236,14 @@ class RenameAndMoveCommand extends Command {
 
 		$inputPathAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToRename, $baseDownloadsPath, CommandType::RENAME_DOWNLOADS);
 
+        $contentLanguages =  $this->torrentService->findLanguagesForTorrents($torrentsToRename);
+
 		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathAsBashArray, $scriptContent);
 		$scriptContent = str_replace("%VIDEO_LIBRARY_BASE_PATH%", $libraryBasePath, $scriptContent);
         $scriptContent = str_replace("%AMC_SCRIPT_PATH%", $amcScriptPath, $scriptContent);
+        $scriptContent = str_replace("%CONTENT_LANGS%", $contentLanguages, $scriptContent);
+
 
 		if ($xbmcHost != null) {
 			$scriptContent = str_replace("%XBMC_HOSTNAME%", $xbmcHost, $scriptContent);
