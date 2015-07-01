@@ -105,8 +105,8 @@ class TorrentFeedController {
 	 * @Method("DELETE")
 	 *
 	 */
-	public function deleteFeedAction($feedId) {
-		$this->torrentFeedService->delete($feedId);
+	public function deleteFeedAction($id) {
+		$this->torrentFeedService->delete($id);
 		return ControllerUtils::createJsonResponseForArray(null);
 	}
 	

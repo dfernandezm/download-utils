@@ -85,11 +85,6 @@ class TorrentApiController {
 		
 		try {
 			
-			$this->logger->debug("Torrent to download " . $torrent->getTorrentName() 
-								 . " has magnet: " 
-								 . $torrent->getMagnetLink() 
-					             . " == torrentFile: " . $torrent->getTorrentFileLink());
-			
 			if ($torrent->getMagnetLink() !== null || $torrent->getTorrentFileLink() !== null) {
 				$torrent = $this->torrentService->startTorrentDownload($torrent);
 			} else {

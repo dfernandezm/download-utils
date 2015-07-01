@@ -3,10 +3,7 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
 
   init = ->
     $scope.loading = true
-    $scope.feeds = Feed.getAll((data) ->
-      $scope.loading = false
-      console.log("Feeds loaded")
-    )
+    $scope.feeds = getAllFeeds()
     $scope.showFeedsForm = false
     $scope.submitText = "Add"
     $scope.formTitle = "Add new feed"
@@ -35,6 +32,12 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
 
     return
 
+  getAllFeeds = ->
+    return Feed.getAll((data) ->
+      $scope.loading = false
+      console.log("Feeds loaded")
+    )
+
   $scope.action = ->
     collectValues()
     if $scope.actionToPerform is "add" then save() else update()
@@ -62,6 +65,8 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
   deleteFeed = ->
     $scope.feed.$delete((feed) ->
       console.log("Feed deleted!")
+      $scope.feed = null
+      $scope.feeds = getAllFeeds()
     )
 
   $scope.newFeed = ->
@@ -83,6 +88,11 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
     for field in $scope.feedsFields
       field.value = feed[field.name]
 
+    return
+
+  $scope.deleteFeedd = (feed) ->
+    $scope.feed = feed
+    deleteFeed()
     return
 
   collectValues = ->
