@@ -48,4 +48,12 @@ class ControllerUtils {
 		return self::createJsonResponseForArray($error, $statusCode);
 	}
 
+    public static function generateErrorResponse($message, $errorCode) {
+        $error = array(
+            "error" => "There was an error processing call: " . $message,
+            "errorCode" => $errorCode);
+
+        return ControllerUtils::createJsonResponseForArray($error, $errorCode);
+    }
+
 }

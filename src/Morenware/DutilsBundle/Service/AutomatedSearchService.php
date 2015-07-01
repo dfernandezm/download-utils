@@ -1,6 +1,10 @@
 <?php
 namespace Morenware\DutilsBundle\Service;
 
+use JMS\DiExtraBundle\Annotation\Service;
+use JMS\DiExtraBundle\Annotation as DI;
+use Monolog\Logger;
+
 /** @Service("automatedsearch.service") */
 class AutomatedSearchService {
 
@@ -29,7 +33,7 @@ class AutomatedSearchService {
      * })
      *
      */
-    public function __construct(Logger $logger, Logger $monitorLogger, $debrilFeedReader, $entityClass) {
+    public function __construct(Logger $logger, Logger $monitorLogger, $entityClass) {
 
         $this->logger = $logger;
         $this->monitorLogger = $monitorLogger;
@@ -84,5 +88,16 @@ class AutomatedSearchService {
         $this->em->flush();
         $this->em->clear();
     }
+
+
+
+
+
+
+
+
+
+
+
 
 }

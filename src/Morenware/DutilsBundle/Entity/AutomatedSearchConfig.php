@@ -19,25 +19,25 @@ class AutomatedSearchConfig {
 
 
 	/**
-	 * @ORM\Column(type="string", length=100)
+	 * @ORM\Column(name="content_type", type="string", length=100)
 	 */
 	private $contentType;
 
 
 	/**
-	 * @ORM\Column(type="string", length=100)
+	 * @ORM\Column(name="content_title", type="string", length=100)
 	 */
 	private $contentTitle;
 
 
 	/**
-	 * @ORM\Column(type="string", length=200)
+	 * @ORM\Column(name="preferred_quality", type="string", length=200)
 	 */
 	private $preferredQuality;
 
 
     /**
-     * @ORM\Column(type="string", length=200)
+     * @ORM\Column(name="preferred_format", type="string", length=200)
      */
     private $preferredFormat;
 
@@ -49,7 +49,7 @@ class AutomatedSearchConfig {
 
 
     /**
-     * @ORM\Column(type="string", length=100)
+     * @ORM\Column(name="content_language", type="string", length=100)
      */
     private $contentLanguage;
 
@@ -61,30 +61,54 @@ class AutomatedSearchConfig {
 
 
 	/**
-	 * @ORM\Column(type="datetime")
+	 * @ORM\Column(name="reference_date", type="datetime")
 	 *
 	 */
 	private $referenceDate;
 
 
 	/**
-	 * @ORM\Column(type="datetime", nullable=true)
+	 * @ORM\Column(name="last_checked_date", type="datetime", nullable=true)
 	 *
 	 */
 	private $lastCheckedDate;
 
 
 	/**
-	 * @ORM\Column(type="datetime", nullable=true)
+	 * @ORM\Column(name="last_download_date", type="datetime", nullable=true)
 	 *
 	 */
-	private $lastDownloadedDate;
+	private $lastDownloadDate;
 
 
 	/**
-	 * @ORM\Column(type="string", length=100, nullable=true)
+	 * @ORM\Column(name="subtitles_languages", type="string", length=100, nullable=true)
 	 */
-	private $subtitlesLanguage;
+	private $subtitlesLanguages;
+
+    /**
+     * @ORM\Column(name="active", type="boolean", length=1, nullable=false)
+     */
+    private $active = true;
+
+    public function _construct() {
+        $this->active = true;
+    }
+    /**
+     * @return mixed
+     */
+    public function getActive()
+    {
+        return $this->active;
+    }
+
+    /**
+     * @param mixed $active
+     */
+    public function setActive($active)
+    {
+        $this->active = $active;
+    }
 
     /**
      * @return mixed
@@ -249,33 +273,33 @@ class AutomatedSearchConfig {
     /**
      * @return mixed
      */
-    public function getLastDownloadedDate()
+    public function getLastDownloadDate()
     {
-        return $this->lastDownloadedDate;
+        return $this->lastDownloadDate;
     }
 
     /**
-     * @param mixed $lastDownloadedDate
+     * @param mixed $lastDownloadDate
      */
-    public function setLastDownloadedDate($lastDownloadedDate)
+    public function setLastDownloadDate($lastDownloadDate)
     {
-        $this->lastDownloadedDate = $lastDownloadedDate;
+        $this->lastDownloadDate = $lastDownloadDate;
     }
 
     /**
      * @return mixed
      */
-    public function getSubtitlesLanguage()
+    public function getSubtitlesLanguages()
     {
-        return $this->subtitlesLanguage;
+        return $this->subtitlesLanguages;
     }
 
     /**
-     * @param mixed $subtitlesLanguage
+     * @param mixed $subtitlesLanguages
      */
-    public function setSubtitlesLanguage($subtitlesLanguage)
+    public function setSubtitlesLanguages($subtitlesLanguages)
     {
-        $this->subtitlesLanguage = $subtitlesLanguage;
+        $this->subtitlesLanguages = $subtitlesLanguages;
     }
 
 }

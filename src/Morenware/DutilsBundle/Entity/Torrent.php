@@ -120,13 +120,6 @@ class Torrent {
 	 */
 	private $seeds;
 
-    /**
-     * @ORM\Column(name="automated_search_id", type="integer", nullable=true)
-     * /**
-     * @ManyToOne(targetEntity="AutomatedSearchConfig", fetch="LAZY")
-     */
-    private $automatedSearchId;
-
 
 	public function getTitle() {
 		return $this->title;
@@ -271,18 +264,4 @@ class Torrent {
         $this->dateFinished = $dateFinished;
     }
 
-// 	public function cmpSeeds($torrentA, $torrentB) {
-   	 	
-// 		$seedsA = $torrentA->getSeeds();
-// 		$seedsB = "";
-		
-		
-//    	 	if ($torrentA->getSeeds() === $torrentA->getSeeds()) {
-//    	 		return 0;
-//    	 	}
-   	 	
-//    	 	return ($torrentA->getSeeds() < $torrentB->getSeeds()) ? -1 : 1; 	
-//    	 };
-	
-	
 }
