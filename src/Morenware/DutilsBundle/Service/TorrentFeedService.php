@@ -99,7 +99,7 @@ class TorrentFeedService
     }
 
     public function findFeedsForAutomatedSearch($feedsTitle) {
-        $feeds = $this->getRepository()->findBy(array('title' => $feedsTitle, 'active' => true));
+        $feeds = $this->getRepository()->findBy(array('description' => $feedsTitle, 'active' => true));
         $this->em->flush();
         $this->em->clear();
         return $feeds;
@@ -128,7 +128,7 @@ class TorrentFeedService
                     try {
                         $torrents = $this->parseFeedContentToTorrents($feed);
                     } catch (\Exception $e) {
-                        $this->logger->warn("We assume there is an error in the feed -- continue with next feed" . $e->getMessage());
+                        $this->logger->warn("We assume there is an error in the feed -- continue with next feed" . $e->getMessage() . " \n" . $e->getTraceAsString());
                         //continue;
                     }
 
@@ -219,6 +219,7 @@ class TorrentFeedService
         $torrents = array();
         $titles = array();
         $automatedSearchConfig->setLastCheckedDate(new \DateTime());
+        $this->logger->info("[AUTOMATED-SEARCH] Last checked date is  " . $automatedSearchConfig->getLastCheckedDate()->format("Y-m-d H:i"));
 
         /** @var \Morenware\DutilsBundle\Entity\Feed $feed */
         foreach ($feeds as $feed) {
@@ -274,7 +275,7 @@ class TorrentFeedService
                 $this->merge($feed);
 
             } catch (\Exception $e) {
-                $this->logger->info("[AUTOMATED-SEARCH] Error occurred checking feed  " . $feed->getDescription() . " " . $e->getMessage() . " == continue with next feed");
+                $this->logger->info("[AUTOMATED-SEARCH] Error occurred checking feed  " . $feed->getDescription() . " " . $e->getMessage() . $e->getMessage() . " \n" . $e->getTraceAsString() . "\n == continue with next feed");
             }
         }
 

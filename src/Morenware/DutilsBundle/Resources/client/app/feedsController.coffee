@@ -70,6 +70,7 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
     )
 
   $scope.newFeed = ->
+    clearForm()
     $scope.submitText = "Add"
     $scope.formTitle = "Add new feed"
     $scope.actionToPerform = "add"
@@ -98,6 +99,10 @@ app.controller 'feedsController', ['$scope', 'Feed', ($scope, Feed) ->
   collectValues = ->
     for field in $scope.feedsFields
       $scope.feed[field.name] = field.value
+
+  clearForm = ->
+    for field in $scope.feedsFields
+      field.value = null
 
   init()
 

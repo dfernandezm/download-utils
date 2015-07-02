@@ -19,11 +19,11 @@ use Morenware\DutilsBundle\Service\CommandType;
 use Monolog;
 
 /**
- * @Service("checkautomatedSearchs.service")
+ * @Service("checkautomatedsearchscommand.service")
  * @Tag("console.command")
  *
  */
-class CheckAumotatedSearchsCommand extends Command {
+class CheckAutomatedSearchsCommand extends Command {
 
 	private $logger;
 
@@ -112,6 +112,4 @@ class CheckAumotatedSearchsCommand extends Command {
 			unlink($pidFile);
 		}
 	}
-
-
 }

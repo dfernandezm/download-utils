@@ -131,11 +131,14 @@ class AutomatedSearchService {
 
                     $automatedSearch->setReferenceDate(new \DateTime());
                     $automatedSearch->setLastDownloadDate(new \DateTime());
-
+                    $this->logger->info("[AUTOMATED-SEARCH] Last checked date outside is " . $automatedSearch->getLastCheckedDate()->format("Y-m-d H:i"));
                 }
 
+
+                $this->update($automatedSearch);
+
             } catch (\Exception $e) {
-                $this->renamerLogger->error("[AUTOMATED-SEARCH] Error retrieving data from Automated Search " . $automatedSearch->getContentTitle() . " == " . $e->getMessage());
+                $this->renamerLogger->error("[AUTOMATED-SEARCH] Error retrieving data from Automated Search " . $automatedSearch->getContentTitle() . " == " . $e->getMessage() . " \n == " . $e->getTraceAsString());
             }
         }
     }

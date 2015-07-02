@@ -1,11 +1,11 @@
 <div class="torrent-actions">
 
-    <button ng-show="torrent.state == 'COMPLETED_WITH_ERROR' || torrent.state == 'FAILED_DOWNLOAD_ATTEMPT'"
+    <button ng-show="torrent.state == 'COMPLETED_WITH_ERROR' || torrent.state == 'FAILED_DOWNLOAD_ATTEMPT' || torrent.state == 'AWAITING_DOWNLOAD'"
             ng-click="startDownload(torrent)" class="btn btn-sm btn-primary pull-left">
       Start
     </button>
 
-    <button ng-show="torrent.state !== 'COMPLETED' && torrent.state !== 'AWAITING_DOWNLOAD'"
+    <button ng-show="torrent.state !== 'COMPLETED'"
             ng-click="cancelDownload(torrent)" class="btn btn-sm btn-primary pull-left">
       Cancel
     </button>
