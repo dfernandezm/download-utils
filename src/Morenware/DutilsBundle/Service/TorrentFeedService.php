@@ -214,8 +214,8 @@ class TorrentFeedService
 
     public function parseAutomatedSearchConfigToTorrents(AutomatedSearchConfig $automatedSearchConfig) {
 
-        $feeds = $this->findFeedsForAutomatedSearch($automatedSearchConfig->getContentTitle());
-
+        //$feeds = $this->findFeedsForAutomatedSearch($automatedSearchConfig->getContentTitle());
+        $feeds = $automatedSearchConfig->getFeeds();
         $torrents = array();
         $titles = array();
         $automatedSearchConfig->setLastCheckedDate(new \DateTime());
@@ -241,6 +241,7 @@ class TorrentFeedService
 
                     $torrent = new Torrent();
                     $torrent->setTitle((string)$item->getTitle());
+                    $torrent->setTorrentName((string)$item->getTitle());
                     $torrent->setMagnetLink((string)$item->getLink());
                     $torrent->setOrigin(TorrentOrigin::FEED);
                     $torrent->setContentType(TorrentContentType::TV_SHOW);

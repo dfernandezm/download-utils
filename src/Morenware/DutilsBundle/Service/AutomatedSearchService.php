@@ -1,9 +1,11 @@
 <?php
 namespace Morenware\DutilsBundle\Service;
+use Doctrine\Common\Collections\ArrayCollection;
 
 use JMS\DiExtraBundle\Annotation\Service;
 use JMS\DiExtraBundle\Annotation as DI;
 use Monolog\Logger;
+use Morenware\DutilsBundle\Entity\AutomatedSearchConfig;
 
 /** @Service("automatedsearch.service") */
 class AutomatedSearchService {
@@ -59,9 +61,30 @@ class AutomatedSearchService {
     }
 
     public function create($automatedSearchConfig) {
+
+        $this->linkFeedsToAutomatedSearch($automatedSearchConfig);
+
         $this->em->persist($automatedSearchConfig);
         $this->em->flush();
     }
+
+    private function linkFeedsToAutomatedSearch(AutomatedSearchConfig $automatedSearchConfig)
+    {
+
+        $feedIds = $automatedSearchConfig->getFeedIds();
+
+        if ($automatedSearchConfig->getFeeds() == null) {
+            $automatedSearchConfig->setFeeds(new ArrayCollection());
+        }
+
+        if (count($feedIds) > 0) {
+            foreach ($feedIds as $feedId) {
+                $feed = $this->torrentFeedService->find($feedId);
+                $automatedSearchConfig->getFeeds()->add($feed);
+            }
+        }
+    }
+
 
     public function persist($automatedSearchConfig) {
         $this->em->persist($automatedSearchConfig);
@@ -74,6 +97,7 @@ class AutomatedSearchService {
 
     /* Implicit transaction version */
     public function update($automatedSearchConfig) {
+        $this->linkFeedsToAutomatedSearch($automatedSearchConfig);
         $this->em->merge($automatedSearchConfig);
         $this->em->flush();
         $this->em->clear();

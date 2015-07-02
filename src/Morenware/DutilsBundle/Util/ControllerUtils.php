@@ -3,6 +3,10 @@ namespace Morenware\DutilsBundle\Util;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+
 class ControllerUtils {
 	
 	public static function createJsonResponseForDto($serializer, $object, $statusCode = 200, $field = null) {
@@ -55,5 +59,24 @@ class ControllerUtils {
 
         return ControllerUtils::createJsonResponseForArray($error, $errorCode);
     }
+
+
+
+    public static function setupSerializer() {
+
+        $normalizer = new ObjectNormalizer();
+        $normalizer->setIgnoredAttributes(array('age'));
+        $encoder = new JsonEncoder();
+
+        $serializer = new Serializer(array($normalizer), array($encoder));
+
+    }
+
+
+
+
+
+
+
 
 }

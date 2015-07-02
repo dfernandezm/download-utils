@@ -1,12 +1,16 @@
 <?php
 namespace Morenware\DutilsBundle\Entity;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
+use JMS\Serializer\Annotation\ExclusionPolicy;
+use JMS\Serializer\Annotation\Exclude;
+use JMS\Serializer\Annotation\Type;
 
 /**
  *
  * @ORM\Entity
  * @ORM\Table(name="automated_search_config")
- *
+ * @ExclusionPolicy("none")
  */
 class AutomatedSearchConfig {
 
@@ -90,6 +94,64 @@ class AutomatedSearchConfig {
      * @ORM\Column(name="active", type="boolean", length=1, nullable=false)
      */
     private $active = true;
+
+
+    /**
+     * @ORM\OneToMany(targetEntity="Feed", mappedBy="automatedSearchConfig", cascade={"merge"})
+     *
+     * @Exclude
+     *
+     */
+    private $feeds;
+
+
+    /**
+     * @Type("array<integer>")
+     */
+    private $feedIds;
+
+
+    public function __construct() {
+        $this->feeds = new ArrayCollection();
+
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFeedIds()
+    {
+        return $this->feedIds;
+    }
+
+    /**
+     * @param mixed $feedIds
+     */
+    public function setFeedIds($feedIds)
+    {
+        $this->feedIds = $feedIds;
+    }
+
+
+
+
+    /**
+     * @return mixed
+     */
+    public function getFeeds()
+    {
+        return $this->feeds;
+    }
+
+    /**
+     * @param mixed $feeds
+     */
+    public function setFeeds($feeds)
+    {
+        $this->feeds = $feeds;
+    }
+
+
 
     public function _construct() {
         $this->active = true;
