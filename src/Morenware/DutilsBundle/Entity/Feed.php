@@ -58,6 +58,22 @@ class Feed {
 		$this->id = $id;
 		return $this;
 	}
+
+    /**
+     * @return mixed
+     */
+    public function getAutomatedSearchConfig()
+    {
+        return $this->automatedSearchConfig;
+    }
+
+    /**
+     * @param mixed $automatedSearchConfig
+     */
+    public function setAutomatedSearchConfig($automatedSearchConfig)
+    {
+        $this->automatedSearchConfig = $automatedSearchConfig;
+    }
 	public function getUrl() {
 		return $this->url;
 	}

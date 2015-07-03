@@ -53,6 +53,7 @@ class AutomatedSearchApiController {
 			$automatedSearch = $this->automatedSearchService->find($id);
 
 			if ($automatedSearch != null) {
+                $this->fillFeedIds($automatedSearch);
                 return ControllerUtils::createJsonResponseForDto($this->serializer, $automatedSearch, 200, "automatedSearch");
 			} else {
                 return ControllerUtils::generateErrorResponse("AUTOMATED_SEARCH_NOT_FOUND", 404);
@@ -128,6 +129,10 @@ class AutomatedSearchApiController {
 
             $automatedSearchs = $this->automatedSearchService->getAll();
 
+            foreach ($automatedSearchs as $automatedSearch) {
+                $this->fillFeedIds($automatedSearch);
+            }
+
             return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $automatedSearchs, 200, "automatedSearchs");
 
         } catch (\Exception $e) {
@@ -154,10 +159,23 @@ class AutomatedSearchApiController {
                 return ControllerUtils::generateErrorResponse("AUTOMATED_SEARCH_NOT_FOUND", 404);
 			} else {
                 $this->automatedSearchService->delete($automatedSearch);
+                return ControllerUtils::createJsonResponseForArray(null);
             }
 
 		} catch(\Exception $e)  {
 			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
 		}
 	}
+
+
+    private function fillFeedIds($automatedSearch) {
+        $feedIds = array();
+        foreach($automatedSearch->getFeeds() as $feed) {
+
+            $feedIds[] = $feed->getId();
+        }
+
+        $automatedSearch->setFeedIds($feedIds);
+
+    }
 }

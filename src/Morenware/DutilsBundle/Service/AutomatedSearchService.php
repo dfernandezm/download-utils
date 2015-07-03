@@ -62,27 +62,55 @@ class AutomatedSearchService {
 
     public function create($automatedSearchConfig) {
 
-        $this->linkFeedsToAutomatedSearch($automatedSearchConfig);
-
-        $this->em->persist($automatedSearchConfig);
-        $this->em->flush();
+        $this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em, function() use ($automatedSearchConfig) {
+            $this->linkFeedsToAutomatedSearch($automatedSearchConfig);
+            $this->em->persist($automatedSearchConfig);
+        });
     }
 
-    private function linkFeedsToAutomatedSearch(AutomatedSearchConfig $automatedSearchConfig)
-    {
+    private function linkFeedsToAutomatedSearch(AutomatedSearchConfig $automatedSearchConfig) {
 
         $feedIds = $automatedSearchConfig->getFeedIds();
+        $currentFeeds = new ArrayCollection();
 
-        if ($automatedSearchConfig->getFeeds() == null) {
-            $automatedSearchConfig->setFeeds(new ArrayCollection());
+        // Get current feeds if they exist
+        if ($automatedSearchConfig->getId() !== null) {
+            $currentAutomatedSearchConfig = $this->find($automatedSearchConfig->getId());
+            $currentFeeds =  $currentAutomatedSearchConfig->getFeeds();
         }
 
+        // Initialize feeds collection
+        if ($automatedSearchConfig->getFeeds() == null) {
+            $automatedSearchConfig->setFeeds(new ArrayCollection());
+        } else {
+            $automatedSearchConfig->setFeeds($currentFeeds);
+        }
+
+        $toAdd = array();
+
+        // Extract feeds to add from ids
+        foreach ($feedIds as $feedId) {
+            $feed = $this->torrentFeedService->find($feedId);
+            $toAdd[] = $feed;
+        }
+
+        // To delete
+        foreach ($currentFeeds as $currentFeed) {
+            if (!in_array($currentFeed, $toAdd)) {
+                $automatedSearchConfig->getFeeds()->removeElement($currentFeed);
+                $currentFeed->setAutomatedSearchConfig(null);
+            }
+        }
+
+        // To add
         if (count($feedIds) > 0) {
             foreach ($feedIds as $feedId) {
                 $feed = $this->torrentFeedService->find($feedId);
                 $automatedSearchConfig->getFeeds()->add($feed);
+                $feed->setAutomatedSearchConfig($automatedSearchConfig);
             }
         }
+
     }
 
 
@@ -97,10 +125,12 @@ class AutomatedSearchService {
 
     /* Implicit transaction version */
     public function update($automatedSearchConfig) {
-        $this->linkFeedsToAutomatedSearch($automatedSearchConfig);
-        $this->em->merge($automatedSearchConfig);
-        $this->em->flush();
-        $this->em->clear();
+
+        $this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em, function() use ($automatedSearchConfig) {
+            $this->linkFeedsToAutomatedSearch($automatedSearchConfig);
+            $this->em->merge($automatedSearchConfig);
+        });
+
     }
 
     public function find($id) {

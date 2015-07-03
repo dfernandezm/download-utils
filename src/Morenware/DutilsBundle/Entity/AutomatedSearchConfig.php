@@ -5,12 +5,15 @@ use Doctrine\ORM\Mapping AS ORM;
 use JMS\Serializer\Annotation\ExclusionPolicy;
 use JMS\Serializer\Annotation\Exclude;
 use JMS\Serializer\Annotation\Type;
+use JMS\Serializer\Annotation\AccessType;
+
 
 /**
  *
  * @ORM\Entity
  * @ORM\Table(name="automated_search_config")
  * @ExclusionPolicy("none")
+ * @AccessType("public_method")
  */
 class AutomatedSearchConfig {
 
@@ -130,6 +133,20 @@ class AutomatedSearchConfig {
     public function setFeedIds($feedIds)
     {
         $this->feedIds = $feedIds;
+    }
+
+    //TO Remove!!
+    public function collectIds() {
+
+        $ids = array();
+
+        if ($this->feeds !== null) {
+            foreach ($this->feeds as $feed) {
+                $ids[] = $feed->getId();
+            }
+        }
+
+        $this->feedIds = $ids;
     }
 
 
