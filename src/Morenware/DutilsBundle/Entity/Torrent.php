@@ -120,8 +120,30 @@ class Torrent {
 	 */
 	private $seeds;
 
+    /**
+     * @ORM\ManyToOne(targetEntity="AutomatedSearchConfig", fetch="LAZY")
+     * @ORM\JoinColumn(name="automated_search_config_id", referencedColumnName="id")
+     */
+    private $automatedSearchConfig;
 
-	public function getTitle() {
+    /**
+     * @return mixed
+     */
+    public function getAutomatedSearchConfig()
+    {
+        return $this->automatedSearchConfig;
+    }
+
+    /**
+     * @param mixed $automatedSearchConfig
+     */
+    public function setAutomatedSearchConfig($automatedSearchConfig)
+    {
+        $this->automatedSearchConfig = $automatedSearchConfig;
+    }
+
+
+    public function getTitle() {
 		return $this->title;
 	}
 	public function setTitle($title) {

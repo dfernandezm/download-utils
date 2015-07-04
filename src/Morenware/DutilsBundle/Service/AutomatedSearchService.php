@@ -89,9 +89,11 @@ class AutomatedSearchService {
         $toAdd = array();
 
         // Extract feeds to add from ids
-        foreach ($feedIds as $feedId) {
-            $feed = $this->torrentFeedService->find($feedId);
-            $toAdd[] = $feed;
+        if ($feedIds != null) {
+            foreach ($feedIds as $feedId) {
+                $feed = $this->torrentFeedService->find($feedId);
+                $toAdd[] = $feed;
+            }
         }
 
         // To delete
@@ -171,25 +173,26 @@ class AutomatedSearchService {
 
             try {
 
-                $torrents = $this->torrentFeedService->parseAutomatedSearchConfigToTorrents($automatedSearch);
+                $this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em, function() use ($automatedSearch) {
+                    $torrents = $this->torrentFeedService->parseAutomatedSearchConfigToTorrents($automatedSearch);
 
-                if (count($torrents) > 0) {
+                    if (count($torrents) > 0) {
 
-                    if ($automatedSearch->getDownloadStartsAutomatically()) {
-                        $this->logger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to start immediately");
-                        $this->startDownloadingOrCreateTorrents($torrents, true);
-                    } else {
-                        $this->logger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to keep in AWAITING_DOWNLOAD");
-                        $this->startDownloadingOrCreateTorrents($torrents, false);
+                        if ($automatedSearch->getDownloadStartsAutomatically()) {
+                            $this->logger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to start immediately");
+                            $this->startDownloadingOrCreateTorrents($torrents, true);
+                        } else {
+                            $this->logger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to keep in AWAITING_DOWNLOAD");
+                            $this->startDownloadingOrCreateTorrents($torrents, false);
+                        }
+
+                        $automatedSearch->setReferenceDate(new \DateTime());
+                        $automatedSearch->setLastDownloadDate(new \DateTime());
+                        $this->logger->info("[AUTOMATED-SEARCH] Last checked date outside is " . $automatedSearch->getLastCheckedDate()->format("Y-m-d H:i"));
                     }
 
-                    $automatedSearch->setReferenceDate(new \DateTime());
-                    $automatedSearch->setLastDownloadDate(new \DateTime());
-                    $this->logger->info("[AUTOMATED-SEARCH] Last checked date outside is " . $automatedSearch->getLastCheckedDate()->format("Y-m-d H:i"));
-                }
-
-
-                $this->update($automatedSearch);
+                    $this->update($automatedSearch);
+            });
 
             } catch (\Exception $e) {
                 $this->renamerLogger->error("[AUTOMATED-SEARCH] Error retrieving data from Automated Search " . $automatedSearch->getContentTitle() . " == " . $e->getMessage() . " \n == " . $e->getTraceAsString());

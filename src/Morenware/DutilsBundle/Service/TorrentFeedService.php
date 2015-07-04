@@ -248,6 +248,7 @@ class TorrentFeedService
                     $torrent->setState(TorrentState::AWAITING_DOWNLOAD);
                     $torrent->setDate($item->getUpdated());
                     $torrent->setGuid(GuidGenerator::generate());
+                    $torrent->setAutomatedSearchConfig($automatedSearchConfig);
 
                     $torrentTitle = $torrent->getTitle();
 

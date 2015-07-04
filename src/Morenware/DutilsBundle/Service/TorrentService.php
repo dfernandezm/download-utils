@@ -778,8 +778,13 @@ class TorrentService {
 				}
 
 				$torrent->setRenamedPath($renamedPath);
+                $automatedSearchConfig = $torrent->getAutomatedSearchConfig();
 
-				if ($requireSubtitles) {
+                if ($automatedSearchConfig !== null) {
+                    $this->renamerLogger->debug("[RENAMING] Torrent $torrentName created by automated search for content " . $automatedSearchConfig->getContentTitle());
+                }
+
+				if ($requireSubtitles || ($automatedSearchConfig !== null && $automatedSearchConfig->getSubtitlesEnabled()) ) {
 
 					$torrent->setState(TorrentState::RENAMING_COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] With subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
@@ -920,6 +925,14 @@ class TorrentService {
         // Assume english
         return "en";
 
+    }
+
+    public function torrentRequiresSubtitles($torrent) {
+
+        $requireSubtitlesBasedOnContent = $this->requireSubtitles($torrent);
+        $automatedSearchConfig = $torrent->getAutomatedSearchConfig();
+
+        return $requireSubtitlesBasedOnContent || ($automatedSearchConfig !== null && $automatedSearchConfig->getSubtitlesEnabled());
     }
 
 }
