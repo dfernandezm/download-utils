@@ -45,5 +45,16 @@ class DefaultController extends Controller
     {
     	return $this->render('MorenwareDutilsBundle:Default:feeds.html.twig');
     }
-    
+
+    /**
+     * Automated Search
+     *
+     * @Route("/automatedsearch")
+     * @Method("GET")
+     *
+     */
+    public function automatedSearchAction()
+    {
+        return $this->render('MorenwareDutilsBundle:Default:automatedSearch.html.twig');
+    }
 }

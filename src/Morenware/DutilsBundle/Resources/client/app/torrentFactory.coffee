@@ -37,6 +37,7 @@ app.factory 'torrentFactory', ['$http', ($http) ->
       res = $http.put(url)
     else
       console.log "Action not recognised " + action
+      return
 
     addCallbacks(res,successCallback,errorCallback)
 
