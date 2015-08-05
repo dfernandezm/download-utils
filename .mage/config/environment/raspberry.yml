@@ -22,7 +22,7 @@ tasks:
     - create-build-properties
     - build-client
   on-deploy:
-    - configure-web-layer: {environ: raspberry, serverName: torrents.morenware.com, documentRoot: "/var/www/dutils/current/web"}
+    - configure-web-layer: {environ: raspberry, serverName: media.morenware.com, documentRoot: "/var/www/dutils/current/web"}
     - init-database
     - symfony2/doctrine-migrate
     - symfony2/cache-warmup
