@@ -21,13 +21,12 @@ module.exports = {
   },
    plugins: [
     new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /de|fr|hu/)
-    // new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/)
-  ],
+    ],
   resolve: {
             alias: {
                 moment: path.join(__dirname, "node_modules/moment/moment.js")
-            },
-        },
+            }
+        }
 
 
 };
