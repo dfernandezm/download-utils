@@ -1,3 +1,6 @@
+require '../renderTorrentState/renderTorrentState.coffee'
+require '../torrentActions/torrentActions.coffee'
+
 template = require './torrentsTable.html'
 app.directive 'torrentsTable', [ "$sce", ($sce) ->
   template: template,

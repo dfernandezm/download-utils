@@ -1,4 +1,6 @@
-template = require './torrentsElements.html'
+require '../torrentElement/torrentElement.coffee'
+
+template = require './torrentElements.html'
 app.directive 'torrentsElements', [ "$sce", ($sce) ->
   template: template,
   restrict: 'E',

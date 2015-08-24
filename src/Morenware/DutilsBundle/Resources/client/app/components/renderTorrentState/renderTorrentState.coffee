@@ -8,6 +8,9 @@ app.directive 'renderTorrentState', [ ->
    torrent: '='
   },
   link: (scope, iElement, iAttrs, controller) ->
+
+    scope.cssClasses = require './torrentStateStyle.json'
+
     scope.process = (torrent) ->
       torrentState = torrent?.state
       stateText = torrentState.replace(/_/g," ")
