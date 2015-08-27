@@ -13,11 +13,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   eth = 'en0'
   interfaces = ["lo", "eth0"]
 
-  major = true
-  git_branch = `git rev-parse --abbrev-ref HEAD`.to_s
-
   # Every Vagrant virtual environment requires a box to build off of.
-  config.vm.box = "dfernandezm/download-utils-base"
+  config.vm.box = "deb/jessie-amd64"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -32,7 +29,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.network "forwarded_port", guest: 13306, host: 13306
   config.vm.network "forwarded_port", guest: 9091, host: 9091
 
-  config.vm.network :private_network, ip: "192.0.0.3"
+  config.vm.network :private_network, ip: "192.0.0.2"
   config.vm.synced_folder '.', '/vagrant', nfs: true
   config.ssh.insert_key = 'true'
 
@@ -51,12 +48,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     v.gui = false
 
-    if major
-     v.name = "dutils-#{git_branch}"
-    else
-     v.name = 'dutils'
-    end
-
     v.customize ["modifyvm", :id, "--memory", mem]
     v.customize ["modifyvm", :id, "--cpus", cpus]
   end
@@ -66,16 +57,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.trigger.after [:provision, :up, :reload, :resume] do
 
     host = RbConfig::CONFIG['host_os']
+    #host_ip = '192.168.1.53'
+    #eth = 'en0'
 
     if host =~ /darwin/
       system('echo "
         rdr pass on %ETH% inet proto tcp from any to %HOST_IP% port 80 -> 127.0.0.1 port 10080
         rdr pass on %ETH% inet proto tcp from any to %HOST_IP% port 443 -> 127.0.0.1 port 10443
+        rdr pass on %ETH% inet proto tcp from any to %HOST_IP% port 13306 -> 127.0.0.1 port 13306
         rdr pass on lo0 inet proto tcp from any to 127.0.0.1 port 80 -> 127.0.0.1 port 10080
         rdr pass on lo0 inet proto tcp from any to 127.0.0.1 port 443 -> 127.0.0.1 port 10443
+        rdr pass on lo0 inet proto tcp from any to 127.0.0.1 port 13306 -> 127.0.0.1 port 13306
         rdr pass on lo0 inet proto tcp from any to %HOST_IP% port 80 -> 127.0.0.1 port 10080
         rdr pass on lo0 inet proto tcp from any to %HOST_IP% port 443 -> 127.0.0.1 port 10443
-        " | sudo pfctl -e -f - > /dev/null 2>&1; echo "==> Forwarding Ports: 80 -> 10080, 443 -> 10443 to %HOST_IP% on %ETH%"'.gsub("%HOST_IP%", host_ip).gsub("%ETH%", eth))
+        rdr pass on lo0 inet proto tcp from any to %HOST_IP% port 13306 -> 127.0.0.1 port 13306
+        " | sudo pfctl -e -f - > /dev/null 2>&1; echo "==> Forwarding Ports: 80 -> 10080, 443 -> 10443, 8000 to %HOST_IP% on %ETH%"'.gsub("%HOST_IP%", host_ip).gsub("%ETH%", eth))
     else
       system("sudo iptables -t nat -A OUTPUT -o lo -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 10080;
               sudo iptables -t nat -A OUTPUT -o lo -p tcp -d %HOST_IP% --dport 80 -j REDIRECT --to-port 10080;
@@ -136,7 +132,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # View the documentation for the provider you're using for more
   # information on available options.
 
-  config.vm.provision :shell, inline: File.read("deploy/local/app-bootstrap.sh", :encoding => "UTF-8")
+  # Uncomment to provision again
+  #config.vm.provision :shell, inline: File.read("./bootstrap.sh", :encoding => "UTF-8")
 
   #
   # Enable provisioning with CFEngine. CFEngine Community packages are

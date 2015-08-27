@@ -115,10 +115,10 @@ mkdir -p $FILEBOT_HOME/cache && chown $SERVICES_USER:$SERVICES_USER $FILEBOT_HOM
 mkdir -p $FILEBOT_HOME/temp && chown $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME/temp
 chown -R $SERVICES_USER:$SERVICES_USER /opt/software
 
+apt-get -y install git
+apt-get -y install nodejs npm
+apt-get install php5-mysql
+
 # Create mediacenter, NFS share, mount HDD
 chmod +x /vagrant/deploy/local/create-mediacenter-local.sh
 /vagrant/deploy/local/create-mediacenter-local.sh
-
-# Install XBMC
-#chmod +x /vagrant/deploy/scripts/provision/install-xbmc.sh
-#/vagrant/deploy/scripts/provision/install-xbmc.sh
