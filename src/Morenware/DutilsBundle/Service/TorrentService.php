@@ -748,9 +748,9 @@ class TorrentService {
 					rename($currentFilePath, $newName);
 					$this->sanitizeFileNames($newName);
 				} else {
-					$newname = $this->clearSpecialChars($currentFilePath);
+					$newName = $this->clearSpecialChars($currentFilePath);
 					$this->logger->debug("[TORRENT-SERVICE] From $currentFilePath To $newName");
-					rename($currentFilePath, $newname);
+					rename($currentFilePath, $newName);
 				}
 			}
 			closedir($fh);

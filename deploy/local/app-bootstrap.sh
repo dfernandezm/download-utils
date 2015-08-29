@@ -21,5 +21,31 @@ fi
 cd /vagrant
 composer install
 
+set +e
+rm -f /opt/software/filebot/cache/*
+rm -f /opt/software/filebot/data/*
+set -e
+
+ln -s /mediacenter /vagrant/mediacenter
+
+# Reinstall transmission
+set +e
+/etc/init.d/transmission-daemon stop
+update-rc.d -f transmission-daemon remove
+apt-get -y remove transmission-daemon
+apt-get -y remove transmission-cli
+apt-get -y remove transmission-common
+rm -rf /etc/transmission-daemon
+rm -rf /etc/default/transmission-daemon
+rm -rf /var/lib/transmission-daemon
+rm -rf /usr/share/transmission/
+set -e
+
+chmod +x /vagrant/deploy/external-configuration/install-transmission.sh
+/vagrant/deploy/external-configuration/install-transmission.sh
+
 php app/console --no-interaction doctrine:migrations:migrate
 php app/console cache:warmup
+
+filebot -script fn:osdb.login
+chown -R pi:pi /opt/software/filebot/data
