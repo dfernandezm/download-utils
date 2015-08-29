@@ -15,6 +15,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   major = true
   git_branch = `git rev-parse --abbrev-ref HEAD`.to_s
+  git_branch = git_branch.gsub('/','-').gsub('\n','')
 
   # Every Vagrant virtual environment requires a box to build off of.
   config.vm.box = "dfernandezm/download-utils-base"
@@ -32,7 +33,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.network "forwarded_port", guest: 13306, host: 13306
   config.vm.network "forwarded_port", guest: 9091, host: 9091
 
-  config.vm.network :private_network, ip: "192.0.0.3"
+  config.vm.network :private_network, ip: "192.0.0.2"
   config.vm.synced_folder '.', '/vagrant', nfs: true
   config.ssh.insert_key = 'true'
 
@@ -203,3 +204,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #
   #   chef.validation_client_name = "ORGNAME-validator"
 end
+
+
+### RUN TRANSMISSION DAEMON LIKE THIS ###
+#sudo su - pi
+#sudo su - pi -c '/usr/bin/transmission-daemon --config-dir /var/lib/transmission-daemon/info --log-error --log-info --logfile /opt/software/transmission-daemon.log'
