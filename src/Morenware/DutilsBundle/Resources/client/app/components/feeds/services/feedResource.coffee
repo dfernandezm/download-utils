@@ -1,4 +1,4 @@
-mod = ($resource) ->
+ module.exports = mod = ($resource) ->
     # Make use of the resource plugin: path, attribute - path override (feedId is the id field in the
     # resolved object), list of methods to override
     Feed = $resource 'api/feeds/:feedId', {feedId: '@id'}, {

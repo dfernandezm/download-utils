@@ -2,11 +2,10 @@ adminForm = require '../../adminForm/adminForm'
 adminTable = require '../../adminTable/adminTable'
 feedsApi = require '../feedsApi'
 
-#TODO: Inject the Feed service into the directive!!!
 template = require './feeds.html'
 mod = angular
       .module('feeds-directive',[adminForm, adminTable, feedsApi])
-      .directive 'feeds', [  ->
+      .directive 'feeds', [ 'Feed', (Feed)  ->
         restrict: 'E'
         replace: true
         transclude: true
@@ -18,7 +17,7 @@ mod = angular
             scope.formTitle = "Add new feed"
             scope.actionToPerform = "add"
             scope.showFeedsForm = true
-            console.log(feedsApi)
+            console.log('HTTP '+Feed)
             scope.feed = new Feed()
             return
           return

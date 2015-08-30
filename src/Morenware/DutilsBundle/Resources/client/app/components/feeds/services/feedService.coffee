@@ -1,4 +1,4 @@
-mod =  (Feed) ->
+module.exports = mod =  (Feed) ->
 
   getAll = (actionWhenDone) ->
     return Feed.getAll((data) ->
