@@ -23,9 +23,11 @@ require './components/adminTable/adminTable.coffee'
 require './components/torrentStatus/torrentsTable/torrentsTable.coffee'
 # feature
 require './components/torrentList/torrentElements/torrentElements.coffee'
+#require './components/automatedSearch/directives/automatedSearchDirective.coffee'
+#require './components/automatedSearch/automatedSearch.coffee'
 require './components/filters/filters.coffee'
 
 require './components/progressBar/progressBar.coffee'
 require './torrentFactory.coffee'
 require './torrentController.coffee'
-require './modules/automatedSearchModule.coffee'
+#require './modules/automatedSearchModule.coffee'

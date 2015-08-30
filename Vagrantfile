@@ -36,6 +36,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.network :private_network, ip: "192.0.0.2"
   config.vm.synced_folder '.', '/vagrant', nfs: true
   config.ssh.insert_key = 'true'
+  #
+  # config.vm.define "#{git_branch}" do |t|
+  #
+  # end
 
   # VirtualBox
   config.vm.provider "virtualbox" do |v|
@@ -77,6 +81,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         rdr pass on lo0 inet proto tcp from any to %HOST_IP% port 80 -> 127.0.0.1 port 10080
         rdr pass on lo0 inet proto tcp from any to %HOST_IP% port 443 -> 127.0.0.1 port 10443
         " | sudo pfctl -e -f - > /dev/null 2>&1; echo "==> Forwarding Ports: 80 -> 10080, 443 -> 10443 to %HOST_IP% on %ETH%"'.gsub("%HOST_IP%", host_ip).gsub("%ETH%", eth))
+        run_remote "sudo /etc/init.d/apache2 start"
+        run_remote "sudo /etc/init.d/transmission-daemon start"
     else
       system("sudo iptables -t nat -A OUTPUT -o lo -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 10080;
               sudo iptables -t nat -A OUTPUT -o lo -p tcp -d %HOST_IP% --dport 80 -j REDIRECT --to-port 10080;

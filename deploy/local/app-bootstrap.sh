@@ -41,8 +41,8 @@ rm -rf /var/lib/transmission-daemon
 rm -rf /usr/share/transmission/
 set -e
 
-chmod +x /vagrant/deploy/external-configuration/install-transmission.sh
-/vagrant/deploy/external-configuration/install-transmission.sh
+chmod +x $EXTERNAL_CONF_DIR/install-transmission.sh
+$EXTERNAL_CONF_DIR/install-transmission.sh
 
 php app/console --no-interaction doctrine:migrations:migrate
 php app/console cache:warmup

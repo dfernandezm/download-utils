@@ -25,7 +25,10 @@ module.exports = {
   resolve: {
             alias: {
                 moment: path.join(__dirname, "node_modules/moment/moment.js")
-            }
+            },
+
+            extensions: ['', '.js', '.coffee']
+
         }
 
 

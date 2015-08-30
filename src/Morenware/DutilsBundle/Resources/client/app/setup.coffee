@@ -1,4 +1,7 @@
-app = window.app = angular.module 'dutilsApp', ['ngRoute', 'ngResource', 'ui.bootstrap']
+#name = require "./components/automatedSearch/directives/automatedSearchDirective"
+name = require "./components/automatedSearch/automatedSearch"
+console.log 'NAME ' + name
+app = window.app = angular.module 'dutilsApp', ['ngRoute', 'ngResource', 'ui.bootstrap', name]
 
 app.config ['$routeProvider','$httpProvider','$interpolateProvider', '$compileProvider', ($routeProvider, $httpProvider, $interpolateProvider, $compileProvider) ->
   # Avoid having this header here! - use cookies or token
