@@ -38,14 +38,15 @@ class AutomatedSearchApiController {
 	public $automatedSearchService;
 
 
-	/**
-	 * Get automated search config by id
-	 * 
-	 * @Route("/automatedsearchs/{id}")
+    /**
+     * Get automated search config by id
+     *
+     * @Route("/automatedsearchs/{id}")
      * @Method("GET")
-	 * 
-	 * @param $id
-	 */
+     *
+     * @param $id
+     * @return JsonResponse
+     */
 	public function getAutomatedSearchAction($id) {
 		
 		try {
@@ -139,16 +140,17 @@ class AutomatedSearchApiController {
             return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
         }
     }
-	
 
-	/**
-	 *
-	 * Delete automated search
-	 *
-	 * @Route("/automatedsearchs/{id}")
-	 * @Method("DELETE")
-	 *
-	 */
+
+    /**
+     *
+     * Delete automated search
+     *
+     * @Route("/automatedsearchs/{id}")
+     * @Method("DELETE")
+     * @param $id
+     * @return JsonResponse
+     */
 	public function deleteAutomatedSearchAction($id) {
 
         try {
@@ -168,7 +170,10 @@ class AutomatedSearchApiController {
 	}
 
 
-    private function fillFeedIds($automatedSearch) {
+    /**
+     * @param $automatedSearch
+     */
+    private function fillFeedIds(AutomatedSearchConfig $automatedSearch) {
         $feedIds = array();
         foreach($automatedSearch->getFeeds() as $feed) {
 

@@ -1,0 +1,33 @@
+<div class="torrent-actions">
+
+    <button ng-show="torrent.state == 'COMPLETED_WITH_ERROR' || torrent.state == 'FAILED_DOWNLOAD_ATTEMPT' || torrent.state == 'AWAITING_DOWNLOAD'"
+            ng-click="startDownload(torrent)" class="btn btn-sm btn-primary pull-left">
+      Start
+    </button>
+
+    <button ng-show="torrent.state !== 'COMPLETED'"
+            ng-click="cancelDownload(torrent)" class="btn btn-sm btn-primary pull-left">
+      Cancel
+    </button>
+
+    <button ng-show="torrent.state == 'DOWNLOADING'"
+            ng-click="pauseDownload(torrent)" class="btn btn-sm btn-primary pull-left">
+      Pause
+    </button>
+
+    <button ng-show="torrent.state == 'PAUSED'"
+            ng-click="resumeDownload(torrent)" class="btn btn-sm btn-primary pull-left">
+      Resume
+    </button>
+
+    <button ng-show="torrent.state == 'DOWNLOAD_COMPLETED'"
+            ng-click="rename(torrent)" class="btn btn-sm btn-primary pull-left">
+      Rename
+    </button>
+
+    <button ng-show="torrent.state == 'RENAMING_COMPLETED'"
+            ng-click="fetchSubtitles(torrent)" class="btn btn-sm btn-primary pull-left">
+      Get subtitles
+    </button>
+
+-</div>

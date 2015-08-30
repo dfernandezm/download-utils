@@ -10,8 +10,8 @@ require './setup.coffee'
 require './searchFactory.coffee'
 require './utilsService.coffee'
 
-require './feeds.coffee'
-require './feedsController.coffee'
+# require './feeds.coffee'
+# require './feedsController.coffee'
 
 require './searchController.coffee'
 require './torrents.coffee'
