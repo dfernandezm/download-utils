@@ -1,17 +1,18 @@
 module.exports = mod =  (Feed) ->
 
-  getAll = (actionWhenDone) ->
+  getAll =  ->
     return Feed.getAll((data) ->
-      actionWhenDone()
+      console.log("Get all " + data)
     )
 
   save = (feed) ->
-    # the parameter 'feed' is the saved value coming from the server
+    # the parameter 'savedFeed' is the saved value coming from the server
+    # CoffeeScript here: this function returns a promise to the result (notice
+    # there is no return statement in the main function)
     feed.$save((savedFeed) ->
-      console.log("Feed saved " + feed)
+      console.log(savedFeed)
       return savedFeed
     )
-    return
 
   update = (feed) ->
     feed.$update((updatedFeed) ->
@@ -20,14 +21,13 @@ module.exports = mod =  (Feed) ->
         # $scope.showFeedsForm = false
         return updatedFeed
     )
-    return
+
   remove = (feed) ->
     feed.$delete((data) ->
       console.log("Feed deleted!")
       #$scope.feed = null
       #$scope.feeds = getAllFeeds()
     )
-    return
 
   return {
     getAll: getAll
@@ -35,5 +35,5 @@ module.exports = mod =  (Feed) ->
     update: update
     remove: remove
   }
-  
+
 mod.$inject = ['Feed']
