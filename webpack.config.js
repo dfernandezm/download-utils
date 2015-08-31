@@ -13,11 +13,12 @@ module.exports = {
   bail: true,
   cache: true,
   entry: {
-    init: './src/Morenware/DutilsBundle/Resources/client/app/init.coffee'
+    init: './src/Morenware/DutilsBundle/Resources/client/app/init.coffee',
+    filemanager: './src/Morenware/DutilsBundle/Resources/client/filemanager/filemanager.coffee'
   },
   output: {
     path: './web/client/js/app',
-    filename: 'init.js'
+    filename: '[name].js'
   },
    plugins: [
     new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /de|fr|hu/)

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" ng-app="FileManagerApp">
+<head>
+
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Media Library FileManager</title>
+
+    {% block stylesheets %}
+    <link rel="stylesheet" href="client/css/bootswatch/paper/bootstrap.min.css" />
+    <link rel="stylesheet" href="client/css/angular-filemanager.css">
+    {% endblock %}
+
+    {% block javascripts  %}
+        <script src="client/js/app/filemanager.js"></script>
+        <script src="client/js/filemanager/jquery.min.js"></script>
+        <script src="client/js/filemanager/bootstrap.min.js"></script>
+        <script src="client/js/filemanager/angular-filemanager.min.js"></script>
+        <script type="text/javascript">
+            //example to override angular-filemanager default config
+            angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (fileManagerConfig) {
+                var defaults = fileManagerConfig.$get();
+
+                fileManagerConfig.set({
+                    appName: 'Media Downloader Automator - View Library',
+                    allowedActions: angular.extend(defaults.allowedActions, {
+                        remove: true
+                    })
+                });
+
+            }]);
+        </script>
+    {% endblock %}
+</head>
+
+<body class="ng-cloak">
+{% block body %}{% endblock %}
+<angular-filemanager />
+</body>
+</html>
