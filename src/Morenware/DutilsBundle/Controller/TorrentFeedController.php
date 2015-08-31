@@ -2,7 +2,6 @@
 namespace Morenware\DutilsBundle\Controller;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Morenware\DutilsBundle\Entity\Instance;
 use Symfony\Component\HttpFoundation\Request;
 use JMS\DiExtraBundle\Annotation as DI;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
