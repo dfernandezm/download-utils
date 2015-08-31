@@ -28,7 +28,7 @@ mod = angular
           scope.deleteFeed = (feed) ->
             feedService.remove(feed).then ( (data) ->
                 scope.feeds = feedService.getAll()
-              return
+                return
             )
             return
 

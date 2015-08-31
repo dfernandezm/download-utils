@@ -1,4 +1,4 @@
-app.controller 'searchController', ['$scope', 'searchFactory', 'utilsService', '$window', '$location', 'Torrent', ($scope, searchFactory, utilsService, $window, $location, Torrent) ->
+app.controller 'searchController', ['$scope', 'searchFactory', '$window', '$location', ($scope, searchFactory, $window, $location) ->
 
   promise = null
   reloadPage = false
