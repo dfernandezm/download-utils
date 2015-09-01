@@ -23,9 +23,26 @@
 
                 fileManagerConfig.set({
                     appName: 'Media Downloader Automator - View Library',
+                    defaultLang: "es",
                     listUrl: "api/media/list",
+                    uploadUrl: "api/media/upload",
+                    renameUrl: "api/media/rename",
+                    removeUrl: "api/media/remove",
+                    editUrl: "api/media/edit",
+                    downloadFileUrl: "api/media/download",
+                    getContentUrl: "api/media/content",
+                    sidebar: false,
                     allowedActions: angular.extend(defaults.allowedActions, {
-                        remove: true
+                        remove: true,
+                        rename: true,
+                        copy: false,
+                        edit: true,
+                        changePermissions: false,
+                        compress: false,
+                        compressChooseName: false,
+                        extract: false,
+                        download: true,
+                        preview: true
                     })
                 });
 

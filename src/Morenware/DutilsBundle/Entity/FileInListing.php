@@ -5,19 +5,15 @@
  * Date: 31/08/2015
  * Time: 22:12
  */
-
 namespace Morenware\DutilsBundle\Entity;
-
 
 class FileInListing
 {
-
     private $name;
     private $rights;
     private $size;
     private $date;
     private $type;
-
     /**
      * @return mixed
      */
@@ -25,7 +21,6 @@ class FileInListing
     {
         return $this->name;
     }
-
     /**
      * @param mixed $name
      */
@@ -33,7 +28,6 @@ class FileInListing
     {
         $this->name = $name;
     }
-
     /**
      * @return mixed
      */
@@ -41,7 +35,6 @@ class FileInListing
     {
         return $this->rights;
     }
-
     /**
      * @param mixed $rights
      */
@@ -49,7 +42,6 @@ class FileInListing
     {
         $this->rights = $rights;
     }
-
     /**
      * @return mixed
      */
@@ -57,7 +49,6 @@ class FileInListing
     {
         return $this->size;
     }
-
     /**
      * @param mixed $size
      */
@@ -65,7 +56,6 @@ class FileInListing
     {
         $this->size = $size;
     }
-
     /**
      * @return mixed
      */
@@ -73,7 +63,6 @@ class FileInListing
     {
         return $this->date;
     }
-
     /**
      * @param mixed $date
      */
@@ -81,7 +70,6 @@ class FileInListing
     {
         $this->date = $date;
     }
-
     /**
      * @return mixed
      */
@@ -89,7 +77,6 @@ class FileInListing
     {
         return $this->type;
     }
-
     /**
      * @param mixed $type
      */
@@ -97,5 +84,4 @@ class FileInListing
     {
         $this->type = $type;
     }
-
 }
