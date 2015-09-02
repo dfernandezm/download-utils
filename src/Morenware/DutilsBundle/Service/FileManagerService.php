@@ -4,6 +4,9 @@ use JMS\DiExtraBundle\Annotation\Service;
 use JMS\DiExtraBundle\Annotation as DI;
 use Doctrine\Common\Persistence\ObjectManager;
 use Morenware\DutilsBundle\Entity\FileInListing;
+use Morenware\DutilsBundle\Util\GeneralUtils;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 
 /** @Service("filemanager.service") */
@@ -122,6 +125,20 @@ class FileManagerService {
 		return $fileList;
 	}
 
+	private function getMediaLibraryRootPath() {
+
+		$mediaLibraryRoot = $this->settingsService->getDefaultMediacenterSettings()->getBaseLibraryPath();
+
+		if (is_link($mediaLibraryRoot)) {
+			$this->logger->debug("[FILEMANAGER] Root $mediaLibraryRoot ");
+			$mediaLibraryRoot = readlink($mediaLibraryRoot);
+			$this->logger->debug("[FILEMANAGER] Real path from symlink is $mediaLibraryRoot");
+		}
+
+		return $mediaLibraryRoot;
+
+	}
+
 
 	private function readDirectoryAsFileInfos($dirPath) {
 		$fileList = array();
@@ -129,7 +146,7 @@ class FileManagerService {
 		if ($handle = opendir($dirPath)) {
 
 			while (false !== ($entry = readdir($handle))) {
-				if ($entry != "." && $entry != ".." && !$this->startsWith($entry, ".")) {
+				if ($entry != "." && $entry != ".." && !GeneralUtils::startsWith($entry, ".")) {
 					$entryFullPath =  "$dirPath/$entry";
 					$this->logger->debug("[FILEMANAGER] Reading entries from directory $dirPath: " . "$entryFullPath");
 					$fileList[] = $this->getFileInfoForListing($entryFullPath);
@@ -183,9 +200,123 @@ class FileManagerService {
 		return $info;
 	}
 
-    private function startsWith($haystack, $needle) {
-        // search backwards starting from haystack length characters from the end
-        return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
+
+	public function remove($path) {
+
+		$mediaLibraryRootPath = $this->getMediaLibraryRootPath();
+		$fullPath = $mediaLibraryRootPath . $path;
+
+		if (file_exists($fullPath)) {
+
+				if ($path != '/' && $path !== "/".self::TV_SHOWS_FOLDER_NAME && $path !== "/".self::MOVIES_FOLDER_NAME ) {
+
+				    if (is_dir($fullPath)) {
+                        $this->deleteDir($fullPath);
+                    } else {
+                        unlink($fullPath);
+                    }
+
+                } else {
+                    $this->logger->warn("[FILEMANAGER] Reject deletion of root path " . $path);
+                }
+		} else {
+            $this->logger->warn("[FILEMANAGER] Path requested for deletion does no exist " . $fullPath);
+        }
+
+	}
+
+
+    public function editSubtitle($content, $path) {
+
+        $mediaLibraryRootPath = $this->getMediaLibraryRootPath();
+        $fullPath = $mediaLibraryRootPath . $path;
+
+        // Only allow editing .srt files
+        if (GeneralUtils::endsWith($fullPath, ".srt")) {
+
+            if (file_exists($fullPath)) {
+                file_put_contents($fullPath, $content);
+            } else {
+                $this->logger->warn("[FILEMANAGER] Cannot edit file in path $fullPath");
+            }
+
+        } else {
+            $this->logger->warn("[FILEMANAGER] Cannot edit file in path $fullPath");
+        }
+
     }
+
+    public function getSubtitleContent($path) {
+        $mediaLibraryRootPath = $this->getMediaLibraryRootPath();
+        $fullPath = $mediaLibraryRootPath . $path;
+
+        // Only allow editing .srt files
+        if (GeneralUtils::endsWith($fullPath, ".srt")) {
+
+            if (file_exists($fullPath)) {
+
+                $content = file_get_contents($fullPath);
+                return $content;
+
+            } else {
+                $this->logger->warn("[FILEMANAGER] Cannot edit file in path $fullPath");
+            }
+
+        } else {
+            $this->logger->warn("[FILEMANAGER] Cannot edit file in path $fullPath");
+        }
+
+        return null;
+    }
+
+    public function renameOrMove($currentPath, $newPath) {
+
+        $mediaLibraryRootPath = $this->getMediaLibraryRootPath();
+
+        $fullCurrentPath = $mediaLibraryRootPath . $currentPath;
+        $fullNewPath = $mediaLibraryRootPath . $newPath;
+
+        if (file_exists($fullCurrentPath)) {
+
+            if (!file_exists($fullNewPath)) {
+                rename($fullCurrentPath, $fullNewPath);
+            } else {
+                $this->logger->warn("[FILEMANAGER] New path already exists $fullNewPath");
+            }
+
+        } else {
+            $this->logger->warn("[FILEMANAGER] Current path does not exist $fullCurrentPath");
+        }
+
+    }
+
+    public function uploadFileToLocation() {
+
+    }
+
+    public function downloadOrPreview() {
+        
+    }
+
+
+    private function deleteDir($dirPath) {
+        $it = new RecursiveDirectoryIterator($dirPath, RecursiveDirectoryIterator::SKIP_DOTS);
+        $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
+
+        foreach($files as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
+        }
+
+        rmdir($dirPath);
+    }
+
+
+
+
+
 
 }
