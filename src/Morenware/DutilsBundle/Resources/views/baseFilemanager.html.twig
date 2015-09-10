@@ -32,6 +32,7 @@
                     downloadFileUrl: "api/media/download",
                     getContentUrl: "api/media/content",
                     sidebar: false,
+                    isEditableFilePattern: /\.(txt|srt|sh|php[3-6]?|vb)$/i,
                     allowedActions: angular.extend(defaults.allowedActions, {
                         remove: true,
                         rename: true,
@@ -41,7 +42,7 @@
                         compress: false,
                         compressChooseName: false,
                         extract: false,
-                        download: true,
+                        download: false,
                         preview: true
                     })
                 });

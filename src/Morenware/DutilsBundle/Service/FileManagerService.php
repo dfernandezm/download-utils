@@ -256,6 +256,7 @@ class FileManagerService {
             if (file_exists($fullPath)) {
 
                 $content = file_get_contents($fullPath);
+
                 return $content;
 
             } else {

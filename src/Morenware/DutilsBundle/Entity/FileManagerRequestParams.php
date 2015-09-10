@@ -26,25 +26,41 @@ use JMS\Serializer\Annotation\AccessType;
  * @AccessType("public_method")
  *
  */
-class FileManagerRequestParams {
+class FileManagerRequestParams
+{
 
- /**
-  * @Type("string")
-  *
-  */
-  private $mode;
+    /**
+     * @Type("string")
+     *
+     */
+    private $mode;
 
-  /**
-   * @Type("boolean")
-   *
-   */
-  private $onlyFolders;
+    /**
+     * @Type("boolean")
+     *
+     */
+    private $onlyFolders;
 
-  /**
-   * @Type("string")
-   *
-   */
-  private $path;
+    /**
+     * @Type("string")
+     *
+     */
+    private $path;
+
+
+    /**
+     * @Type("string")
+     *
+     */
+    private $newPath;
+
+
+    /**
+     * @Type("string")
+     *
+     */
+    private $content;
+
 
     /**
      * @return mixed
@@ -95,6 +111,37 @@ class FileManagerRequestParams {
     }
 
 
+    /**
+     * @return mixed
+     */
+    public function getNewPath()
+    {
+        return $this->newPath;
+    }
+
+    /**
+     * @param mixed $newPath
+     */
+    public function setNewPath($newPath)
+    {
+        $this->newPath = $newPath;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getContent()
+    {
+        return $this->content;
+    }
+
+    /**
+     * @param mixed $content
+     */
+    public function setContent($content)
+    {
+        $this->content = $content;
+    }
 
 
 }
