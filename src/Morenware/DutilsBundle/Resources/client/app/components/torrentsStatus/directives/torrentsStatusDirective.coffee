@@ -34,15 +34,7 @@ mod = angular
 
           # This is here because the scope needs to be updated with fetched data
           scope.pollForStatus()
-
-          scope.startDownload = (torrentDefinition) ->
-            torrentService.startDownload(torrentDefinition)
-            return
-
-          scope.pauseDownload = (torrentDefinition) ->
-            torrentService.pauseDownload(torrentDefinition)
-            return
-
+          
       ]
 
 module.exports = mod.name

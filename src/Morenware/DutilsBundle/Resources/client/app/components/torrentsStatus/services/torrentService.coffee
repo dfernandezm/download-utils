@@ -62,49 +62,73 @@ module.exports = mod = ($http, $timeout) ->
       pollPromise = $timeout(torrentService.pollForStatus(updateAction), 5000)
       return resp.data.torrents
 
+  startTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
+    return (responseData, status, headers, config) ->
+      #responseData.torrent.date = moment(responseData.torrent.date).format('YYYY-MM-DD')
+      _.extend torrentDefinition, responseData.torrent
+      return
+
+  cancelTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
+    return (responseData, status, headers, config) ->
+      torrentDefinition.state = "NEW"
+      torrentDefinition.buttonText = "Start"
+      return
+
+  pauseTorrentSuccessCallbackCreator = (torrentDefinition) ->
+    return (responseData, status, headers, config) ->
+      _.extend torrentDefinition, responseData.torrent
+      return
+
+  resumeTorrentSuccessCallbackCreator = (torrentDefinition) ->
+    return (responseData, status, headers, config) ->
+      _.extend torrentDefinition, responseData.torrent
+      return
+
   torrentService.startDownload = (torrentDefinition) ->
     torrentDownload = {}
-    torrentDefinition.date = moment(torrentDefinition.date).format('YYYY-MM-DD[T]HH:mm:ssZZ')
+    date = moment(torrentDefinition.date).format('YYYY-MM-DD[T]HH:mm:ssZZ')
     # copies properties over from 2 to 1 - torrentDefinition to torrentDownload
     _.extend torrentDownload, torrentDefinition
+    torrentDownload.date = date
     torrentDefinition.buttonText = "Starting..."
     successCallback = startTorrentDownloadSuccessCallbackCreator(torrentDefinition)
-    torrentFactory.torrentAction "START",torrentDownload,successCallback,onError
+    torrentService.torrentAction("START",torrentDownload,successCallback,onError)
     return
 
-  # TODO: either refactor torrent API to use resource properly or use another endpoint
   torrentService.cancelDownload = (torrentDefinition) ->
     torrentGuidOrHash = torrentDefinition.hash
     torrentDefinition.buttonText = "Cancelling..."
     successCallback = cancelTorrentDownloadSuccessCallbackCreator(torrentDefinition)
-    torrentFactory.torrentAction "CANCEL",torrentDefinition,successCallback,onError
+    torrentService.torrentAction("CANCEL",torrentDefinition,successCallback,onError)
     return
 
   torrentService.pauseDownload = (torrentDefinition) ->
     torrentDefinition.buttonText = "Pausing..."
     successCallback = pauseTorrentSuccessCallbackCreator(torrentDefinition)
-    torrentFactory.torrentAction "PAUSE",torrentDefinition,successCallback,onError
+    torrentService.torrentAction("PAUSE",torrentDefinition,successCallback,onError)
     return
 
   torrentService.resumeDownload = (torrentDefinition) ->
     torrentDefinition.buttonText = "Resuming..."
     successCallback = resumeTorrentSuccessCallbackCreator(torrentDefinition)
-    torrentFactory.torrentAction "RESUME",torrentDefinition,successCallback,onError
+    torrentService.torrentAction("RESUME",torrentDefinition,successCallback,onError)
     return
 
   torrentService.fetchSubtitles = (torrentDefinition) ->
     torrentDefinition.buttonText = "Fetching..."
     successCallback = pauseTorrentSuccessCallbackCreator(torrentDefinition)
-    torrentFactory.torrentAction "SUBTITLES",torrentDefinition,successCallback,onError
+    torrentService.torrentAction("SUBTITLES",torrentDefinition,successCallback,onError)
     return
 
   torrentService.rename = (torrentDefinition) ->
     torrentDefinition.buttonText = "Renaming..."
     successCallback = pauseTorrentSuccessCallbackCreator(torrentDefinition)
-    torrentFactory.torrentAction "RENAME",torrentDefinition,successCallback,onError
+    torrentService.torrentAction("RENAME",torrentDefinition,successCallback,onError)
     return
 
-
+  onError = (responseData) ->
+    console.log("Error in request")
+    return
 
   return torrentService
 
