@@ -214,7 +214,6 @@ class TorrentFeedService
 
     public function parseAutomatedSearchConfigToTorrents(AutomatedSearchConfig $automatedSearchConfig) {
 
-        //$feeds = $this->findFeedsForAutomatedSearch($automatedSearchConfig->getContentTitle());
         $feeds = $automatedSearchConfig->getFeeds();
         $torrents = array();
         $titles = array();
@@ -251,6 +250,8 @@ class TorrentFeedService
                     $torrent->setAutomatedSearchConfig($automatedSearchConfig);
 
                     $torrentTitle = $torrent->getTitle();
+
+                    // Feeds only have SD and 720p qualities
 
                     $currentIsHD = strpos($torrentTitle, '720p') !== false;
                     $titleNoQuality = str_replace("720p", "", $torrentTitle);

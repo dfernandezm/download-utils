@@ -44,16 +44,20 @@ class TorrentService {
 
 	private $transmissionConfigured = false;
 
-   /**
-	* @DI\InjectParams({
-	*     "logger"           = @DI\Inject("monolog.logger"),
-	*     "monitorLogger"	 = @DI\Inject("monolog.logger.monitor"),
-	*     "renamerLogger"	 = @DI\Inject("monolog.logger.renamer"),
-	*     "debrilFeedReader" = @DI\Inject("debril.reader"),
-	*     "entityClass"      = @DI\Inject("%morenware_dutils.torrent.class%")
-	* })
-	*
-	*/
+	/**
+	 * @DI\InjectParams({
+	 *     "logger"           = @DI\Inject("monolog.logger"),
+	 *     "monitorLogger"     = @DI\Inject("monolog.logger.monitor"),
+	 *     "renamerLogger"     = @DI\Inject("monolog.logger.renamer"),
+	 *     "debrilFeedReader" = @DI\Inject("debril.reader"),
+	 *     "entityClass"      = @DI\Inject("%morenware_dutils.torrent.class%")
+	 * })
+	 * @param Logger $logger
+	 * @param Logger $monitorLogger
+	 * @param Logger $renamerLogger
+	 * @param $debrilFeedReader
+	 * @param $entityClass
+	 */
 	public function __construct(Logger $logger, Logger $monitorLogger,  Logger $renamerLogger, $debrilFeedReader, $entityClass) {
 
 		$this->logger = $logger;
@@ -531,10 +535,11 @@ class TorrentService {
 
 		$downloadingTorrent = null;
 
-		if ($existingTorrent == null || $existingTorrent->getState() == TorrentState::AWAITING_DOWNLOAD || $existingTorrent->getState() == TorrentState::NEW_DOWNLOAD) {
+		if ($existingTorrent == null || $existingTorrent->getState() == TorrentState::AWAITING_DOWNLOAD ||
+			$existingTorrent->getState() == TorrentState::NEW_DOWNLOAD) {
 
-            if ($existingTorrent == null) {
-                $torrent->setGuid(GuidGenerator::generate());
+					if ($existingTorrent == null) {
+						$torrent->setGuid(GuidGenerator::generate());
             }
 
 			$downloadingTorrent = $this->transmissionService->startDownload($torrent, $fromFile);

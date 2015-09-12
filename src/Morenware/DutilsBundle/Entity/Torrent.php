@@ -29,7 +29,7 @@ class Torrent {
 	private $title;
 	
 	/**
-	 * @ORM\Column(type="string", length=200, nullable=true)
+	 * @ORM\Column(type="string", length=250, nullable=true)
 	 */
 	private $torrentName;
 	

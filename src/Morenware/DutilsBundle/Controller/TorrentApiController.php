@@ -38,15 +38,15 @@ class TorrentApiController {
      */
 	public $torrentService;
 
-	
-	
+
 	/**
 	 * Fetch a torrent with the given hash or guid
-	 * 
+	 *
 	 * @Route("/torrents/{hashOrGuid}")
-     * @Method("GET")
-	 * 
-	 * @param unknown $hashOrGuid
+	 * @Method("GET")
+	 *
+	 * @param  $hashOrGuid
+	 * @return JsonResponse
 	 */
 	public function getTorrentAction($hashOrGuid) {
 		

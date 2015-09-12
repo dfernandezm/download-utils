@@ -1,5 +1,5 @@
 <?php
-namespace Morenware\DutilsBundle\Service\Search;
+namespace Morenware\DutilsBundle\Entity;
 
 class SearchWebsiteType {
 	const MAIN_DETAIL = "MAIN_DETAIL";

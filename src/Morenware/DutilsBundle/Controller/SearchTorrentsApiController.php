@@ -49,20 +49,28 @@ class SearchTorrentsApiController extends Controller {
 		}
 		
 		$this->logger->debug('Received query to search: '. $searchQuery . " websites is: " . print_r($websitesToSearch,true));
-		
-		list($torrents, $currentOffset, $total) = $this->searchService->searchTorrentsInWebsites($searchQuery, $websitesToSearch, 25, 0);    		
 
-		//$this->logger->debug('Torrents are: ' . print_r($torrents,true));
-		
-    	$torrentsInfo =
-    				array('torrents' => $torrents, 
-    					  'limit' => 25,
-    					  'offset' => 0,		 
-    					  'currentOffset' => $currentOffset, 
-    					  'total' => $total,  
-    					  'query' => $searchQuery
-    				);
-		
-    	return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $torrentsInfo, 200, "torrentsInfo");
+//		try {
+
+			list($torrents, $currentOffset, $total) = $this->searchService->searchTorrentsInWebsites($searchQuery, $websitesToSearch, 25, 0);
+
+			//$this->logger->debug('Torrents are: ' . print_r($torrents,true));
+
+			$torrentsInfo =
+				array('torrents' => $torrents,
+					'limit' => 25,
+					'offset' => 0,
+					'currentOffset' => $currentOffset,
+					'total' => $total,
+					'query' => $searchQuery
+				);
+
+			return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $torrentsInfo, 200, "torrentsInfo");
+
+//		} catch(\Exception $e) {
+//			$this->logger->error("Error: " . $e->getMessage() . " -- " . str_replace("#", "\n#", $e->getTraceAsString()));
+//			return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
+//		}
+
 	}	
 }

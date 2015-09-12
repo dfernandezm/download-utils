@@ -94,7 +94,7 @@ parameters:
     jms_serializer.serialized_name_annotation_strategy.class: JMS\Serializer\Naming\IdenticalPropertyNamingStrategy
 
 leezy_pheanstalk:
-    enabled: true
+    enabled: false
     pheanstalks:
       primary:
         server: localhost

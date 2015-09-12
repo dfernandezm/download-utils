@@ -1,5 +1,5 @@
 <?php
-namespace Morenware\DutilsBundle\Service\Search;
+namespace Morenware\DutilsBundle\Entity;
 
 class TorrentDateType {
 	

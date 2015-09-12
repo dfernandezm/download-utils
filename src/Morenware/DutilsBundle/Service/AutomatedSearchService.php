@@ -6,6 +6,7 @@ use JMS\DiExtraBundle\Annotation\Service;
 use JMS\DiExtraBundle\Annotation as DI;
 use Monolog\Logger;
 use Morenware\DutilsBundle\Entity\AutomatedSearchConfig;
+use Morenware\DutilsBundle\Entity\TorrentContentType;
 
 /** @Service("automatedsearch.service") */
 class AutomatedSearchService {
@@ -68,6 +69,30 @@ class AutomatedSearchService {
         });
     }
 
+
+    /**
+     * Simple matching of feeds based on the name of the TV Show
+     *
+     * @param AutomatedSearchConfig $automatedSearch
+     */
+    public function attachFeedsForTvShowAutomatedSearch(AutomatedSearchConfig $automatedSearch) {
+
+        if ($automatedSearch->getContentType() === TorrentContentType::TV_SHOW) {
+
+            $tvShowName = $automatedSearch->getContentTitle();
+            $feeds = $this->torrentFeedService->findFeedsForAutomatedSearch($tvShowName);
+
+            $feedIds = array();
+
+            foreach ($feeds as $feed) {
+                 $feedIds[] = $feed->getId();
+            }
+
+            $automatedSearch->setFeedIds($feedIds);
+        }
+    }
+
+
     private function linkFeedsToAutomatedSearch(AutomatedSearchConfig $automatedSearchConfig) {
 
         $feedIds = $automatedSearchConfig->getFeedIds();
@@ -99,6 +124,7 @@ class AutomatedSearchService {
         // To delete
         foreach ($currentFeeds as $currentFeed) {
             if (!in_array($currentFeed, $toAdd)) {
+                // Need to do both ways
                 $automatedSearchConfig->getFeeds()->removeElement($currentFeed);
                 $currentFeed->setAutomatedSearchConfig(null);
             }
