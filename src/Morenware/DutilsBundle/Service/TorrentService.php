@@ -940,4 +940,22 @@ class TorrentService {
         return $requireSubtitlesBasedOnContent || ($automatedSearchConfig !== null && $automatedSearchConfig->getSubtitlesEnabled());
     }
 
+	public function extractHashFromMagnetLink($magnetLink) {
+
+		if ($magnetLink !== null) {
+
+			$hashPattern = '/urn:btih:(.*)&dn=/';
+			$matches = array();
+
+			if (preg_match($hashPattern, $magnetLink, $matches)) {
+				$hash = $matches[1];
+				return $hash;
+			}
+		}
+
+		return null;
+
+	}
+
+
 }

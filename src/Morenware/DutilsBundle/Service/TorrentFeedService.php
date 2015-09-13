@@ -135,7 +135,10 @@ class TorrentFeedService
                     $torrent = new Torrent();
                     $torrent->setTitle((string)$item->getTitle());
                     $torrent->setTorrentName((string)$item->getTitle());
-                    $torrent->setMagnetLink((string)$item->getLink());
+
+                    $magnetLink = (string)$item->getLink();
+
+                    $torrent->setMagnetLink($magnetLink);
                     $torrent->setOrigin(TorrentOrigin::FEED);
                     $torrent->setContentType(TorrentContentType::TV_SHOW);
                     $torrent->setState(TorrentState::AWAITING_DOWNLOAD);
@@ -143,9 +146,19 @@ class TorrentFeedService
                     $torrent->setGuid(GuidGenerator::generate());
                     $torrent->setAutomatedSearchConfig($automatedSearchConfig);
 
-                    $torrents[] = $torrent;
+                    $hash = $this->torrentService->extractHashFromMagnetLink($magnetLink);
 
-                    $this->logger->debug("[AUTOMATED-SEARCH] Found torrent in feed: " . $torrent->getTitle());
+                    if ($hash !== null) {
+                        $existingTorrent = $this->torrentService->findTorrentByHash($hash);
+                        if ($existingTorrent == null) {
+                            $torrents[] = $torrent;
+                            $this->logger->info("[AUTOMATED-SEARCH] Found torrent in feed: " . $torrent->getTitle());
+                        } else {
+                            $this->logger->info("[AUTOMATED-SEARCH] Torrent already exists in DB -- skipping " . $torrent->getTitle());
+                        }
+                    } else {
+                        $this->logger->info("[AUTOMATED-SEARCH] Unable to extract torrent from magnet link, assume it is invalid  -- $magnetLink -- " . $torrent->getTitle());
+                    }
                 }
 
                 $this->logger->info("[AUTOMATED-SEARCH] Found " . count($torrents) . " torrents from feed " . $feed->getDescription());
