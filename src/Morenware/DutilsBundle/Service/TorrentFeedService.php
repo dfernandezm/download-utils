@@ -75,159 +75,53 @@ class TorrentFeedService
         $this->em->merge($feed);
     }
 
-    public function update($feed)
-    {
+    public function update($feed) {
         $this->em->merge($feed);
         $this->em->flush();
     }
 
-    public function find($id)
-    {
+    public function find($id) {
         return $this->getRepository()->find($id);
     }
 
-    public function getAll()
-    {
+    public function getAll() {
         return $this->getRepository()->findAll();
     }
 
-    public function delete($feedId)
-    {
+    public function delete($feedId) {
         $feed = $this->find($feedId);
         $this->em->remove($feed);
         $this->em->flush();
     }
 
     public function findFeedsForAutomatedSearch($feedsTitle) {
-        $feeds = $this->getRepository()->findBy(array('description' => $feedsTitle, 'active' => true));
-        $this->em->flush();
-        $this->em->clear();
+
+        $q = $this->em->createQuery(
+            "select f from MorenwareDutilsBundle:Feed f " .
+            "where LOWER(f.description) = :title")
+            ->setParameter("title", strtolower($feedsTitle));
+        $feeds = $q->getResult();
+
         return $feeds;
     }
-
-
-    public function checkFeedsForTorrents()
-    {
-
-        // list all feeds
-        // - get XML into entities
-        // - loop checking dates
-        // - generate Torrent entities with state AWAITING_DOWNLOAD
-        // execute this as cron -- every day at 2:00 AM
-
-        $feeds = $this->getAll();
-
-        foreach ($feeds as $feed) {
-
-            if ($feed->getActive()) {
-
-                $this->logger->info("Reading active feed " . $feed->getDescription());
-                // Check each feed in a separate transaction
-                $this->em->transactional(function ($em) use ($feed) {
-
-                    try {
-                        $torrents = $this->parseFeedContentToTorrents($feed);
-                    } catch (\Exception $e) {
-                        $this->logger->warn("We assume there is an error in the feed -- continue with next feed" . $e->getMessage() . " \n" . $e->getTraceAsString());
-                        //continue;
-                    }
-
-                    foreach ($torrents as $torrent) {
-                        $this->torrentService->create($torrent);
-                        $this->logger->info("Sending torrent " . $torrent->getGuid() . " torrents from feed " . $feed->getDescription() . " to Transmission for download");
-                        $this->transmissionService->startDownload($torrent);
-                    }
-
-                });
-            }
-        }
-
-    }
-
-
-    public function parseFeedContentToTorrents($feed)
-    {
-
-        $this->logger->info("Parsing feed with URL " . $feed->getUrl());
-
-        $lastDownloadDate = $feed->getLastDownloadDate();
-
-        $referenceDate = $lastDownloadDate != null ? $lastDownloadDate : new \DateTime();
-
-        $feedResult = $this->debrilFeedReader->getFeedContent($feed->getUrl(), $referenceDate);
-
-        $readItems = $feedResult->getItems();
-
-        $titles = array();
-        $torrents = array();
-
-        // Regardless of existence of torrents to download or not, we are checking the feed, so we set the lastCheckedDate to now
-        $feed->setLastCheckedDate(new \DateTime());
-
-        foreach ($readItems as $item) {
-
-            $torrent = new Torrent();
-            $torrent->setTitle((string)$item->getTitle());
-            $torrent->setMagnetLink((string)$item->getLink());
-            $torrent->setOrigin(TorrentOrigin::FEED);
-            $torrent->setContentType(TorrentContentType::TV_SHOW);
-            $torrent->setState(TorrentState::AWAITING_DOWNLOAD);
-            $torrent->setDate($item->getUpdated());
-            $torrent->setGuid(GuidGenerator::generate());
-
-            $torrentTitle = $torrent->getTitle();
-
-            //TODO: Take into account 1080p
-            $currentIsHD = strpos($torrentTitle, '720p') !== false;
-            $titleNoQuality = str_replace("720p", "", $torrentTitle);
-            $titleToSearch = trim(strtolower(str_replace(" ", "", $titleNoQuality)));
-            $key = array_search($titleToSearch, $titles);
-
-            if ($key !== false) { // title has already been added
-
-                if ($currentIsHD) { // replace if current is HD
-                    $previous = $torrents[$key];
-                    $torrents[$key] = $torrent;
-                    $this->logger->debug("Replaced torrent " . $previous->getTitle() . " with " . $torrent->getTitle());
-                }
-
-            } else { // no added so add it now
-                $torrents[] = $torrent;
-                $titles[] = $titleToSearch;
-                $this->logger->debug("Added torrent " . $torrent->getTitle());
-            }
-        }
-
-        $this->logger->info("Created " . count($torrents) . " torrents from feed " . $feed->getDescription() . " awaiting download");
-
-        if (count($torrents) > 0) {
-            // There are torrents to download, set lastDownloadDate to now
-            $feed->setLastDownloadDate(new \DateTime());
-        }
-
-        //TODO: only update if the Transmission Download started correctly
-        $this->merge($feed);
-
-        return $torrents;
-    }
-
 
     public function parseAutomatedSearchConfigToTorrents(AutomatedSearchConfig $automatedSearchConfig) {
 
         $feeds = $automatedSearchConfig->getFeeds();
         $torrents = array();
-        $titles = array();
         $automatedSearchConfig->setLastCheckedDate(new \DateTime());
         $this->logger->info("[AUTOMATED-SEARCH] Last checked date is  " . $automatedSearchConfig->getLastCheckedDate()->format("Y-m-d H:i"));
 
         /** @var \Morenware\DutilsBundle\Entity\Feed $feed */
         foreach ($feeds as $feed) {
+
             try {
-                $this->logger->info("[AUTOMATED-SEARCH] Parsing feed with URL " . $feed->getUrl());
 
-                $lastDownloadDate = $feed->getLastDownloadDate();
+                $this->logger->info("[AUTOMATED-SEARCH] Checking feed with URL " . $feed->getUrl());
 
-                $referenceDate = $lastDownloadDate != null ? $lastDownloadDate : $automatedSearchConfig->getReferenceDate();
+                $referenceDate = $automatedSearchConfig->getReferenceDate();
+
+                $this->logger->info("[AUTOMATED-SEARCH] Initial reference date is  " . $automatedSearchConfig->getReferenceDate()->format("Y-m-d H:i"));
 
                 $feedResult = $this->debrilFeedReader->getFeedContent($feed->getUrl(), $referenceDate);
 
@@ -249,33 +143,12 @@ class TorrentFeedService
                     $torrent->setGuid(GuidGenerator::generate());
                     $torrent->setAutomatedSearchConfig($automatedSearchConfig);
 
-                    $torrentTitle = $torrent->getTitle();
+                    $torrents[] = $torrent;
 
-                    // Feeds only have SD and 720p qualities
-
-                    $currentIsHD = strpos($torrentTitle, '720p') !== false;
-                    $titleNoQuality = str_replace("720p", "", $torrentTitle);
-                    $titleToSearch = trim(strtolower(str_replace(" ", "", $titleNoQuality)));
-                    $key = array_search($titleToSearch, $titles);
-
-                    if ($key !== false) { // title has already been added
-
-                        if ($currentIsHD && $automatedSearchConfig->getPreferredQuality() == MediaContentQuality::P720) { // replace if current is HD
-                            $previous = $torrents[$key];
-                            $torrents[$key] = $torrent;
-                            $this->logger->debug("[AUTOMATED-SEARCH] Replaced torrent " . $previous->getTitle() . " with " . $torrent->getTitle());
-                        }
-
-                    } else { // no added so add it now
-                        $torrents[] = $torrent;
-                        $titles[] = $titleToSearch;
-                        $this->logger->debug("[AUTOMATED-SEARCH] Adding torrent " . $torrent->getTitle());
-                    }
+                    $this->logger->debug("[AUTOMATED-SEARCH] Found torrent in feed: " . $torrent->getTitle());
                 }
 
-                $this->logger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from feed " . $feed->getDescription());
-
-                $this->merge($feed);
+                $this->logger->info("[AUTOMATED-SEARCH] Found " . count($torrents) . " torrents from feed " . $feed->getDescription());
 
             } catch (\Exception $e) {
                 $this->logger->info("[AUTOMATED-SEARCH] Error occurred checking feed  " . $feed->getDescription() . " " . $e->getMessage() . $e->getMessage() . " \n" . $e->getTraceAsString() . "\n == continue with next feed");
@@ -284,8 +157,6 @@ class TorrentFeedService
 
         return $torrents;
     }
-
-
 }
 
 

@@ -6,7 +6,9 @@ use JMS\DiExtraBundle\Annotation\Service;
 use JMS\DiExtraBundle\Annotation as DI;
 use Monolog\Logger;
 use Morenware\DutilsBundle\Entity\AutomatedSearchConfig;
+use Morenware\DutilsBundle\Entity\MediaContentQuality;
 use Morenware\DutilsBundle\Entity\TorrentContentType;
+use Morenware\DutilsBundle\Util\GeneralUtils;
 
 /** @Service("automatedsearch.service") */
 class AutomatedSearchService {
@@ -62,7 +64,7 @@ class AutomatedSearchService {
     }
 
     public function create($automatedSearchConfig) {
-
+        $this->attachFeedsForTvShowAutomatedSearch($automatedSearchConfig);
         $this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em, function() use ($automatedSearchConfig) {
             $this->linkFeedsToAutomatedSearch($automatedSearchConfig);
             $this->em->persist($automatedSearchConfig);
@@ -85,6 +87,7 @@ class AutomatedSearchService {
             $feedIds = array();
 
             foreach ($feeds as $feed) {
+                 $this->logger->info("[AUTOMATED-SEARCH] Attaching feed " . $feed->getDescription() ." to automated search being created");
                  $feedIds[] = $feed->getId();
             }
 
@@ -146,13 +149,19 @@ class AutomatedSearchService {
         $this->em->persist($automatedSearchConfig);
     }
 
-    /** Non implicit transaction, needs one */
+    /** Non implicit transaction, needs one
+     * @param $automatedSearchConfig
+     */
     public function merge($automatedSearchConfig) {
         $this->em->merge($automatedSearchConfig);
     }
 
     /* Implicit transaction version */
     public function update($automatedSearchConfig) {
+
+        //if ($attachFeeds) {
+            $this->attachFeedsForTvShowAutomatedSearch($automatedSearchConfig);
+        //}
 
         $this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em, function() use ($automatedSearchConfig) {
             $this->linkFeedsToAutomatedSearch($automatedSearchConfig);
@@ -199,25 +208,35 @@ class AutomatedSearchService {
 
             try {
 
+                $this->renamerLogger->info("[AUTOMATED-SEARCH] Checking automated search for " . $automatedSearch->getContentTitle());
                 $this->transactionService->executeInTransactionWithRetryUsingProvidedEm($this->em, function() use ($automatedSearch) {
+
                     $torrents = $this->torrentFeedService->parseAutomatedSearchConfigToTorrents($automatedSearch);
+
+                    $torrents = $this->filterTorrentsAccordingToQuality($automatedSearch, $torrents);
+
+                    // Regardless of torrents being found, we update the last time this was checked
+                    $automatedSearch->setReferenceDate(new \DateTime());
+                    $automatedSearch->setLastCheckedDate(new \DateTime());
+
+                    $this->renamerLogger->info("[AUTOMATED-SEARCH] Setting last checked date to " . $automatedSearch->getLastCheckedDate()->format("Y-m-d H:i"));
 
                     if (count($torrents) > 0) {
 
                         if ($automatedSearch->getDownloadStartsAutomatically()) {
-                            $this->logger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to start immediately");
+                            $this->renamerLogger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to start immediately");
                             $this->startDownloadingOrCreateTorrents($torrents, true);
                         } else {
-                            $this->logger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to keep in AWAITING_DOWNLOAD");
+                            $this->renamerLogger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to keep in AWAITING_DOWNLOAD");
                             $this->startDownloadingOrCreateTorrents($torrents, false);
                         }
 
-                        $automatedSearch->setReferenceDate(new \DateTime());
+                        // There are torrents found, so lastDownloadDate is updated
                         $automatedSearch->setLastDownloadDate(new \DateTime());
-                        $this->logger->info("[AUTOMATED-SEARCH] Last checked date outside is " . $automatedSearch->getLastCheckedDate()->format("Y-m-d H:i"));
+                        $this->renamerLogger->info("[AUTOMATED-SEARCH] Last download date is " . $automatedSearch->getLastDownloadDate()->format("Y-m-d H:i"));
                     }
 
-                    $this->update($automatedSearch);
+                    $this->merge($automatedSearch);
             });
 
             } catch (\Exception $e) {
@@ -242,6 +261,56 @@ class AutomatedSearchService {
             }
         }
 
+    }
+
+    private function filterTorrentsAccordingToQuality(AutomatedSearchConfig $automatedSearch, $torrents) {
+
+        // Title to Torrents map
+        $seasonAndEpisodeToTorrents = array();
+        // Use regex to get the episode number and season - unique in the array of
+        $seasonAndEpisodeRegex = '/(.*)([\d]+x[\d]+)(.*)/';
+
+        $getInHd = $automatedSearch->getPreferredQuality() == MediaContentQuality::P720;
+
+        // We only want one title - one torrent => so we don't download duplicates or different qualities
+        foreach ($torrents as $torrent) {
+
+            $title = $torrent->getTitle();
+            $matches = array();
+
+            $this->logger->debug("[AUTOMATED-SEARCH] Filtering torrent $title");
+
+            if (preg_match($seasonAndEpisodeRegex,$title, $matches)) {
+
+                // 0 is everything, 1 is first group (series name), 2 is season and episode, 3 is the rest
+                $seasonAndEpisode = $matches[2];
+
+                if (strpos($title, '720p') !== false && $getInHd) {
+
+                    $this->logger->debug("[AUTOMATED-SEARCH] Adding torrent, overriding as 720p is required [$seasonAndEpisode => $title]");
+
+                    // Override directly
+                    $seasonAndEpisodeToTorrents[$seasonAndEpisode] = $torrent;
+                } else {
+
+                    $this->logger->debug("[AUTOMATED-SEARCH] It is not a 720p torrent or 720p not required -- $title");
+
+                    if (!array_key_exists($seasonAndEpisode, $seasonAndEpisodeToTorrents)) {
+
+                        $this->logger->debug("[AUTOMATED-SEARCH] Adding torrent, it was not previous torrent for [$seasonAndEpisode => $title] -- adding it now");
+
+                        // There is no torrent yet, add it
+                        $seasonAndEpisodeToTorrents[$seasonAndEpisode] = $torrent;
+                    }
+
+                    // Else, we do not override, a torrent is already present
+                }
+            }
+        }
+
+        $torrentsToDownload = array_values($seasonAndEpisodeToTorrents);
+        $this->logger->debug("[AUTOMATED-SEARCH] Filtered to " . count($torrentsToDownload) . " torrents");
+        return $torrentsToDownload;
     }
 
 }

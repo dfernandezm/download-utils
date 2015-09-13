@@ -14,7 +14,7 @@ mod = angular
           torrent: '='
         },
         link: (scope) ->
-          # Convert into a filter
+          #TODO: Convert into a filter
           scope.fieldFormat = (field, torrent) ->
             if field is 'size'
               processedField = if torrent.size? then torrent.size + " MB" else ""

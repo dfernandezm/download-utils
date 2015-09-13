@@ -70,6 +70,8 @@ class AutomatedSearchConfig {
 	/**
 	 * @ORM\Column(name="reference_date", type="datetime")
 	 *
+     * @Type("DateTime<'Y-m-d H:i'>")
+     *
 	 */
 	private $referenceDate;
 
@@ -77,6 +79,8 @@ class AutomatedSearchConfig {
 	/**
 	 * @ORM\Column(name="last_checked_date", type="datetime", nullable=true)
 	 *
+     * @Type("DateTime<'Y-m-d H:i'>")
+     *
 	 */
 	private $lastCheckedDate;
 
@@ -84,6 +88,8 @@ class AutomatedSearchConfig {
 	/**
 	 * @ORM\Column(name="last_download_date", type="datetime", nullable=true)
 	 *
+     * @Type("DateTime<'Y-m-d H:i'>")
+     *
 	 */
 	private $lastDownloadDate;
 

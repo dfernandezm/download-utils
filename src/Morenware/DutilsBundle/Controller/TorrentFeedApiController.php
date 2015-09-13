@@ -15,7 +15,7 @@ use Morenware\DutilsBundle\Entity\Feed;
 /**
  * @Route("/api")
  */
-class TorrentFeedController {
+class TorrentFeedApiController {
 	
 	/** @DI\Inject("jms_serializer") */
 	private $serializer;   
@@ -121,31 +121,7 @@ class TorrentFeedController {
 		
 		return ControllerUtils::createJsonResponseForDto($this->serializer, $this->torrentFeedService->getAll());
 	}
-	
-	/**
-	 * Check the active feeds for new torrents. If torrents are found they are created in the system pending to download. 
-	 * The created torrents are retrieved in the response
-	 * 
-	 * @Route("/feeds/check")
-	 * @Method("GET")
-	 * 
-	 */
-	
-	//TODO:
-	public function checkFeedsAction() {
-	
-		try {
-			$this->torrentFeedService->checkFeedsForTorrents();
-			return ControllerUtils::createJsonResponseForArray(null);
-		} catch(\Exception $e)  {
-			$error = array(
-					"error" => "There was an error checking feeds ".$e->getMessage(),
-					"errorCode" => 500);
-				
-			return ControllerUtils::createJsonResponseForArray($error, 500);
-		}
 
-	}
 	
 	/**
 	 * TODO: Move to another API endpoint

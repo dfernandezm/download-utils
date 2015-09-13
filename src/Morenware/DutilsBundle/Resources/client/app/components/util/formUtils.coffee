@@ -7,7 +7,12 @@ formUtils.fillForm = (fields, target) ->
 
 formUtils.collectValues = (fields, target) ->
   for field in fields
-    target[field.name] = field.value
+    value = field.value
+
+    if field.type is 'BOOLEAN' && field.value == null
+      value = false
+    
+    target[field.name] = value
   return
 
 formUtils.clearForm = (fields) ->

@@ -83,6 +83,7 @@ class AutomatedSearchApiController {
            return ControllerUtils::createJsonResponseForDto($this->serializer, $automatedSearch, 200, "automatedSearch");
 
        } catch (\Exception $e) {
+           $this->logger->error("Error: " . $e->getMessage() . " -- " . str_replace("#", "\n#", $e->getTraceAsString()));
            return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
        }
 	}
@@ -113,6 +114,7 @@ class AutomatedSearchApiController {
             }
 
         } catch (\Exception $e) {
+            $this->logger->error("Error: " . $e->getMessage() . " -- " . str_replace("#", "\n#", $e->getTraceAsString()));
             return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
         }
     }
@@ -134,8 +136,8 @@ class AutomatedSearchApiController {
                 $this->fillFeedIds($automatedSearch);
             }
 
-            return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $automatedSearchs, 200, "automatedSearchs");
-
+            //return ControllerUtils::createJsonResponseForDtoArray($this->serializer, $automatedSearchs, 200, "automatedSearchs");
+            return ControllerUtils::createJsonResponseForDto($this->serializer, $automatedSearchs);
         } catch (\Exception $e) {
             return ControllerUtils::sendError("GENERAL_ERROR", $e->getMessage(), 500);
         }
