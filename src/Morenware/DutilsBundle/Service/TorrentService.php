@@ -112,13 +112,12 @@ class TorrentService {
 		
 		$upperDate = new \DateTime();
 		$lowerDate = new \DateTime();
-		$interval = \DateInterval::createFromDateString("-5 years");
+		$interval = \DateInterval::createFromDateString("-1 week");
 		$lowerDate = $lowerDate->add($interval);
-//        $interval = \DateInterval::createFromDateString("+1 hour");
-//        $upperDate = $upperDate->add($interval);
 		
 		$q = $this->em->createQuery("select t from MorenwareDutilsBundle:Torrent t " . 
-				                    "where (t.dateStarted between :lowerDate and :upperDate) or t.state = 'AWAITING_DOWNLOAD' " .
+				                    "where (t.dateStarted is not null and t.dateStarted between :lowerDate and :upperDate) " .
+				                    "or t.state != 'COMPLETED' " .
 				                    "order by t.dateStarted DESC")
 		                            ->setParameter("lowerDate", $lowerDate->format("Y-m-d H:i"))
 		                            ->setParameter("upperDate", $upperDate->format("Y-m-d H:i"));
