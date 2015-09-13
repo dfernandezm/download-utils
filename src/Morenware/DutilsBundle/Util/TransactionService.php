@@ -3,6 +3,7 @@ namespace Morenware\DutilsBundle\Util;
 
 use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\EntityManager;
+use Exception;
 use Morenware\DutilsBundle\Entity\Instance;
 use JMS\DiExtraBundle\Annotation as DI;
 use JMS\DiExtraBundle\Annotation\Service;
@@ -81,15 +82,16 @@ class TransactionService {
 			throw $exception;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Executes runnable in the context of a transaction created through the Entity Manager passed as parameter.
 	 * The transaction retries 5 times and gives up after that throwing the last exception supplied
-	 * 
-	 * @param unknown $em
-	 * @param unknown $runnable
+	 *
+	 * @param EntityManager|unknown $em
+	 * @param callable|unknown $runnable
 	 * @throws Exception
+	 * @throws null
 	 */
 	public function executeInTransactionWithRetryUsingProvidedEm(EntityManager $em, callable $runnable) {
 	

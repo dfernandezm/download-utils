@@ -311,7 +311,7 @@ class SearchTorrentsService {
 		   $currentOffset = $j == 0 ? $j : $j - 1;
 		}
 
-		
+
 
 		$this->logger->info("[DIVX-TOTAL] Found " . count($torrents) . " torrents.");
 
@@ -348,8 +348,6 @@ class SearchTorrentsService {
      $mainResultsFilterString = $kickassSite->getTorrentMainResultsFilterString();
      $crawlerRows = $crawler->filter($mainResultsFilterString);
 
-       $this->logger->debug("[SEARCH-KICKASS] Found rows " .iterator_count($crawlerRows));
-
      $total = iterator_count($crawlerRows) - 1; // minus header row
 
      $torrents = array();
@@ -367,26 +365,17 @@ class SearchTorrentsService {
 
      		$magnetLinksFilterString = $kickassSite->getTorrentMagnetLinksFilterString();
      		$magnetLinks = $subCrawler->filter($magnetLinksFilterString)->extract("href");
-            $this->logger->info("SEARCH - LINKS ======  " . print_r($magnetLinks, true));
-
 
      		// size, files, age, seed, leech
      		$torrentAttributesFilterString = $kickassSite->getTorrentAttributesFilterString();
      		$torrentAttributes = $subCrawler->filter($torrentAttributesFilterString)->extract("_text");
 
      		$count = count($titles);
-            $this->logger->info("SEARCH - titles " . $count);
+
      		if ($count > 0) {
      		 	$k = 0;
      			$torrentName = $titles[$k];
-                $this->logger->info("SEARCH - index $k - magnetLinks array " . print_r($magnetLinks, true));
-
-                if (count($magnetLinks) > 0) {
-                    $magnetLink = $magnetLinks[$k];
-                } else {
-                    $magnetLink = null;
-                }
-
+                $magnetLink = $magnetLinks[$k];
      			$age = $torrentAttributes[2];
      			$date = $this->convertAgeToDate($age);
      			$seedsStr = $torrentAttributes[3];
@@ -510,21 +499,21 @@ class SearchTorrentsService {
 	   	$torrent->setState("NEW");
 
 	   	$hash = null;
-	   	
+
 	   	if ($magnetLink !== null) {
-	   		
+
 	   		$hashPattern = '/urn:btih:(.*)&dn=/';
 	   		$matches = array();
-	   		
+
 	   		if (preg_match($hashPattern, $magnetLink, $matches)) {
 	   			$hash = $matches[1];
 	   			$existingTorrent = $this->torrentService->findTorrentByHash($hash);
 	   		}
-	   			   		
+
 	   	} else {
-	   		$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($fileLink);		
+	   		$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($fileLink);
 	   	}
-	   
+
 	   	if ($existingTorrent !== null) {
 	   		$this->logger->warn("[SEARCH-TORRENTS-MATCH] Matched torrent $torrentName " . $existingTorrent->getHash());
 	   		return $existingTorrent;
@@ -778,15 +767,15 @@ class SearchTorrentsService {
 
    private function sortByDate($torrents) {
    	$dateSort = function ($torrentA, $torrentB) {
-   		
+
    		if ($torrentB->getDate() == null) {
    			return -1;
-   		} 
-   		
+   		}
+
    		if ($torrentA->getDate() == null) {
    			return 1;
    		}
-   		
+
    		$timeA = $torrentA->getDate()->getTimestamp();
    		$timeB = $torrentB->getDate()->getTimestamp();
 

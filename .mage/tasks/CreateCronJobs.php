@@ -10,9 +10,6 @@ class CreateCronJobs extends SymfonyAbstractTask {
   }
 
   public function run() {
-    $environ =  $this->getParameter("environ","raspberry");
-    $serverName = $this->getParameter('serverName', 'localhost');
-    $documentRoot = $this->getParameter('documentRoot', '/var/www/localhost');
 
     $baseConsoleForCommandPath = "/var/www/dutils/current/app/console";
     $automatedSearchCommandName = "dutils:automatedSearch";
