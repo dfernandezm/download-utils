@@ -127,9 +127,6 @@ class TorrentFeedService
 
                 $readItems = $feedResult->getItems();
 
-                // Regardless of existence of torrents to download or not, we are checking the feed, so we set the lastCheckedDate to now
-                $feed->setLastCheckedDate(new \DateTime());
-
                 foreach ($readItems as $item) {
 
                     $torrent = new Torrent();
@@ -144,27 +141,17 @@ class TorrentFeedService
                     $torrent->setState(TorrentState::AWAITING_DOWNLOAD);
                     $torrent->setDate($item->getUpdated());
                     $torrent->setGuid(GuidGenerator::generate());
-                    $torrent->setAutomatedSearchConfig($automatedSearchConfig);
 
                     $hash = $this->torrentService->extractHashFromMagnetLink($magnetLink);
+                    $this->logger->info("[AUTOMATED-SEARCH] Found torrent in feed: " . $torrent->getTitle() . " [$hash]");
+                    $torrents[] = $torrent;
 
-                    if ($hash !== null) {
-                        $existingTorrent = $this->torrentService->findTorrentByHash($hash);
-                        if ($existingTorrent == null) {
-                            $torrents[] = $torrent;
-                            $this->logger->info("[AUTOMATED-SEARCH] Found torrent in feed: " . $torrent->getTitle());
-                        } else {
-                            $this->logger->info("[AUTOMATED-SEARCH] Torrent already exists in DB -- skipping " . $torrent->getTitle());
-                        }
-                    } else {
-                        $this->logger->info("[AUTOMATED-SEARCH] Unable to extract torrent from magnet link, assume it is invalid  -- $magnetLink -- " . $torrent->getTitle());
-                    }
                 }
 
                 $this->logger->info("[AUTOMATED-SEARCH] Found " . count($torrents) . " torrents from feed " . $feed->getDescription());
 
             } catch (\Exception $e) {
-                $this->logger->info("[AUTOMATED-SEARCH] Error occurred checking feed  " . $feed->getDescription() . " " . $e->getMessage() . $e->getMessage() . " \n" . $e->getTraceAsString() . "\n == continue with next feed");
+                $this->logger->info("[AUTOMATED-SEARCH] Error occurred checking feed  " . $feed->getDescription() . " " . $e->getMessage() . " \n" . $e->getTraceAsString() . "\n == continue with next feed");
             }
         }
 

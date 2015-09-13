@@ -27,7 +27,8 @@ module.exports = mod = ($http, $timeout) ->
       }
       res = $http.post(startUrl, dataObject)
     else if action is "CANCEL"
-      url = cancelUrl + "/" + torrent.hash
+      url = cancelUrl + "/" + (torrent.hash || torrent.guid)
+      console.log "Cancel url " + url
       res = $http.delete(url)
     else if action is "PAUSE"
       url = pauseUrl + "/" + torrent.hash
@@ -96,7 +97,6 @@ module.exports = mod = ($http, $timeout) ->
     return
 
   torrentService.cancelDownload = (torrentDefinition) ->
-    torrentGuidOrHash = torrentDefinition.hash
     torrentDefinition.buttonText = "Cancelling..."
     successCallback = cancelTorrentDownloadSuccessCallbackCreator(torrentDefinition)
     torrentService.torrentAction("CANCEL",torrentDefinition,successCallback,onError)

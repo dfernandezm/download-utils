@@ -121,7 +121,7 @@ class Torrent {
 	private $seeds;
 
     /**
-     * @ORM\ManyToOne(targetEntity="AutomatedSearchConfig", fetch="LAZY")
+     * @ORM\ManyToOne(targetEntity="AutomatedSearchConfig", fetch="LAZY", cascade={"merge"})
      * @ORM\JoinColumn(name="automated_search_config_id", referencedColumnName="id")
      */
     private $automatedSearchConfig;

@@ -154,6 +154,7 @@ class AutomatedSearchService {
      */
     public function merge($automatedSearchConfig) {
         $this->em->merge($automatedSearchConfig);
+        return $automatedSearchConfig;
     }
 
     /* Implicit transaction version */
@@ -223,19 +224,21 @@ class AutomatedSearchService {
 
                     if (count($torrents) > 0) {
 
+                        $automatedSearch->setLastDownloadDate(new \DateTime());
+
                         if ($automatedSearch->getDownloadStartsAutomatically()) {
                             $this->renamerLogger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to start immediately");
-                            $this->startDownloadingOrCreateTorrents($torrents, true);
+                            $this->startDownloadingOrCreateTorrents($torrents, $automatedSearch, true);
                         } else {
                             $this->renamerLogger->info("[AUTOMATED-SEARCH] Created " . count($torrents) . " torrents from automated search " . $automatedSearch->getContentTitle() . " to keep in AWAITING_DOWNLOAD");
-                            $this->startDownloadingOrCreateTorrents($torrents, false);
+                            $this->startDownloadingOrCreateTorrents($torrents, $automatedSearch, false);
                         }
 
                         // There are torrents found, so lastDownloadDate is updated
-                        $automatedSearch->setLastDownloadDate(new \DateTime());
                         $this->renamerLogger->info("[AUTOMATED-SEARCH] Last download date is " . $automatedSearch->getLastDownloadDate()->format("Y-m-d H:i"));
                     }
 
+                    // Need to merge to update
                     $this->merge($automatedSearch);
             });
 
@@ -245,19 +248,28 @@ class AutomatedSearchService {
         }
     }
 
-    private function startDownloadingOrCreateTorrents($torrents, $startDownload) {
+    private function startDownloadingOrCreateTorrents($torrents, $automatedSearch, $startDownload) {
 
         if ($startDownload) {
             foreach($torrents as $torrent) {
                 $this->renamerLogger->debug("[AUTOMATED-SEARCH] Starting immediate download for torrent " . $torrent->getTitle());
+                $torrent->setAutomatedSearchConfig($automatedSearch);
                 $this->torrentService->startTorrentDownload($torrent);
+
+                // Sleep 1 second between calls to transmission
                 sleep(1);
             }
         } else {
 
             foreach($torrents as $torrent) {
                 $this->renamerLogger->debug("[AUTOMATED-SEARCH] Persisting torrent in AWAITING_DOWNLOAD state " . $torrent->getTitle());
-                $this->torrentService->create($torrent);
+                $torrent->setAutomatedSearchConfig($automatedSearch);
+
+                // IMPORTANT: Doctrine: We use merge() instead of persist() here because we are setting an
+                // ALREADY existing entity ($automatedSearch) into a new one ($torrent). If we call persist() it is going
+                // to complain due to a new unknown entity ($automatedSearch) even though we merged it before this call.
+
+                $this->torrentService->merge($torrent);
             }
         }
 
@@ -278,7 +290,7 @@ class AutomatedSearchService {
             $title = $torrent->getTitle();
             $matches = array();
 
-            $this->logger->debug("[AUTOMATED-SEARCH] Filtering torrent $title");
+            $this->renamerLogger->debug("[AUTOMATED-SEARCH] Filtering torrent $title");
 
             if (preg_match($seasonAndEpisodeRegex,$title, $matches)) {
 
@@ -287,17 +299,17 @@ class AutomatedSearchService {
 
                 if (strpos($title, '720p') !== false && $getInHd) {
 
-                    $this->logger->debug("[AUTOMATED-SEARCH] Adding torrent, overriding as 720p is required [$seasonAndEpisode => $title]");
+                    $this->renamerLogger->debug("[AUTOMATED-SEARCH] Adding torrent, overriding as 720p is required [$seasonAndEpisode => $title]");
 
                     // Override directly
                     $seasonAndEpisodeToTorrents[$seasonAndEpisode] = $torrent;
                 } else {
 
-                    $this->logger->debug("[AUTOMATED-SEARCH] It is not a 720p torrent or 720p not required -- $title");
+                    $this->renamerLogger->debug("[AUTOMATED-SEARCH] It is not a 720p torrent or 720p not required -- $title");
 
                     if (!array_key_exists($seasonAndEpisode, $seasonAndEpisodeToTorrents)) {
 
-                        $this->logger->debug("[AUTOMATED-SEARCH] Adding torrent, it was not previous torrent for [$seasonAndEpisode => $title] -- adding it now");
+                        $this->renamerLogger->debug("[AUTOMATED-SEARCH] Adding torrent, it was not previous torrent for [$seasonAndEpisode => $title] -- adding it now");
 
                         // There is no torrent yet, add it
                         $seasonAndEpisodeToTorrents[$seasonAndEpisode] = $torrent;
@@ -309,8 +321,29 @@ class AutomatedSearchService {
         }
 
         $torrentsToDownload = array_values($seasonAndEpisodeToTorrents);
-        $this->logger->debug("[AUTOMATED-SEARCH] Filtered to " . count($torrentsToDownload) . " torrents");
-        return $torrentsToDownload;
+
+        // Final filter [REFACTOR]
+        $finalTorrents = array();
+
+        foreach ($torrentsToDownload as $torrent) {
+
+            $magnetLink = $torrent->getMagnetLink();
+            $hash = $this->torrentService->extractHashFromMagnetLink($magnetLink);
+
+            if ($hash !== null) {
+                $existingTorrent = $this->torrentService->findByHashIsolated($hash);
+                if ($existingTorrent == null) {
+                    $finalTorrents[] = $torrent;
+                } else {
+                    $this->renamerLogger->info("[AUTOMATED-SEARCH] Torrent already exists in DB -- skipping " . $torrent->getTitle() . " [$hash]");
+                }
+            } else {
+                $this->renamerLogger->info("[AUTOMATED-SEARCH] Unable to extract torrent from magnet link, assume it is invalid  -- $magnetLink -- " . $torrent->getTitle());
+            }
+        }
+
+        $this->renamerLogger->debug("[AUTOMATED-SEARCH] Filtered to " . count($finalTorrents) . " torrents");
+        return $finalTorrents;
     }
 
 }
