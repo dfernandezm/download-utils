@@ -52,7 +52,14 @@ ln -s /usr/bin/nodejs /usr/bin/node
 /etc/init.d/apache2 start
 /etc/init.d/transmission-daemon start
 
+# This creates the cache / data directories
+set +e
+filebot -script fn:sysinfo
+set -e
+
 chown -R pi:pi /opt/software/filebot/data
+filebot -script fn:sysinfo
+echo "Enter OpenSubtitles credentials... "
 filebot -script fn:osdb.login
 
 # Build the client out of the VM running
