@@ -47,5 +47,13 @@ $EXTERNAL_CONF_DIR/install-transmission.sh
 php app/console --no-interaction doctrine:migrations:migrate
 php app/console cache:warmup
 
-filebot -script fn:osdb.login
+ln -s /usr/bin/nodejs /usr/bin/node
+
+/etc/init.d/apache2 start
+/etc/init.d/transmission-daemon start
+
 chown -R pi:pi /opt/software/filebot/data
+filebot -script fn:osdb.login
+
+# Build the client out of the VM running
+# npm i & ./start-client.sh
