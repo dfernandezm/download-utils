@@ -66,8 +66,11 @@ if [ "$SKIP_HDD_FOLDER_CREATION" = 0 ]; then
    mkdir -p $MOVIES_HDD_PATH
  fi
 
- if [ ! -f $TV_SHOWS_HDD_PATH ]; then
-   mkdir -p $TV_SHOWS_HDD_PATH
+echo "TV shows path: ${TV_SHOWS_HDD_PATH}"
+ if [ ! -f "\"${TV_SHOWS_HDD_PATH}\"" ]; then
+   CMD="mkdir -p \"$TV_SHOWS_HDD_PATH\""
+   eval $CMD
+   echo '  The command is mkdir -p "\"${TV_SHOWS_HDD_PATH}\"" '
  fi
 
  if [ ! -f $TORRENTS_FOLDER ]; then
@@ -93,7 +96,7 @@ TV_SHOWS_LINK=$(printf %q "$TV_SHOWS_LINK")
 
 if [ ! -L "${TV_SHOWS_LINK}" ]; then
   echo "Creating symbolic link $TV_SHOWS_HDD_PATH -> $TV_SHOWS_LINK"
-  CMD="ln -s \"$TV_SHOWS_HDD_PATH\" $TV_SHOWS_LINK"
+  CMD="ln -s \"${TV_SHOWS_HDD_PATH}\" $TV_SHOWS_LINK"
   eval $CMD
   chmod -R 777 $TV_SHOWS_LINK
 fi

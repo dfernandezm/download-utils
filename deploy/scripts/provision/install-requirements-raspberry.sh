@@ -63,6 +63,12 @@ sudo apt-get install apache2 apache2-mpm-prefork apache2.2-bin apache2.2-common 
 sudo ln -s /etc/apache2/mods-available/rewrite.load /etc/apache2/mods-enabled/rewrite.load
 
 # Install MySQL
+# If not prompted for that, do this:
+
+# /etc/init.d/mysql stop
+# /usr/bin/mysqld_safe --skip-grant-tables
+# mysql --user=root mysql
+# UPDATE user SET Password=PASSWORD('YOUR_PASSWORD') WHERE Host='localhost' AND User='root';
 sudo apt-get install mysql-server php5-mysql --fix-missing
 
 # Install and configure transmission
@@ -134,7 +140,7 @@ mkdir -p $FILEBOT_HOME/temp && chown $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME
 ./create-mediacenter-raspberrypi.sh
 
 # Install XBMC
-./install-xbmc.sh
+#./install-xbmc.sh
 
 # Setup paths for mediacenter
 
