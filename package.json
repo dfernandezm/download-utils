@@ -22,7 +22,8 @@
     "gulp-livereload": ">=3.4.0"
   },
   "scripts": {
-    "gulp-dev": "gulp dev"
+    "dev": "gulp dev",
+    "prod": "gulp prod"
   },
   "dependencies": {
     "moment": "~2.10.2"

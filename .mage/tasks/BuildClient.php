@@ -9,7 +9,7 @@ class BuildClient extends AbstractTask {
   }
 
   public function run() {
-    $command = 'gulp prod';
+    $command = 'npm run prod';
     $result = $this->runCommandLocal($command);
 
     return $result;
