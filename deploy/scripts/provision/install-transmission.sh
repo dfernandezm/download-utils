@@ -75,7 +75,7 @@ exit
 # by default, this is set to 'transmission'.
 # For the sake of security you shouldn't set a password
 # on this user
-USERNAME=pi
+USERNAME=osmc
 
 
 # ----- *ADVANCED* CONFIGURATION -----
