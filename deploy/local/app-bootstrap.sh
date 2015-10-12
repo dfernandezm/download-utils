@@ -5,13 +5,14 @@
 [ `whoami` = root ] || exec su -c $0 root
 
 set -e
-
+SERVICES_USER=pi
+DOMAIN_NAME='download-utils'
 EXTERNAL_CONF_DIR=/vagrant/deploy/external-configuration
 
 cp $EXTERNAL_CONF_DIR/dutils-vhost.conf /etc/apache2/sites-enabled
 mv /etc/apache2/sites-enabled/000-default.conf /etc/apache2/sites-enabled/000-default.conf.disabled
 service apache2 reload
-echo "127.0.0.1    download-utils" >> /etc/hosts
+echo "127.0.0.1    $DOMAIN_NAME" >> /etc/hosts
 
 if [ ! -f /usr/bin/composer ]; then
  curl -sS https://getcomposer.org/installer | php
@@ -25,8 +26,6 @@ set +e
 rm -f /opt/software/filebot/cache/*
 rm -f /opt/software/filebot/data/*
 set -e
-
-ln -s /mediacenter /vagrant/mediacenter
 
 # Reinstall transmission
 set +e
@@ -57,7 +56,7 @@ set +e
 filebot -script fn:sysinfo
 set -e
 
-chown -R pi:pi /opt/software/filebot/data
+chown -R $SERVICES_USER:$SERVICES_USER /opt/software/filebot/data
 filebot -script fn:sysinfo
 echo "Enter OpenSubtitles credentials... "
 filebot -script fn:osdb.login

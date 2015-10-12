@@ -23,3 +23,5 @@ deploy/local/*.box
 .idea
 *.box
 /bower_components/
+
+*.log
