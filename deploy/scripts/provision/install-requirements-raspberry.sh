@@ -83,7 +83,7 @@ apt-get install mediainfo libmediainfo-dev
 
 # Change users for services Apache and Transmission
 SED_APACHE_USER="s/APACHE_RUN_USER=www-data/APACHE_RUN_USER=$SERVICES_USER/g"
-SED_APACHE_GROUP="s/APACHE_RUN_USER=www-data/APACHE_RUN_GROUP=$SERVICES_USER/g"
+SED_APACHE_GROUP="s/APACHE_RUN_GROUP=www-data/APACHE_RUN_GROUP=$SERVICES_USER/g"
 SED_TRANSMISSION_USER="s/USER=debian-transmission/USER=$SERVICES_USER/g"
 
 sed -i "$SED_APACHE_USER" /etc/apache2/envvars
