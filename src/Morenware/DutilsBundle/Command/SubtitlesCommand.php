@@ -242,7 +242,7 @@ class SubtitlesCommand extends Command {
 		$subtitlesLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/subtitles_$processPid";
 		$scriptContent = str_replace("%LOG_LOCATION%", $subtitlesLogFilePath, $scriptContent);
 
-		$inputPathsAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToFetchSubs, $mediacenterSettings->getBaseLibraryPath(), CommandType::FETCH_SUBTITLES);
+		$inputPathsAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToFetchSubs, CommandType::FETCH_SUBTITLES);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathsAsBashArray, $scriptContent);
 
 		# 2letter-3letter string, comma separated

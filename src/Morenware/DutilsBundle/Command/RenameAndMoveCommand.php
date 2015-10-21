@@ -231,10 +231,9 @@ class RenameAndMoveCommand extends Command {
 		$scriptContent = file_get_contents($filePath);
 
 		$renamerLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename_$processPid";
-		$baseDownloadsPath = $mediacenterSettings->getBaseDownloadsPath();
 		$libraryBasePath = $mediacenterSettings->getBaseLibraryPath();
 
-		$inputPathAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToRename, $baseDownloadsPath, CommandType::RENAME_DOWNLOADS);
+		$inputPathAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToRename, CommandType::RENAME_DOWNLOADS);
 
         $contentLanguages =  $this->torrentService->findLanguagesForTorrents($torrentsToRename);
 
