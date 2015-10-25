@@ -3,6 +3,7 @@ namespace Morenware\DutilsBundle\Command;
 
 use AppKernel;
 use Morenware\DutilsBundle\Entity\MediaCenterSettings;
+use Morenware\DutilsBundle\Service\TorrentService;
 use Symfony\Bridge\Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -122,29 +123,40 @@ class RenameAndMoveCommand extends Command {
 
 			$polls = 0;
 			$failedPolls = 0;
+            $unsortedFolderAlreadyChecked = false;
+            $isUnsortedFolder = false;
 
 			while (!$terminated) {
+
 				$this->renamerLogger->debug("[RENAMING] Checking if there are any torrents to rename...");
 				$this->printMemoryUsage();
 				$torrentsToRename = $this->torrentService->findTorrentsByState(TorrentState::DOWNLOAD_COMPLETED);
 
-				if (count($torrentsToRename) > 0) {
+				if (count($torrentsToRename) > 0 || !$unsortedFolderAlreadyChecked) {
 
 					$guid = GuidGenerator::generate();
-					$this->renamerLogger->debug("[RENAMING] Detected torrents to rename in DOWNLOAD COMPLETED STATE");
+
+                    if (count($torrentsToRename) == 0 && !$unsortedFolderAlreadyChecked) {
+                        $this->renamerLogger->debug("[RENAMING] Checking Unsorted folder");
+                        $isUnsortedFolder = true;
+                    } else {
+                        $this->renamerLogger->debug("[RENAMING] Detected torrents to rename in DOWNLOAD COMPLETED STATE");
+                    }
 
 					// Perform substitutions in the template renamer script
 					list($scriptToExecute, $renamerLogFilePath) =
                         $this->prepareRenameScriptToExecute($torrentsToRename, $mediacenterSettings,
                                                             $pid . "_" . $guid,
+															!$unsortedFolderAlreadyChecked,
                                                             $mediacenterSettings->getXbmcHostOrIp());
+
 					$this->renamerLogger->debug("[RENAMING] The script to execute is $scriptToExecute");
 					$renamerLogger = $this->renamerLogger;
 
 					// Define callback function to monitor real time output of the process
 					$waitCallback = function ($type, $buffer, Process $process) use ($renamerLogger, $terminatedFile) {
 
-						$renamerLogger->debug("[RENAMING] ==> $buffer");
+						$renamerLogger->debug("[RENAMING-EXECUTING-FILEBOT] ==> $buffer");
 
 						if (file_exists($terminatedFile)) {
 							$renamerLogger->debug("[RENAMING] Terminated renamer worker on demand");
@@ -161,28 +173,47 @@ class RenameAndMoveCommand extends Command {
 					$exitCode = $process->getExitCode();
 					$exitCodeText = $process->getExitCodeText();
 
-					$renamerLogger->error("[RENAMING] Renamer process exitCode is $exitCodeText ==> $exitCode");
+					$renamerLogger->info("[RENAMING] Renamer process exitCode is $exitCodeText ==> $exitCode");
 
-					if (intval($exitCode) !== 0) {
-						$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code");
-						$this->logger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code from filebot, continue polling -- polls = $polls");
+                    // If the Unsorted folder is being checked, it is likely it is empty and Filebot would fail -- check this here
+					if ($isUnsortedFolder) {
 
-						$failedPolls++;
-						$polls++;
+                        $renamerLogger->info("[RENAMING] Unsorted folder case -- We'll ignore errors");
+						$unsortedFolderAlreadyChecked = true;
 
-						if ($polls > 10 && $failedPolls > 3) {
-							$this->processManager->killRenamerProcessIfRunning();
-						}
+                        //TODO: CHeck only for message in log: No files selected for processing
+                        if (intval($exitCode) !== 0) {
+                            $polls = 0;
+                            $renamerLogger->info("[RENAMING] The renamer script returned non-zero code -- Assume Unsorted folder is empty");
+                        } else {
+                            $renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing Unsorted folder -- No errors, assume there are torrents moved");
+                            $this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename);
+                        }
 
 					} else {
 
-						$polls = 0;
+						if (intval($exitCode) !== 0) {
+							$renamerLogger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code");
+							$this->logger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code from filebot, continue polling -- polls = $polls");
+
+							$failedPolls++;
+							$polls++;
+
+							if ($polls > 10 && $failedPolls > 3) {
+								$this->processManager->killRenamerProcessIfRunning();
+							}
+
+						} else {
+
+							$polls = 0;
+						}
+
+                        $renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- continue after renaming...");
+                        $this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename);
 					}
 
-					$renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- continue after renaming...");
-					$this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename);
-
 				} else {
+
 					$this->renamerLogger->debug("[RENAMER] No torrents in DOWNLOAD_COMPLETED state found -- polls = $polls");
 
 					$polls++;
@@ -216,10 +247,11 @@ class RenameAndMoveCommand extends Command {
      * @param $torrentsToRename
      * @param MediaCenterSettings $mediacenterSettings
      * @param $processPid
+     * @param $isUnsortedFolder
      * @param null $xbmcHost
      * @return array
      */
-    public function prepareRenameScriptToExecute($torrentsToRename, MediaCenterSettings $mediacenterSettings, $processPid, $xbmcHost = null) {
+    public function prepareRenameScriptToExecute($torrentsToRename, MediaCenterSettings $mediacenterSettings, $processPid, $isUnsortedFolder, $xbmcHost = null) {
 
 		$appRoot = $this->kernel->getRootDir();
 		$filePath = $appRoot . "/" . self::RENAME_SCRIPT_PATH;
@@ -233,9 +265,16 @@ class RenameAndMoveCommand extends Command {
 		$renamerLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename_$processPid";
 		$libraryBasePath = $mediacenterSettings->getBaseLibraryPath();
 
-		$inputPathAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToRename, CommandType::RENAME_DOWNLOADS);
+		if ($isUnsortedFolder && count($torrentsToRename) == 0) {
 
-        $contentLanguages =  $this->torrentService->findLanguagesForTorrents($torrentsToRename);
+			$inputPathAsBashArray = "(" . "\"" . $mediacenterSettings->getBaseLibraryPath() . "/Unsorted" . "\"" . ")";
+			$contentLanguages = '( "en" "es" )';
+
+		} else {
+			$inputPathAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToRename, CommandType::RENAME_DOWNLOADS);
+			$contentLanguages =  $this->torrentService->findLanguagesForTorrents($torrentsToRename);
+		}
+
 
 		$scriptContent = str_replace("%LOG_LOCATION%", $renamerLogFilePath, $scriptContent);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathAsBashArray, $scriptContent);

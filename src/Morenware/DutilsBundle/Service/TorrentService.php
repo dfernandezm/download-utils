@@ -339,11 +339,12 @@ class TorrentService {
 	}
 
 
-	/**
-	 * Looks up in the renamer log file matching paths of renaming to identify torrents by its name
-	 *
-	 * @param unknown $renamerLogFilePath
-	 */
+    /**
+     * Looks up in the renamer log file matching paths of renaming to identify torrents by its name
+     *
+     * @param unknown $renamerLogFilePath
+     * @param $torrentsToRename
+     */
 	public function processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename) {
 
 		$this->logger->info("[RENAMING] Starting state update of torrents / subtitle fetching after renaming using renamer log file $renamerLogFilePath");
@@ -377,7 +378,7 @@ class TorrentService {
 				// The hash is always 40 characters as it is SHA1
 				$matchesHash = array();
 
-				if(preg_match($hashRegex, $originalPath, $matchesHash)) {
+				if (preg_match($hashRegex, $originalPath, $matchesHash)) {
 
 					// This is a path with a torrent hash in it
 					$hash = $matchesHash[1];
@@ -435,11 +436,18 @@ class TorrentService {
 			}
 		} else {
 
-            $this->processSkippedPathFromFilebotLog($pathSkippedPattern, $logContent, $hashRegex, $renamerLogFilePath);
+            $this->processSkippedPathFromFilebotLog($pathSkippedPattern, $logContent, $hashRegex, $renamerLogFilePath, $torrentsToRename);
 
 		}
 	}
 
+    /**
+     * @param $pathSkippedPattern
+     * @param $logContent
+     * @param $hashRegex
+     * @param $renamerLogFilePath
+     * @param $torrentsToRename
+     */
     private function processSkippedPathFromFilebotLog($pathSkippedPattern, $logContent, $hashRegex, $renamerLogFilePath, $torrentsToRename) {
 
         $this->renamerLogger->debug("[RENAMING] No torrents were detected in renamer log file $renamerLogFilePath");
@@ -831,7 +839,6 @@ class TorrentService {
                     $torrent->setState(TorrentState::COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] Completing renaming process for torrent $torrentName with hash $hash -- COMPLETED");
 					$this->monitorLogger->info("[WORKFLOW-FINISHED] COMPLETED processing $torrentName");
-					$this->processManager->killWorkerProcessesIfRunning();
 				}
 
 				$this->update($torrent);
@@ -945,7 +952,8 @@ class TorrentService {
 
     public function findLanguageOfContent($torrentTitleOrMagnetLink) {
 
-        $spanishIndicators = array("divxtotal", "spanish", "español", "espanol", "elitetorrent", "mejortorrent", ".spa.");
+        $spanishIndicators = array("divxtotal", "spanish", "español", "espanol",
+                                   "elitetorrent", "mejortorrent", ".spa.", ".cas.");
 
         $normalizedString = trim(strtolower($torrentTitleOrMagnetLink));
 
