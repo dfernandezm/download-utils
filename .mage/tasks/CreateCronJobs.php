@@ -23,7 +23,7 @@ class CreateCronJobs extends SymfonyAbstractTask {
      * cat <(fgrep -i -v "$command" <(crontab -l)) <(echo "$job") | crontab -
      */
 
-    $command = "bash deploy/scripts/cron/install-cronjobs.sh \"php $baseConsoleForCommandPath $automatedSearchCommandName\" \"$cronPattern\"";
+    $command = "bash deploy/scripts/cron/install-cronjobs.sh 'php $baseConsoleForCommandPath $automatedSearchCommandName' '$cronPattern'";
     $result = $this->runCommandRemote($command);
     return $result;
   }

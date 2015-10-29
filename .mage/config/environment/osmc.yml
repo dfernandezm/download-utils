@@ -10,6 +10,15 @@ deployment:
     - app/logs/*
     - .settings
     - eclipse
+    - Vagrantfile
+    - gulpfile.js
+    - webpack.config.js
+    - README.md
+    - LICENSE.txt
+    - .vagrant
+    - .DS_Store
+    - .idea
+    - package.json
 releases:
   enabled: true
   max: 4
@@ -24,6 +33,7 @@ tasks:
     - build-client
   on-deploy:
     - configure-web-layer: {environ: raspberry, serverName: media-stage.morenware.com, documentRoot: "/var/www/dutils/current/web"}
+    - create-cron-jobs
     - init-database
     - symfony2/doctrine-migrate
     - symfony2/cache-warmup
