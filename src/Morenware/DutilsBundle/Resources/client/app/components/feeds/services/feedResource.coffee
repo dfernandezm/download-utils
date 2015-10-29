@@ -11,5 +11,3 @@
     Feed.prototype.name = 'feed'
     # Coffescript syntax: return the above created "class"
     return Feed
-
-mod.$inject = ['$resource']

@@ -1,6 +1,8 @@
 mod = angular.module('automatedSearchApi', [])
 
-mod.factory 'AutomatedSearch', require './services/automatedSearchResource'
+# Careful, if we try to inject in the automatedSearchResource through mod.inject it
+# does not work after minification
+mod.factory 'AutomatedSearch', ['$resource', require './services/automatedSearchResource']
 mod.factory 'automatedSearchFactory', require './services/automatedSearchFactory'
 
 module.exports = mod.name

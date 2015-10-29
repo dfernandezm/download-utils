@@ -11,5 +11,3 @@
     AutomatedSearch.prototype.name = 'automatedSearch'
     # Coffescript syntax: return the above created "class"
     return AutomatedSearch
-
-mod.$inject = ['$resource']
