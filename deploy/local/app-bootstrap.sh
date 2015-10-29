@@ -19,8 +19,14 @@ if [ ! -f /usr/bin/composer ]; then
  mv composer.phar /usr/bin/composer
 fi
 
-cd /vagrant
-composer install
+# Add swap to the VM (200MB)
+/bin/dd if=/dev/zero of=/var/swap.1 bs=1M count=200
+/sbin/mkswap /var/swap.1
+/sbin/swapon /var/swap.1
+
+# Do not run this - not enough memory
+# cd /vagrant
+# composer install
 
 set +e
 rm -f /opt/software/filebot/cache/*
@@ -43,8 +49,8 @@ set -e
 chmod +x $EXTERNAL_CONF_DIR/install-transmission.sh
 $EXTERNAL_CONF_DIR/install-transmission.sh
 
-php app/console --no-interaction doctrine:migrations:migrate
-php app/console cache:warmup
+php /vagrant/app/console --no-interaction doctrine:migrations:migrate
+php /vagrant/app/console cache:warmup
 
 ln -s /usr/bin/nodejs /usr/bin/node
 
