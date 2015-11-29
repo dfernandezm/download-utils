@@ -71,7 +71,72 @@ class TorrentSearchResult {
 	 * @ORM\Column(name="seeds", type="integer", nullable=true)
 	 */
 	private $seeds;
-	
+
+	/**
+	 * @ORM\Column(name="search_hash", type="string", nullable=true)
+	 */
+	private $hash;
+
+
+    /**
+     * @ORM\Column(name="lang", type="string", nullable=true)
+     */
+    private $language;
+
+
+    /**
+     * @ORM\Column(name="site_id", type="string", nullable=true)
+     */
+    private $siteId;
+
+    /**
+     * @return mixed
+     */
+    public function getLanguage()
+    {
+        return $this->language;
+    }
+
+    /**
+     * @param mixed $language
+     */
+    public function setLanguage($language)
+    {
+        $this->language = $language;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSiteId()
+    {
+        return $this->siteId;
+    }
+
+    /**
+     * @param mixed $siteId
+     */
+    public function setSiteId($siteId)
+    {
+        $this->siteId = $siteId;
+    }
+
+
+	/**
+	 * @return mixed
+	 */
+	public function getDateFound()
+	{
+		return $this->dateFound;
+	}
+
+	/**
+	 * @param mixed $dateFound
+	 */
+	public function setDateFound($dateFound)
+    {
+        $this->dateFound = $dateFound;
+    }
 
 	public function getTitle() {
 		return $this->title;
@@ -101,13 +166,7 @@ class TorrentSearchResult {
 		$this->date = $date;
 		return $this;
 	}
-	public function getAsset() {
-		return $this->asset;
-	}
-	public function setAsset($asset) {
-		$this->asset = $asset;
-		return $this;
-	}
+
 	public function getState() {
 		return $this->state;
 	}
@@ -122,13 +181,7 @@ class TorrentSearchResult {
 		$this->contentType = $contentType;
 		return $this;
 	}
-	public function getFilePath() {
-		return $this->filePath;
-	}
-	public function setFilePath($filePath) {
-		$this->filePath = $filePath;
-		return $this;
-	}
+
 	public function getOrigin() {
 		return $this->origin;
 	}
@@ -136,13 +189,7 @@ class TorrentSearchResult {
 		$this->origin = $origin;
 		return $this;
 	}
-	public function getGuid() {
-		return $this->guid;
-	}
-	public function setGuid($guid) {
-		$this->guid = $guid;
-		return $this;
-	}
+
 	public function getId() {
 		return $this->id;
 	}
@@ -150,20 +197,7 @@ class TorrentSearchResult {
 		$this->id = $id;
 		return $this;
 	}
-	public function getTransmissionId() {
-		return $this->transmissionId;
-	}
-	public function setTransmissionId($transmissionId) {
-		$this->transmissionId = $transmissionId;
-		return $this;
-	}
-	public function getTorrentName() {
-		return $this->torrentName;
-	}
-	public function setTorrentName($torrentName) {
-		$this->torrentName = $torrentName;
-		return $this;
-	}
+
 	public function getTorrentFileLink() {
 		return $this->torrentFileLink;
 	}
@@ -171,20 +205,7 @@ class TorrentSearchResult {
 		$this->torrentFileLink = $torrentFileLink;
 		return $this;
 	}
-	public function getPercentDone() {
-		return $this->percentDone;
-	}
-	public function setPercentDone($percentDone) {
-		$this->percentDone = $percentDone;
-		return $this;
-	}
-	public function getRenamedPath() {
-		return $this->renamedPath;
-	}
-	public function setRenamedPath($renamedPath) {
-		$this->renamedPath = $renamedPath;
-		return $this;
-	}
+
 	public function getSize() {
 		return $this->size;
 	}
