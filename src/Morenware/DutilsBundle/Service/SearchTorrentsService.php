@@ -500,6 +500,8 @@ class SearchTorrentsService {
 
 	   	$hash = null;
 
+	    $existingTorrent = null;
+
 	   	if ($magnetLink !== null) {
 
 	   		$hashPattern = '/urn:btih:(.*)&dn=/';

@@ -1,6 +1,7 @@
 automatedSearch = require "./components/automatedSearch/automatedSearch"
 feeds = require "./components/feeds/feeds"
 torrentsStatus = require "./components/torrentsStatus/torrentsStatus"
+search = require "./components/search/search"
 
 console.log 'NAME ' + torrentsStatus
 app = window.app = angular.module 'dutilsApp', ['ngRoute'
@@ -9,6 +10,7 @@ app = window.app = angular.module 'dutilsApp', ['ngRoute'
     automatedSearch
     feeds
     torrentsStatus
+    search
 ]
 
 app.config ['$routeProvider','$httpProvider','$interpolateProvider', '$compileProvider', ($routeProvider, $httpProvider, $interpolateProvider, $compileProvider) ->

@@ -7,26 +7,10 @@ require '../lib/angular-route.min.js'
 require '../lib/angular-resource.min.js'
 require '../lib/ui-bootstrap-tpls-0.12.1.min.js'
 require './setup.coffee'
+
+# Change to directive
 require './searchFactory.coffee'
-
-# require './feeds.coffee'
-# require './feedsController.coffee'
-
 require './searchController.coffee'
-#require './torrents.coffee'
-#require './torrentsStatusController.coffee'
 
 require './components/adminForm/adminForm.coffee'
 require './components/adminTable/adminTable.coffee'
-# feature
-#require './components/torrentStatus/torrentsTable/torrentsTable.coffee'
-# feature
-#require './components/torrentList/torrentElements/torrentElements.coffee'
-#require './components/automatedSearch/directives/automatedSearchDirective.coffee'
-#require './components/automatedSearch/automatedSearch.coffee'
-#require './components/filters/filters.coffee'
-
-#require './components/progressBar/progressBar.coffee'
-require './torrentFactory.coffee'
-require './torrentController.coffee'
-#require './modules/automatedSearchModule.coffee'
