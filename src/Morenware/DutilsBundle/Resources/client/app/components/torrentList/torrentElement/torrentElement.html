@@ -1,7 +1,9 @@
 <div class="row-fluid">
 
-  <div class="row-fluid clearfix torrent-state">
-    <render-torrent-state torrent="torrent" />
+  <div ng-if="style !== 'COMPACT'" class="row-fluid clearfix torrent-state">
+    <div class="list-group-item-text no-padding">
+      <render-torrent-state torrent="torrent" />
+    </div>
   </div>
 
   <div class="row-fluid clearfix torrent-title">
@@ -14,8 +16,11 @@
 
    <div class="row-fluid no-padding clearfix">
      <div class="list-group-item-text no-padding">
-      [[fieldFormat('date',torrent)]] &nbsp; | &nbsp; [[fieldFormat('size',torrent)]]
-     </div>
+      <strong ng-if="style == 'COMPACT'"><render-torrent-state torrent="torrent" /></strong>
+      <strong>&nbsp; | &nbsp;[[fieldFormat('date',torrent)]]</strong>
+      <strong ng-if="torrent.size">&nbsp; | &nbsp; [[fieldFormat('size',torrent)]]</strong>
+      <strong ng-if="torrent.seeds">&nbsp; | &nbsp; [[fieldFormat('seeds',torrent)]]</strong>
+       </div>
    </div>
 
    <div class="row-fluid clearfix">

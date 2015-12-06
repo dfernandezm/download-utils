@@ -5,11 +5,11 @@ mod = angular
         return (inputs, targetState) ->
           inputs = inputs || {}
           filtered = []
-          acceptedStates = targetState.split(",")
-
+          
           if not targetState
             filtered = inputs
           else
+            acceptedStates = targetState.split(",")
             angular.forEach inputs, (input) ->
               if _.contains acceptedStates, input.state
                 filtered.push input

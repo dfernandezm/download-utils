@@ -1,3 +1,4 @@
+torrentElements = require '../../torrentList/torrentElements/torrentElements'
 searchApi = require '../searchApi'
 searchUtils = require '../services/searchUtils'
 
@@ -38,7 +39,7 @@ mod = angular
           scope.search = (searchQuery) ->
             scope.loading = true
             searchQuery = scope.query
-            
+
             # returns objects on the list with the property indicated
             sites = _.where scope.searchSites, {selected: true}
             sitesParam = searchUtils.computeSitesParam(sites)

@@ -8,5 +8,6 @@
   "DOWNLOAD_COMPLETED" : "label-warning",
   "FAILED_DOWNLOAD_ATTEMPT" : "label-danger",
   "COMPLETED_WITH_ERROR" : "label-danger",
-  "COMPLETED" : "label-success"
+  "COMPLETED" : "label-success",
+  "NEW": "label-success"
 }

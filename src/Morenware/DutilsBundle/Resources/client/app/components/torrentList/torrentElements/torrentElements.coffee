@@ -12,6 +12,7 @@ mod = angular
         scope: {
           torrents: '='
           filterState: '@'
+          style: '@'
         },
         link: (scope) ->
           return

@@ -5,20 +5,14 @@
 
   <div class="row-fluid search-results clearfix ng-cloak" role="tabpanel">
     <tabset>
-      <tab heading="Downloading" active="true">
-          <torrents-elements torrents="torrents" filter-state="DOWNLOADING,PAUSED" />
+      <tab heading="Active" active="true">
+        <torrents-elements style="COMPACT" torrents="torrents" filter-state="DOWNLOADING,PAUSED,DOWNLOAD_COMPLETED,RENAMING,RENAMING_COMPLETED,FETCHING_SUBTITLES" />
       </tab>
       <tab heading="Awaiting download">
-        <torrents-elements torrents="torrents" filter-state="AWAITING_DOWNLOAD" />
-      </tab>
-      <tab heading="Processing">
-        <torrents-elements torrents="torrents" filter-state="DOWNLOAD_COMPLETED,RENAMING,RENAMING_COMPLETED,FETCHING_SUBTITLES" />
+        <torrents-elements style="COMPACT" torrents="torrents" filter-state="AWAITING_DOWNLOAD" />
       </tab>
       <tab heading="Completed">
-        <torrents-elements torrents="torrents" filter-state="COMPLETED" />
-      </tab>
-      <tab heading="Failed">
-        <torrents-elements torrents="torrents" filter-state="COMPLETED_WITH_ERROR,FAILED_DOWNLOAD_ATTEMPT" />
+        <torrents-elements style="COMPACT" torrents="torrents" filter-state="COMPLETED" />
       </tab>
     </tabset>
   </div>

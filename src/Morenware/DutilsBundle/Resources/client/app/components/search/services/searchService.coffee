@@ -30,7 +30,6 @@ module.exports = mod = ($http) ->
     _modifyTorrentsResponse = (torrentsInfo) ->
       _.map torrentsInfo.torrents, (torrent) ->
         torrent.buttonText = if torrent.state == 'NEW' then "Download" else "Cancel"
-        torrent.state = _str.capitalize torrent.state.toLowerCase()
         torrent.date = moment(torrent.date, 'YYYY-MM-DD').format('YYYY-MM-DD')
       return torrentsInfo
 

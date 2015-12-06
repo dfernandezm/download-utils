@@ -1,1 +1,4 @@
-<span class="label" ng-class="stateConfig[torrent.state].cssClass">[[stateConfig[torrent.state].stateText]]&nbsp;-&nbsp;[[torrent.percentDone]]%</span>
+<span class="label" ng-class="stateConfig[torrent.state].cssClass">
+  [[stateConfig[torrent.state].stateText]]
+  <strong ng-if="torrent.state == 'DOWNLOADING'">&nbsp;-&nbsp;[[torrent.percentDone]]%</strong>
+</span>

@@ -38,5 +38,9 @@
   "COMPLETED" : {
     "cssClass": "label-success",
     "stateText": "COMPLETED"
+  },
+  "NEW" : {
+    "cssClass": "label-success",
+    "stateText": "NEW"
   }
 }
