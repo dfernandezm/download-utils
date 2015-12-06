@@ -9,12 +9,12 @@
    <div class="row-fluid no-padding clearfix">
     <div class="col-sm-9 col-xs-9">
       <div class="row-fluid clearfix torrent-title">
-       <h4 class="list-group-item-heading no-padding">
-         <span ng-if="style == 'COMPACT'"> <render-torrent-state torrent="torrent" /></span>
-         <span class="torrentTitle">[[fieldFormat('title',torrent)]]</span>
+       <h4 class="list-group-item-heading no-padding container-fluid">
+         <span class="torrentTitle col-sm-10 col-md-9 no-padding">[[fieldFormat('title',torrent)]]</span>
+         <span ng-if="style == 'COMPACT'" class="col-sm-2 col-md-1 no-padding pull-left"> <render-torrent-state torrent="torrent" /></span>
        </h4>
       </div>
-      <div class="row-fluid clearfix no-padding">
+      <div ng-if="showProgress" class="row-fluid clearfix no-padding">
         <progress-bar class="no-padding" ng-hide="torrent.state != 'DOWNLOADING' && torrent.state != 'PAUSED'" percent="torrent.percentDone || 0" class="pull-left col-sm-4 no-padding" />
       </div>
       <div class="list-group-item-text no-padding">

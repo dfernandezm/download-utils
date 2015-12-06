@@ -13,7 +13,8 @@ mod = angular
         transclude: true,
         scope: {
           torrent: '=',
-          style: '='
+          style: '=',
+          showProgress: '='
         },
         link: (scope) ->
           #TODO: Convert into a filter

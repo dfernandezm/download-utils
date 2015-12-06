@@ -10,6 +10,10 @@
     {
       "id": "DT",
       "name": "Divx Total"
+    },
+    {
+      "id": "LINK",
+      "name": "Direct Link"
     }
   ]
 }

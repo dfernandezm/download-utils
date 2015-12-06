@@ -13,6 +13,7 @@ mod = angular
           torrents: '='
           filterState: '@'
           style: '@'
+          showProgress: '='
         },
         link: (scope) ->
           return

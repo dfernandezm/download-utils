@@ -10,7 +10,7 @@
    <h4 class="list-group-item-heading no-padding">[[fieldFormat('title',torrent)]]</h4>
   </div>
 
-  <div class="row-fluid clearfix no-padding">
+  <div ng-if="showProgress" class="row-fluid clearfix no-padding">
     <progress-bar class="no-padding" ng-hide="torrent.state != 'DOWNLOADING' && torrent.state != 'PAUSED'" percent="torrent.percentDone || 0" class="pull-left col-sm-4 no-padding" />
   </div>
 
@@ -20,7 +20,7 @@
       <strong>&nbsp; | &nbsp;[[fieldFormat('date',torrent)]]</strong>
       <strong ng-if="torrent.size">&nbsp; | &nbsp; [[fieldFormat('size',torrent)]]</strong>
       <strong ng-if="torrent.seeds">&nbsp; | &nbsp; [[fieldFormat('seeds',torrent)]]</strong>
-       </div>
+     </div>
    </div>
 
    <div class="row-fluid clearfix">

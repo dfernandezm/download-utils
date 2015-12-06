@@ -189,6 +189,7 @@ span.label {
 	margin-bottom: 3px;
 	padding-left:0;
 	padding-right:0;
+	margin-top: 4px;
 }
 
 .torrent-state {
@@ -217,17 +218,29 @@ span.label {
 .ng-cloak { display:none !important; }
 
 .gray-lighter {
-
-	background-color: #f6f6f6;
-
+	background-color: #fafafa;
 }
 
 span.torrentTitle {
 	margin-left: 4px;
+
 }
+
+.ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -o-text-overflow: ellipsis;
+    -moz-binding: url('assets/xml/ellipsis.xml#ellipsis');
+}
+
 
 .vcenter {
     display: inline-block;
     vertical-align: middle;
     float: none;
+}
+
+.no-padding {
+	padding: 0 !important;
 }
