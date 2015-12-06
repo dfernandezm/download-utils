@@ -1,4 +1,3 @@
-torrentElements = require '../../torrentList/torrentElements/torrentElements'
 searchApi = require '../searchApi'
 searchUtils = require '../services/searchUtils'
 
@@ -14,10 +13,17 @@ mod = angular
         link: (scope) ->
 
           scope.searchSites = (require './searchSites.json').searchSites
-          scope.buttonText = "Download"
 
           scope.loading = false
           scopeUpdateClosures = {}
+
+          scope.checkSingleDownload = (site) ->
+            console.log ("Changed to " + site.id + ", selected " + site.selected)
+            if site.selected and site.id == 'LINK'
+              scope.selectedSite = site
+            else
+              scope.selectedSite = undefined
+            return
 
           scopeUpdateClosures.success = (torrentsInfo) ->
             scope.torrents = torrentsInfo.torrents
