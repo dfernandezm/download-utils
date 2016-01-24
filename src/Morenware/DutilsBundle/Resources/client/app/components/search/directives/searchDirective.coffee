@@ -34,6 +34,7 @@ mod = angular
             scope.total = torrentsInfo.total
             scope.searchFinished = true
             scope.loading = false
+            scope.errored = false
             return
 
           scopeUpdateClosures.error = (responseData) ->

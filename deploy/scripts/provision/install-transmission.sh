@@ -34,12 +34,16 @@ sudo update-rc.d transmission-daemon defaults
 
 sudo /etc/init.d/transmission-daemon start
 sudo /etc/init.d/transmission-daemon stop
-echo $'\n'$'\n'"Settings: /home/transmission/.config/transmission-daemon/settings.json"$'\n'
 
-mkdir -p /var/lib/transmission-daemon/info
-cp /vagrant/deploy/external-configuration/transmission-daemon-defaults /etc/default/transmission-daemon
-cp /vagrant/deploy/external-configuration/settings.json /var/lib/transmission-daemon/info
-chown -R pi:pi /var/lib/transmission-daemon
+LOCAL=0
+
+if [ "$LOCAL" -eq 1 ]; then
+  echo $'\n'$'\n'"Settings: /home/transmission/.config/transmission-daemon/settings.json"$'\n'
+  mkdir -p /var/lib/transmission-daemon/info
+  cp /vagrant/deploy/external-configuration/transmission-daemon-defaults /etc/default/transmission-daemon
+  cp /vagrant/deploy/external-configuration/settings.json /var/lib/transmission-daemon/info
+  chown -R osmc:osmc /var/lib/transmission-daemon
+fi
 
 exit
 
@@ -48,8 +52,8 @@ exit
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          transmission-daemon
-# Required-Start:    networking
-# Required-Stop:     networking
+# Required-Start:    $network
+# Required-Stop:     $network
 # Default-Start:     2 3 5
 # Default-Stop:      0 1 6
 # Short-Description: Start the transmission BitTorrent daemon client.

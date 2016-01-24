@@ -14,6 +14,7 @@ popd > /dev/null
 
 SERVICES_USER=osmc
 SEVERAL_JAVA_VERSIONS=0
+JAVA_EXEC=java
 
 # Indicates if the Media Download Automator runs in a different machine than transmission / XBMC-Kodi
 REMOTE=0
@@ -45,7 +46,7 @@ pecl install yaml
 # add extension=yaml.so to php.ini
 
 # Install Apache
-apt-get -y install apache2 apache2-mpm-prefork apache2.2-bin apache2.2-common libapache2-mod-php5
+apt-get -y install apache2 apache2-mpm-prefork apache2.2-bin apache2.2-common libapache2-mod-php5 cron
 
 # Enable mod rewrite
 ln -s /etc/apache2/mods-available/rewrite.load /etc/apache2/mods-enabled/rewrite.load
@@ -123,7 +124,7 @@ chown -R $SERVICES_USER:$SERVICES_USER /opt/software
 chown -R $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME
 
 # Create mediacenter, NFS share, mount HDD
-./create-mediacenter-raspberrypi.sh
+./create-mediacenter-osmc.sh
 
 # Start services: apache, transmission, mysql
 /etc/init.d/apache2 restart

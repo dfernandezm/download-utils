@@ -14,13 +14,14 @@ class ConfigureWebLayer extends SymfonyAbstractTask {
     $serverName = $this->getParameter('serverName', 'localhost');
     $documentRoot = $this->getParameter('documentRoot', '/var/www/localhost');
 
+    // add environ osmc 
     if ($environ === "raspberry") {
-      $reloadCmd = "sudo service apache2 reload";
+      $reloadCmd = "sudo /etc/init.d/apache2 restart";
       $apacheVhostsPath = "/etc/apache2/sites-enabled";
     }
 
     if ($environ === "local") {
-      $reloadCmd = "sudo service apache2 reload";
+      $reloadCmd = "sudo /etc/init.d/apache2 reload";
       $apacheVhostsPath = "/etc/apache2/sites-enabled";
     }
 

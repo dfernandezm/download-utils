@@ -9,8 +9,8 @@ require '../lib/ui-bootstrap-tpls-0.12.1.min.js'
 require './setup.coffee'
 
 # Change to directive
-require './searchFactory.coffee'
-require './searchController.coffee'
+#require './searchFactory.coffee'
+#require './searchController.coffee'
 
 require './components/adminForm/adminForm.coffee'
 require './components/adminTable/adminTable.coffee'
