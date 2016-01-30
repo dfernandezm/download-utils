@@ -137,7 +137,7 @@ class RenameAndMoveCommand extends Command {
 					$guid = GuidGenerator::generate();
 
                     if (count($torrentsToRename) == 0 && !$unsortedFolderAlreadyChecked) {
-                        $this->renamerLogger->debug("[RENAMING] Checking Unsorted folder");
+                        $this->renamerLogger->debug("[RENAMING] Checking [Unsorted] folder");
                         $isUnsortedFolder = true;
                     } else {
                         $this->renamerLogger->debug("[RENAMING] Detected torrents to rename in DOWNLOAD COMPLETED STATE");
@@ -178,15 +178,15 @@ class RenameAndMoveCommand extends Command {
                     // If the Unsorted folder is being checked, it is likely it is empty and Filebot would fail -- check this here
 					if ($isUnsortedFolder) {
 
-                        $renamerLogger->info("[RENAMING] Unsorted folder case -- We'll ignore errors");
+                        $renamerLogger->info("[RENAMING] Unsorted folder case -- We'll ignore any previous errors");
 						$unsortedFolderAlreadyChecked = true;
 
                         //TODO: CHeck only for message in log: No files selected for processing
                         if (intval($exitCode) !== 0) {
                             $polls = 0;
-                            $renamerLogger->info("[RENAMING] The renamer script returned non-zero code -- Assume Unsorted folder is empty");
+                            $renamerLogger->warn("[RENAMING] The renamer script returned non-zero code -- Check Unsorted folder for unprocessed files");
                         } else {
-                            $renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing Unsorted folder -- No errors, assume there are torrents moved");
+                            $renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing Unsorted folder -- Empty or successful processing");
                             $this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename);
                         }
 
@@ -290,7 +290,7 @@ class RenameAndMoveCommand extends Command {
 		$scriptFilePath = $mediacenterSettings->getProcessingTempPath() . "/rename-filebot_$processPid.sh";
 		file_put_contents($scriptFilePath, $scriptContent);
 		file_put_contents($renamerLogFilePath . ".log","");
-        
+
 		return array($scriptFilePath, $renamerLogFilePath . ".log");
 	}
 

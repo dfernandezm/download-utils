@@ -92,7 +92,7 @@ class SubtitlesCommand extends Command {
 			$pidFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::PID_FILE_NAME;
 
 			// Check race condition, only one rename at a time
-			if (file_exists($pidFile)) {
+			if ($this->processManager->pidFileIsActive()) {
 				$logger->info("[SUBTITLES-STOP] There is already one subtitle fetcher process running -- exiting");
 				return;
 			}
