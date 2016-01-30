@@ -109,22 +109,22 @@ class TorrentService {
 	public function getAllOrderedByDate() {
 		return $this->getRepository()->findBy(array(), array('date' => 'DESC'));
 	}
-	
+
 	public function getAllNonCompletedOrderedByDate() {
-		
+
 		$upperDate = new \DateTime();
 		$lowerDate = new \DateTime();
 		$interval = \DateInterval::createFromDateString("-1 week");
 		$lowerDate = $lowerDate->add($interval);
-		
-		$q = $this->em->createQuery("select t from MorenwareDutilsBundle:Torrent t " . 
+
+		$q = $this->em->createQuery("select t from MorenwareDutilsBundle:Torrent t " .
 				                    "where (t.dateStarted is not null and t.dateStarted between :lowerDate and :upperDate) " .
 				                    "or t.state != 'COMPLETED' " .
 				                    "order by t.dateStarted DESC")
 		                            ->setParameter("lowerDate", $lowerDate->format("Y-m-d H:i"))
 		                            ->setParameter("upperDate", $upperDate->format("Y-m-d H:i"));
 		$torrents = $q->getResult();
-		return $torrents;	
+		return $torrents;
 	}
 
 
@@ -472,6 +472,11 @@ class TorrentService {
 
                     $hash = $matchesHash[1];
                     $torrent = $this->findTorrentByHash($hash);
+										
+										if ($torrent == null) {
+											$this->renamerLogger->debug("[RENAMING-SKIPPED] Torrent with hash $hash is NULL, continue and investigate";
+											continue;
+										}
 
                     $this->renamerLogger->debug("[RENAMING-SKIPPED] Skipped torrent detected with hash $hash -- " . $torrent->getTorrentName());
 
@@ -730,14 +735,14 @@ class TorrentService {
 
 		$this->transmissionService->deleteTorrent($torrent->getHash());
 	}
-	
+
 	public function pauseTorrent($torrent) {
 		$this->transmissionService->pauseTorrent($torrent->getHash());
 		$torrent->setState(TorrentState::PAUSED);
 		$this->update($torrent);
 		return $torrent;
 	}
-	
+
 	public function resumeTorrent($torrent) {
 		$this->transmissionService->resumeTorrent($torrent->getHash());
 		$torrent->setState(TorrentState::DOWNLOADING);
@@ -877,13 +882,13 @@ class TorrentService {
 			}
 
 			return $res;
-			
-		} else { 
+
+		} else {
 			// Regular case, 1 path per torrent
 			return $this->checkSubtitlesPresenceForPath($renamedPath);
 		}
 	}
-	
+
 	/** Filebot uses 3-letters language code, our script generates the others */
 	private function checkSubtitlesPresenceForPath($path) {
 
