@@ -123,6 +123,9 @@ mkdir -p $FILEBOT_HOME/temp && chown $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME
 chown -R $SERVICES_USER:$SERVICES_USER /opt/software
 chown -R $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME
 
+# Configure OpenSubtitles -- will prompt for credentials - use expect??
+filebot -script fn:configure
+
 # Create mediacenter, NFS share, mount HDD
 ./create-mediacenter-osmc.sh
 

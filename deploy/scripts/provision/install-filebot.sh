@@ -32,3 +32,5 @@ mkdir -p $FILEBOT_HOME/temp && chown $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME
 
 chown -R $SERVICES_USER:$SERVICES_USER /opt/software
 chown -R $SERVICES_USER:$SERVICES_USER $FILEBOT_HOME
+
+filebot -script fn:configure
