@@ -473,10 +473,10 @@ class TorrentService {
                     $hash = $matchesHash[1];
                     $torrent = $this->findTorrentByHash($hash);
 										
-										if ($torrent == null) {
-											$this->renamerLogger->debug("[RENAMING-SKIPPED] Torrent with hash $hash is NULL, continue and investigate";
-											continue;
-										}
+					if ($torrent == null) {
+						$this->renamerLogger->debug("[RENAMING-SKIPPED] Torrent with hash $hash is NULL, continue and investigate");
+						continue;
+					}
 
                     $this->renamerLogger->debug("[RENAMING-SKIPPED] Skipped torrent detected with hash $hash -- " . $torrent->getTorrentName());
 
