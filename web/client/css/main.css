@@ -244,3 +244,40 @@ span.torrentTitle {
 .no-padding {
 	padding: 0 !important;
 }
+
+a.action-button {
+	width:32px;
+	height: 32px;
+	text-decoration:none;
+	cursor: pointer;
+	margin-right: 4px;
+}
+
+a.play-button {
+	background-image: url('../img/play-button.png');
+}
+
+a.magnet-link {
+	background-image: url('../img/magnet.png');
+	width:32px;
+}
+
+a.cancel-button {
+	background-image: url('../img/cancel-button.png');
+}
+
+a.pause-button {
+	background-image: url('../img/pause-button.png');
+}
+
+a.loading-action {
+	background-image: url('../img/loading-blue.gif');
+}
+
+a.rename-button {
+	background-image: url('../img/rename-button.png');
+}
+
+a.subtitles-button {
+	background-image: url('../img/subtitles-button.png');
+}

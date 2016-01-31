@@ -63,10 +63,11 @@ module.exports = mod = ($http, $timeout) ->
       pollPromise = $timeout(torrentService.pollForStatus(updateAction), 5000)
       return resp.data.torrents
 
-  startTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
+  startTorrentDownloadSuccessCallbackCreator = (torrentDefinition, stopLoadingClosure) ->
     return (responseData, status, headers, config) ->
       #responseData.torrent.date = moment(responseData.torrent.date).format('YYYY-MM-DD')
       _.extend torrentDefinition, responseData.torrent
+      stopLoadingClosure()
       return
 
   cancelTorrentDownloadSuccessCallbackCreator = (torrentDefinition) ->
@@ -80,19 +81,20 @@ module.exports = mod = ($http, $timeout) ->
       _.extend torrentDefinition, responseData.torrent
       return
 
-  resumeTorrentSuccessCallbackCreator = (torrentDefinition) ->
+  resumeTorrentSuccessCallbackCreator = (torrentDefinition, stopLoadingClosure) ->
     return (responseData, status, headers, config) ->
       _.extend torrentDefinition, responseData.torrent
+      stopLoadingClosure()
       return
 
-  torrentService.startDownload = (torrentDefinition) ->
+  torrentService.startDownload = (torrentDefinition, scopeUpdateClosures) ->
     torrentDownload = {}
     date = moment(torrentDefinition.date).format('YYYY-MM-DD[T]HH:mm:ssZZ')
     # copies properties over from 2 to 1 - torrentDefinition to torrentDownload
     _.extend torrentDownload, torrentDefinition
     torrentDownload.date = date
-    torrentDefinition.buttonText = "Starting..."
-    successCallback = startTorrentDownloadSuccessCallbackCreator(torrentDefinition)
+    scopeUpdateClosures.startLoading()
+    successCallback = startTorrentDownloadSuccessCallbackCreator(torrentDefinition, scopeUpdateClosures.stopLoading)
     torrentService.torrentAction("START",torrentDownload,successCallback,onError)
     return
 
@@ -108,9 +110,10 @@ module.exports = mod = ($http, $timeout) ->
     torrentService.torrentAction("PAUSE",torrentDefinition,successCallback,onError)
     return
 
-  torrentService.resumeDownload = (torrentDefinition) ->
+  torrentService.resumeDownload = (torrentDefinition, scopeUpdateClosures) ->
     torrentDefinition.buttonText = "Resuming..."
-    successCallback = resumeTorrentSuccessCallbackCreator(torrentDefinition)
+    scopeUpdateClosures.startLoading()
+    successCallback = resumeTorrentSuccessCallbackCreator(torrentDefinition, scopeUpdateClosures.stopLoading)
     torrentService.torrentAction("RESUME",torrentDefinition,successCallback,onError)
     return
 

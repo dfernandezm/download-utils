@@ -11,9 +11,18 @@ mod = angular
           torrent: '='
         },
         link: (scope) ->
+          scopeUpdateClosures = {}
+          scopeUpdateClosures.startLoading = ->
+            console.log("==== inside start loading ====")
+            scope.loading = true
+            return
+
+          scopeUpdateClosures.stopLoading = ->
+            scope.loading = false
+            return
 
           scope.startDownload = (torrentDefinition) ->
-            torrentService.startDownload(torrentDefinition)
+            torrentService.startDownload(torrentDefinition, scopeUpdateClosures)
             return
 
           scope.pauseDownload = (torrentDefinition) ->
@@ -25,7 +34,7 @@ mod = angular
             return
 
           scope.resumeDownload = (torrentDefinition) ->
-            torrentService.resumeDownload(torrentDefinition)
+            torrentService.resumeDownload(torrentDefinition, scopeUpdateClosures)
             return
 
           scope.rename = (torrentDefinition) ->
