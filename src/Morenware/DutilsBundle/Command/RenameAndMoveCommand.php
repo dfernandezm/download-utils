@@ -183,11 +183,12 @@ class RenameAndMoveCommand extends Command {
 
                         //TODO: CHeck only for message in log: No files selected for processing
                         if (intval($exitCode) !== 0) {
-                            $polls = 0;
+							$failedPolls++;
                             $renamerLogger->warn("[RENAMING] The renamer script returned non-zero code -- Check Unsorted folder for unprocessed files");
                         } else {
                             $renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing Unsorted folder -- Empty or successful processing");
                             $this->torrentService->processTorrentsAfterRenaming($renamerLogFilePath, $torrentsToRename);
+							$polls++;
                         }
 
 					} else {
@@ -197,7 +198,6 @@ class RenameAndMoveCommand extends Command {
 							$this->logger->error("[RENAMING] Error executing renamer process with PID $pid, non-zero exit code from filebot, continue polling -- polls = $polls");
 
 							$failedPolls++;
-							$polls++;
 
 							if ($polls > 10 && $failedPolls > 3) {
 								$this->processManager->killRenamerProcessIfRunning();
@@ -205,7 +205,7 @@ class RenameAndMoveCommand extends Command {
 
 						} else {
 
-							$polls = 0;
+							$polls++;
 						}
 
                         $renamerLogger->debug("[RENAMING] Renamer with PID $pid finished processing -- continue after renaming...");
@@ -213,15 +213,12 @@ class RenameAndMoveCommand extends Command {
 					}
 
 				} else {
-
 					$this->renamerLogger->debug("[RENAMER] No torrents in DOWNLOAD_COMPLETED state found -- polls = $polls");
-
 					$polls++;
+				}
 
-					if ($polls > 10) {
-						$this->processManager->killRenamerProcessIfRunning();
-					}
-
+				if ($polls > 15 || $failedPolls > 5) {
+					$this->processManager->killRenamerProcessIfRunning();
 				}
 
 				if (file_exists($terminatedFile)) {
