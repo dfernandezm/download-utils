@@ -205,9 +205,9 @@ class SubtitlesCommand extends Command {
 					$polls++;
 				}
 
-        if ($polls > 5) {
-            $this->processManager->killSubtitlesProcessIfRunning();
-        }
+				if ($polls > 5) {
+					$this->processManager->killSubtitlesProcessIfRunning();
+				}
 
 				if (file_exists($terminatedFile)) {
 					$this->renamerLogger->debug("[SUBTITLES] .terminated file found -- terminating execution");

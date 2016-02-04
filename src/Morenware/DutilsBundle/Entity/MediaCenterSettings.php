@@ -9,50 +9,50 @@ use Doctrine\ORM\Mapping AS ORM;
  *
  */
 class MediaCenterSettings {
-	
+
 	/**
 	 * @ORM\Column(type="integer")
 	 * @ORM\Id
 	 * @ORM\GeneratedValue(strategy="AUTO")
 	 */
 	protected $id;
-	
+
 	/**
 	 * @ORM\Column(type="string", length=200, nullable=true)
 	 */
 	protected $description;
-	
+
 	/**
 	 * @ORM\Column(name="base_downloads_path", type="string", length=50)
 	 */
 	protected $baseDownloadsPath;
-	
+
 	/**
 	 * @ORM\Column(name="base_library_path", type="string", length=50)
 	 */
 	protected $baseLibraryPath;
-	
+
 	/**
 	 * @ORM\Column(name="is_remote", type="boolean", length=1, nullable=true)
 	 */
 	protected $isRemote;
-	
+
 	/**
 	 * @ORM\Column(name="xbmc_host_or_ip", type="string", length=30, nullable=true)
 	 */
-	protected $xbmcHostOrIp;
-	
+	protected $xbmcHostOrIp; // it could be over ipV6 in OSMC, the value would be ::1
+
 	/**
 	 * @ORM\Column(name="processing_temp_path", type="string", length=50)
 	 */
 	protected $processingTempPath;
-	
+
 	/**
 	 * @ORM\Column(name="transcode_temp_path", type="string", length=50, nullable=true)
 	 */
 	protected $transcodeTempPath;
-	
-	
+
+
 	public function getId() {
 		return $this->id;
 	}
