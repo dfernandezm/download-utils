@@ -10,7 +10,8 @@
     <div class="col-sm-9 col-xs-9">
       <div class="row-fluid clearfix torrent-title">
        <h4 class="list-group-item-heading no-padding container-fluid">
-         <span class="torrentTitle col-sm-10 col-md-9 no-padding">[[fieldFormat('title',torrent)]]</span>
+         <!-- use this https://github.com/lorenooliveira/ng-text-truncate -->
+         <span class="torrentTitle col-sm-10 col-md-9 no-padding truncate">[[fieldFormat('title',torrent)]]</span>
          <span ng-if="style == 'COMPACT'" class="col-sm-2 col-md-1 no-padding pull-left"> <render-torrent-state torrent="torrent" /></span>
        </h4>
       </div>

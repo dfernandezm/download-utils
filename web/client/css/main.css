@@ -281,3 +281,9 @@ a.rename-button {
 a.subtitles-button {
 	background-image: url('../img/subtitles-button.png');
 }
+
+.truncate {
+	overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
