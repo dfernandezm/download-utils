@@ -472,7 +472,7 @@ class TorrentService {
 
                     $hash = $matchesHash[1];
                     $torrent = $this->findTorrentByHash($hash);
-										
+
 					if ($torrent == null) {
 						$this->renamerLogger->debug("[RENAMING-SKIPPED] Torrent with hash $hash is NULL, continue and investigate");
 						continue;
@@ -834,10 +834,6 @@ class TorrentService {
 
 					$torrent->setState(TorrentState::RENAMING_COMPLETED);
 					$this->renamerLogger->debug("[RENAMING] With subtitles, completing renaming process for torrent $torrentName with hash $hash -- RENAMING_COMPLETED");
-
-                    if (!$this->processManager->isSubtitleFetchWorkerRunning()) {
-                        $this->processManager->startSubtitleFetchWorker();
-                    }
 
 				} else {
 

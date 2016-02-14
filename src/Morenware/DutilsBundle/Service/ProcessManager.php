@@ -254,6 +254,7 @@ class ProcessManager {
 	public function startSubtitleFetchWorker() {
 		if (!$this->isSubtitleFetchWorkerRunning()) {
 			$this->startSymfonyCommandAsynchronously(CommandType::FETCH_SUBTITLES);
+			sleep(2);
 
             $times = 0;
             while(!$this->isSubtitleFetchWorkerRunning()) {
@@ -263,6 +264,7 @@ class ProcessManager {
 
                 if ($times > 10) {
                     $this->renamerLogger->error("[SUBTITLES] Timeout polling for subtitles process startup -- ERROR");
+										break;
                 }
 
             }
@@ -296,7 +298,7 @@ class ProcessManager {
 
 	}
 
-	private function pidFileIsActive($pidFile) {
+	public function pidFileIsActive($pidFile) {
 		if (file_exists($pidFile)) {
 			$pid = trim(file_get_contents($pidFile));
 			if (file_exists("/proc/$pid")) {

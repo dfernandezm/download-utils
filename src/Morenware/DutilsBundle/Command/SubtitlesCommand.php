@@ -98,7 +98,7 @@ class SubtitlesCommand extends Command {
 			}
 
 			// Write pid file
-            file_put_contents($pidFile, $pid);
+      file_put_contents($pidFile, $pid);
 
 			$terminated = false;
 
