@@ -42,7 +42,14 @@ class Feed {
 	 * @ORM\Column(name="active", type="boolean", nullable=true)
 	 */
 	private $active;
-	
+
+
+    /**
+     * @ORM\ManyToOne(targetEntity="AutomatedSearchConfig", cascade={"merge"}, fetch="LAZY")
+     * @ORM\JoinColumn(name="automated_search_config_id", referencedColumnName="id")
+     */
+    private $automatedSearchConfig;
+
 	
 	public function getId() {
 		return $this->id;
@@ -51,6 +58,22 @@ class Feed {
 		$this->id = $id;
 		return $this;
 	}
+
+    /**
+     * @return mixed
+     */
+    public function getAutomatedSearchConfig()
+    {
+        return $this->automatedSearchConfig;
+    }
+
+    /**
+     * @param mixed $automatedSearchConfig
+     */
+    public function setAutomatedSearchConfig($automatedSearchConfig)
+    {
+        $this->automatedSearchConfig = $automatedSearchConfig;
+    }
 	public function getUrl() {
 		return $this->url;
 	}

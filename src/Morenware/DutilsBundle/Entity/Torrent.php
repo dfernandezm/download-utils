@@ -29,7 +29,7 @@ class Torrent {
 	private $title;
 	
 	/**
-	 * @ORM\Column(type="string", length=200, nullable=true)
+	 * @ORM\Column(type="string", length=250, nullable=true)
 	 */
 	private $torrentName;
 	
@@ -119,9 +119,31 @@ class Torrent {
 	 * @ORM\Column(name="seeds", type="integer", nullable=true)
 	 */
 	private $seeds;
-	
 
-	public function getTitle() {
+    /**
+     * @ORM\ManyToOne(targetEntity="AutomatedSearchConfig", fetch="LAZY", cascade={"merge"})
+     * @ORM\JoinColumn(name="automated_search_config_id", referencedColumnName="id")
+     */
+    private $automatedSearchConfig;
+
+    /**
+     * @return mixed
+     */
+    public function getAutomatedSearchConfig()
+    {
+        return $this->automatedSearchConfig;
+    }
+
+    /**
+     * @param mixed $automatedSearchConfig
+     */
+    public function setAutomatedSearchConfig($automatedSearchConfig)
+    {
+        $this->automatedSearchConfig = $automatedSearchConfig;
+    }
+
+
+    public function getTitle() {
 		return $this->title;
 	}
 	public function setTitle($title) {
@@ -264,18 +286,4 @@ class Torrent {
         $this->dateFinished = $dateFinished;
     }
 
-// 	public function cmpSeeds($torrentA, $torrentB) {
-   	 	
-// 		$seedsA = $torrentA->getSeeds();
-// 		$seedsB = "";
-		
-		
-//    	 	if ($torrentA->getSeeds() === $torrentA->getSeeds()) {
-//    	 		return 0;
-//    	 	}
-   	 	
-//    	 	return ($torrentA->getSeeds() < $torrentB->getSeeds()) ? -1 : 1; 	
-//    	 };
-	
-	
 }

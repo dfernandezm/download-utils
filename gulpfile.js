@@ -60,7 +60,7 @@ var devCompiler = webpack(myDevConfig);
 gulp.task("webpack-dev", function(callback) {
     // run webpack
     devCompiler.run(function(err, stats) {
-        if(err) throw new gutil.PluginError("webpack-dev", err);
+        if (err) return callback(err);
         gutil.log("[webpack-dev]", stats.toString({
             colors: true
         }));

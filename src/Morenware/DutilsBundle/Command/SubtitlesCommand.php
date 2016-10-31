@@ -31,7 +31,10 @@ class SubtitlesCommand extends Command {
 	/** @DI\Inject("kernel") */
 	public $kernel;
 
-	/** @DI\Inject("torrent.service") */
+	/**
+     * @DI\Inject("torrent.service")
+     * @var \Morenware\DutilsBundle\Service\TorrentService $torrentService;
+     */
 	public $torrentService;
 
 	/** @DI\Inject("settings.service") */
@@ -89,13 +92,13 @@ class SubtitlesCommand extends Command {
 			$pidFile = $mediacenterSettings->getProcessingTempPath() . "/" . self::PID_FILE_NAME;
 
 			// Check race condition, only one rename at a time
-			if (file_exists($pidFile)) {
+			if ($this->processManager->pidFileIsActive()) {
 				$logger->info("[SUBTITLES-STOP] There is already one subtitle fetcher process running -- exiting");
 				return;
 			}
 
 			// Write pid file
-            file_put_contents($pidFile, $pid);
+      file_put_contents($pidFile, $pid);
 
 			$terminated = false;
 
@@ -118,6 +121,8 @@ class SubtitlesCommand extends Command {
 				if (count($torrentsToFetchSubs) > 0) {
 
 					$guid = GuidGenerator::generate();
+
+                    $torrentsToFetchSubs = $this->getTorrentsForSubtitles($torrentsToFetchSubs);
 
 					// Perform substitutions in the template renamer script
 					list($scriptToExecute, $subtitlesLogFilePath) = $this->prepareSubtitleScriptToExecute($torrentsToFetchSubs, $mediacenterSettings, $pid . "_" . $guid);
@@ -200,9 +205,9 @@ class SubtitlesCommand extends Command {
 					$polls++;
 				}
 
-        if ($polls > 5) {
-            $this->processManager->killSubtitlesProcessIfRunning();
-        }
+				if ($polls > 5) {
+					$this->processManager->killSubtitlesProcessIfRunning();
+				}
 
 				if (file_exists($terminatedFile)) {
 					$this->renamerLogger->debug("[SUBTITLES] .terminated file found -- terminating execution");
@@ -237,7 +242,7 @@ class SubtitlesCommand extends Command {
 		$subtitlesLogFilePath = $mediacenterSettings->getProcessingTempPath() . "/subtitles_$processPid";
 		$scriptContent = str_replace("%LOG_LOCATION%", $subtitlesLogFilePath, $scriptContent);
 
-		$inputPathsAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToFetchSubs, $mediacenterSettings->getBaseLibraryPath(), CommandType::FETCH_SUBTITLES);
+		$inputPathsAsBashArray = $this->torrentService->getTorrentsPathsAsBashArray($torrentsToFetchSubs, CommandType::FETCH_SUBTITLES);
 		$scriptContent = str_replace("%INPUT_PATHS%", $inputPathsAsBashArray, $scriptContent);
 
 		# 2letter-3letter string, comma separated
@@ -257,4 +262,18 @@ class SubtitlesCommand extends Command {
 	public function printMemoryUsage(){
 		$this->renamerLogger->debug(sprintf('[SUBTITLES] Memory usage: (current) %dKB / (max) %dKB', round(memory_get_usage(true) / 1024), memory_get_peak_usage(true) / 1024));
 	}
+
+    private function getTorrentsForSubtitles($torrents) {
+
+        $forSubtitles = array();
+
+        foreach($torrents as $torrent) {
+
+            if ($this->torrentService->torrentRequiresSubtitles($torrent)) {
+                $forSubtitles[] = $torrent;
+            }
+        }
+
+        return $forSubtitles;
+    }
 }

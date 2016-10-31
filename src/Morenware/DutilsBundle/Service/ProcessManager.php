@@ -201,7 +201,7 @@ class ProcessManager {
 		$renamerPidFile = $processingPath . "/renamer.pid";
 		$renamerTerminatedFile = $processingPath . "/renamer.terminated";
 
-		if (file_exists($renamerPidFile)) {
+		if ($this->pidFileIsActive($renamerPidFile)) {
 			$this->logger->info("Flagging stop for renamer process");
 			fopen($renamerTerminatedFile,"w");
 		} else {
@@ -216,7 +216,7 @@ class ProcessManager {
 
 		$renamerPidFile = $processingPath . "/renamer.pid";
 
-		if (file_exists($renamerPidFile)) {
+		if ($this->pidFileIsActive($renamerPidFile)) {
 			$this->logger->info("[RENAMING] There is already one renamer process running");
 			return true;
 		} else {
@@ -229,7 +229,7 @@ class ProcessManager {
 		$processingPath = $mediacenterSettings->getProcessingTempPath();
 		$subtitleFetchPidFile = $processingPath . "/subtitles.pid";
 
-		if (file_exists($subtitleFetchPidFile)) {
+		if ($this->pidFileIsActive($subtitleFetchPidFile)) {
 			$this->renamerLogger->info("[SUBTITLES] There is already one subtitle fetcher process running");
 			return true;
 		} else {
@@ -240,18 +240,21 @@ class ProcessManager {
 	public function startRenamerWorker() {
 		if (!$this->isRenamerWorkerRunning()) {
 			$this->startSymfonyCommandAsynchronously(CommandType::RENAME_DOWNLOADS);
+		} else {
+			$this->renamerLogger->info("[RENAMING] PID file detected there is already one renamer process running");
 		}
 	}
-	
+
 	public function startDownloadsMonitoring() {
 		if (!$this->isMonitorDownloadsRunning()) {
 			return $this->startSymfonyCommandAsynchronously(CommandType::MONITOR_DOWNLOADS);
 		}
 	}
-	
+
 	public function startSubtitleFetchWorker() {
 		if (!$this->isSubtitleFetchWorkerRunning()) {
 			$this->startSymfonyCommandAsynchronously(CommandType::FETCH_SUBTITLES);
+			sleep(2);
 
             $times = 0;
             while(!$this->isSubtitleFetchWorkerRunning()) {
@@ -261,6 +264,7 @@ class ProcessManager {
 
                 if ($times > 10) {
                     $this->renamerLogger->error("[SUBTITLES] Timeout polling for subtitles process startup -- ERROR");
+										break;
                 }
 
             }
@@ -293,14 +297,28 @@ class ProcessManager {
 		}
 
 	}
-	
+
+	public function pidFileIsActive($pidFile) {
+		if (file_exists($pidFile)) {
+			$pid = trim(file_get_contents($pidFile));
+			if (file_exists("/proc/$pid")) {
+				$this->logger->warn("PID file is correct, there is a running process with PID $pid");
+				return true;
+			} else {
+				$this->logger->warn("Detected stale PID file $pidFile");
+				unlink($pidFile);
+				return false;
+			}
+		}
+	}
+
 	public function killSubtitlesProcessIfRunning() {
 		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
 		$processingPath = $mediacenterSettings->getProcessingTempPath();
-	
+
 		$renamerPidFile = $processingPath . "/subtitles.pid";
 		$renamerTerminatedFile = $processingPath . "/subtitles.terminated";
-	
+
 		if (file_exists($renamerPidFile)) {
 			$pid = trim(file_get_contents($renamerPidFile));
 			if (file_exists("/proc/$pid")) {
@@ -311,14 +329,14 @@ class ProcessManager {
 			}
 		}
 	}
-	
+
 	public function killDownloadsMonitoringProcessIfRunning() {
 		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();
 		$processingPath = $mediacenterSettings->getProcessingTempPath();
-	
+
 		$monitorPidFile = $processingPath . "/monitor.pid";
 		$monitorTerminatedFile = $processingPath . "/monitor.terminated";
-	
+
 		if (file_exists($monitorPidFile)) {
 			$pid = trim(file_get_contents($monitorPidFile));
 			if (file_exists("/proc/$pid")) {
@@ -329,8 +347,8 @@ class ProcessManager {
 			}
 		}
 	}
-	
-	
+
+
 
 	public function killWorkerProcessesIfRunning() {
 		$mediacenterSettings = $this->settingsService->getDefaultMediacenterSettings();

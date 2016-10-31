@@ -11,9 +11,10 @@ class AsyncService {
 	 * @DI\Inject("logger")
 	 */
 	public $logger;
-	
+
+	// @DI\Inject("leezy.pheanstalk")
 	/**
-	 * @DI\Inject("leezy.pheanstalk")
+	 *
 	 */
 	public $broker;
 	

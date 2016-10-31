@@ -3,7 +3,6 @@ namespace Morenware\DutilsBundle\Controller;
 
 use Morenware\DutilsBundle\Service\TorrentService;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Morenware\DutilsBundle\Entity\Instance;
 use Symfony\Component\HttpFoundation\Request;
 use JMS\DiExtraBundle\Annotation as DI;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
@@ -39,15 +38,15 @@ class TorrentApiController {
      */
 	public $torrentService;
 
-	
-	
+
 	/**
 	 * Fetch a torrent with the given hash or guid
-	 * 
+	 *
 	 * @Route("/torrents/{hashOrGuid}")
-     * @Method("GET")
-	 * 
-	 * @param unknown $hashOrGuid
+	 * @Method("GET")
+	 *
+	 * @param  $hashOrGuid
+	 * @return JsonResponse
 	 */
 	public function getTorrentAction($hashOrGuid) {
 		
@@ -84,11 +83,6 @@ class TorrentApiController {
 	public function startDownloadAction(Torrent $torrent) {
 		
 		try {
-			
-			$this->logger->debug("Torrent to download " . $torrent->getTorrentName() 
-								 . " has magnet: " 
-								 . $torrent->getMagnetLink() 
-					             . " == torrentFile: " . $torrent->getTorrentFileLink());
 			
 			if ($torrent->getMagnetLink() !== null || $torrent->getTorrentFileLink() !== null) {
 				$torrent = $this->torrentService->startTorrentDownload($torrent);

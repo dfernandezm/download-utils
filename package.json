@@ -15,11 +15,13 @@
     "coffee-script": "^1.9.1",
     "less": "1.6.x",
     "gulp": "~3.8.10",
+    "coffee-loader": "0.6.x",
     "gulp-coffee": ">=0.9",
     "gulp-util": ">=0.9",
     "gulp-coffeelint": ">=0.4.0",
     "coffeelint-stylish": ">=0.1.1",
-    "gulp-livereload": ">=3.4.0"
+    "gulp-livereload": ">=3.4.0",
+    "json-loader": "0.5.2"
   },
   "scripts": {
     "dev": "gulp dev",

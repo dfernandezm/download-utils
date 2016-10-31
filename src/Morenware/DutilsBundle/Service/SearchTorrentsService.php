@@ -2,16 +2,12 @@
 namespace  Morenware\DutilsBundle\Service;
 use JMS\DiExtraBundle\Annotation\Service;
 use JMS\DiExtraBundle\Annotation as DI;
-use Doctrine\Common\Persistence\ObjectManager;
+use Morenware\DutilsBundle\Entity\SearchWebsite;
+use Morenware\DutilsBundle\Entity\SearchWebsiteType;
 use Morenware\DutilsBundle\Entity\Torrent;
-use Morenware\DutilsBundle\Entity\TorrentOrigin;
-use Morenware\DutilsBundle\Entity\TorrentContentType;
-use Morenware\DutilsBundle\Entity\TorrentState;
-use Morenware\DutilsBundle\Entity\Feed;
+use Morenware\DutilsBundle\Entity\TorrentDateType;
 use Symfony\Component\DomCrawler\Crawler;
-use Morenware\DutilsBundle\Service\Search\SearchWebsite;
-use Morenware\DutilsBundle\Service\Search\SearchWebsiteType;
-use Morenware\DutilsBundle\Service\Search\TorrentDateType;
+
 
 /** @Service("search.service") */
 class SearchTorrentsService {
@@ -22,7 +18,12 @@ class SearchTorrentsService {
 	public $transmissionService;
 
 	/** @DI\Inject("torrent.service") */
-	public $torrentService;
+    public $torrentService;
+
+    /** @DI\Inject("searchwebsite.service")
+     *
+     */
+    public $searchWebsiteService;
 
 	/**
 	 * @DI\Inject("%torrents_temp_path%")
@@ -34,9 +35,7 @@ class SearchTorrentsService {
 	 */
 	public $searchCacheDir;
 
-
 	private $searchWebsites;
-
 
 	const MAIN_SECTION = "MAIN";
 	const DETAIL_SECTION = "DETAIL";
@@ -60,62 +59,91 @@ class SearchTorrentsService {
 	public function __construct($logger) {
 
 		$this->logger = $logger;
-		$this->initializeWebsites();
 	}
 
 	private function initializeWebsites() {
 		$websites = array();
 
-		// The Pirate Bay
-		$pirateBay = new SearchWebsite();
-		$pirateBay->setName("The Pirate Bay");
-		$pirateBay->setMainUrl("https://pirateproxy.sx");
-		$pirateBay->setSiteId(self::PIRATE_BAY_ID);
-		$pirateBay->setStructureType(SearchWebsiteType::LIST_TYPE);
-		$pirateBay->setTorrentDateType(TorrentDateType::DATE);
+        // The Pirate Bay
+        $pirateBay = $this->searchWebsiteService->findBySiteId(self::PIRATE_BAY_ID);
 
-		// 0/3/0 means order by uploaded date in The Pirate bay
-		$pirateBay->setSearchUrl("{baseUrl}/search/{searchQuery}/0/3/0");
-		$pirateBay->setTorrentMainResultsFilterString("#main-content #searchResult tr");
-		$pirateBay->setTorrentTitlesFilterString("td > div.detName > a");
-		$pirateBay->setTorrentMagnetLinksFilterString("td > a"); // The first link
-		$pirateBay->setTorrentFilesFilterString(null);
-		$pirateBay->setTorrentAttributesFilterString("td > .detDesc");
+        if ($pirateBay == null) {
+            $this->logger->info("[SEARCH-WEBSITES] Inserting default website The Pirate Bay");
 
-		// Kickass Torrents
-		$kickassTorrents = new SearchWebsite();
-		$kickassTorrents->setName("Kickass torrents");
-		$kickassTorrents->setMainUrl("http://kickass-torrents.nl");
-		$kickassTorrents->setSiteId(self::KICKASS_TORRENTS_ID);
-		$kickassTorrents->setStructureType(SearchWebsiteType::LIST_TYPE);
-		$kickassTorrents->setTorrentDateType(TorrentDateType::AGE);
+            $pirateBay = new SearchWebsite();
+            $pirateBay->setName("The Pirate Bay");
+            $pirateBay->setMainUrl("https://pirateproxy.sx");
+            $pirateBay->setSiteId(self::PIRATE_BAY_ID);
+            $pirateBay->setStructureType(SearchWebsiteType::LIST_TYPE);
+            $pirateBay->setTorrentDateType(TorrentDateType::DATE);
 
-		// Ordered by more recent ones
-		$kickassTorrents->setSearchUrl("{baseUrl}/usearch/{searchQuery}/?field=time_add&sorder=desc");
-		$kickassTorrents->setTorrentMainResultsFilterString("div table.data tr");
-		$kickassTorrents->setTorrentTitlesFilterString("td div.torrentname div.markeredBlock a.cellMainLink");
-		$kickassTorrents->setTorrentMagnetLinksFilterString("td div.iaconbox a.imagnet");
-		$kickassTorrents->setTorrentFilesFilterString(null);
-		$kickassTorrents->setTorrentAttributesFilterString("td.center");
+            // 0/3/0 means order by uploaded date in The Pirate bay
+            $pirateBay->setSearchUrl("{baseUrl}/search/{searchQuery}/0/3/0");
+            $pirateBay->setTorrentMainResultsFilterString("#main-content #searchResult tr");
+            $pirateBay->setTorrentTitlesFilterString("td > div.detName > a");
+            $pirateBay->setTorrentMagnetLinksFilterString("td > a"); // The first link
+            $pirateBay->setTorrentFilesFilterString(null);
+            $pirateBay->setTorrentAttributesFilterString("td > .detDesc");
+            $pirateBay->setMainLanguage("en");
 
-		// DivxTotal
-		$divxTotal = new SearchWebsite();
-		$divxTotal->setName("DivX Total");
-		$divxTotal->setMainUrl("http://www.divxtotal.com");
-		$divxTotal->setSiteId(self::DIVX_TOTAL_ID);
-		$divxTotal->setStructureType(SearchWebsiteType::MAIN_DETAIL);
-		$divxTotal->setTorrentDateType(TorrentDateType::DATE);
+            $this->searchWebsiteService->create($pirateBay);
 
-		// Ordered by more recent ones
-		$divxTotal->setSearchUrl("{baseUrl}/buscar.php?busqueda={searchQuery}&orden=1");
+        }
 
-		$divxTotal->setTorrentMainResultsFilterString("table.fichserietabla tr");
-		$divxTotal->setTorrentTitlesFilterString("td.capitulonombre a");
-		$divxTotal->setTorrentMagnetLinksFilterString(null);
-		$divxTotal->setTorrentFilesFilterString("td.capitulonombre a");
+        // Kickass Torrents
+        $kickassTorrents = $this->searchWebsiteService->findBySiteId(self::KICKASS_TORRENTS_ID);
 
-		// Only date in this page
-		$divxTotal->setTorrentAttributesFilterString("td.capitulofecha");
+		if ($kickassTorrents == null) {
+
+            $this->logger->info("[SEARCH-WEBSITES] Inserting default website Kickass Torrents");
+
+            $kickassTorrents = new SearchWebsite();
+            $kickassTorrents->setName("Kickass torrents");
+            $kickassTorrents->setMainUrl("http://kickass-torrents.nl");
+            $kickassTorrents->setSiteId(self::KICKASS_TORRENTS_ID);
+            $kickassTorrents->setStructureType(SearchWebsiteType::LIST_TYPE);
+            $kickassTorrents->setTorrentDateType(TorrentDateType::AGE);
+
+            // Ordered by more recent ones
+            $kickassTorrents->setSearchUrl("{baseUrl}/usearch/{searchQuery}/?field=time_add&sorder=desc");
+            $kickassTorrents->setTorrentMainResultsFilterString("div table.data tr");
+            $kickassTorrents->setTorrentTitlesFilterString("td div.torrentname div.markeredBlock a.cellMainLink");
+            $kickassTorrents->setTorrentMagnetLinksFilterString('td div.iaconbox a[title*="magnet"]');
+            $kickassTorrents->setTorrentFilesFilterString(null);
+            $kickassTorrents->setTorrentAttributesFilterString("td.center");
+            $kickassTorrents->setMainLanguage("en");
+
+            $this->searchWebsiteService->create($kickassTorrents);
+        }
+
+        // DivxTotal
+        $divxTotal = $this->searchWebsiteService->findBySiteId(self::DIVX_TOTAL_ID);
+
+		if ($divxTotal == null) {
+
+            $this->logger->info("[SEARCH-WEBSITES] Inserting default website Divx Total");
+
+            $divxTotal = new SearchWebsite();
+            $divxTotal->setName("DivX Total");
+            $divxTotal->setMainUrl("http://www.divxtotal.com");
+            $divxTotal->setSiteId(self::DIVX_TOTAL_ID);
+            $divxTotal->setStructureType(SearchWebsiteType::MAIN_DETAIL);
+            $divxTotal->setTorrentDateType(TorrentDateType::DATE);
+
+            // Ordered by more recent ones
+            $divxTotal->setSearchUrl("{baseUrl}/buscar.php?busqueda={searchQuery}&orden=1");
+
+            $divxTotal->setTorrentMainResultsFilterString("table.fichserietabla tr");
+            $divxTotal->setTorrentTitlesFilterString("td.capitulonombre a");
+            $divxTotal->setTorrentMagnetLinksFilterString(null);
+            $divxTotal->setTorrentFilesFilterString("td.capitulonombre a");
+
+            // Only date in this page
+            $divxTotal->setTorrentAttributesFilterString("td.capitulofecha");
+            $divxTotal->setMainLanguage("es");
+
+            $this->searchWebsiteService->create($divxTotal);
+        }
 
 		$websites["TPB"] = $pirateBay;
 		$websites["KT"] = $kickassTorrents;
@@ -124,6 +152,9 @@ class SearchTorrentsService {
 	}
 
 	public function searchTorrentsInWebsites($searchQuery, $websitesToSearch, $limit = 25, $offset = 0) {
+
+        // Initialize the websites in case they aren't yet
+        $this->initializeWebsites();
 
 		// We need to paginate results here as the search could retrieves the whole series in a single page
 		$torrents = array();
@@ -280,7 +311,7 @@ class SearchTorrentsService {
 		   $currentOffset = $j == 0 ? $j : $j - 1;
 		}
 
-		
+
 
 		$this->logger->info("[DIVX-TOTAL] Found " . count($torrents) . " torrents.");
 
@@ -321,7 +352,7 @@ class SearchTorrentsService {
 
      $torrents = array();
 
-     if ($total > 1) {
+     if ($total > 0) {
 
      	$this->logger->debug("[SEARCH-KICKASS] Found $total rows to filter as results");
 
@@ -340,10 +371,11 @@ class SearchTorrentsService {
      		$torrentAttributes = $subCrawler->filter($torrentAttributesFilterString)->extract("_text");
 
      		$count = count($titles);
+
      		if ($count > 0) {
      		 	$k = 0;
      			$torrentName = $titles[$k];
-     			$magnetLink = $magnetLinks[$k];
+                $magnetLink = $magnetLinks[$k];
      			$age = $torrentAttributes[2];
      			$date = $this->convertAgeToDate($age);
      			$seedsStr = $torrentAttributes[3];
@@ -467,21 +499,23 @@ class SearchTorrentsService {
 	   	$torrent->setState("NEW");
 
 	   	$hash = null;
-	   	
+
+	    $existingTorrent = null;
+
 	   	if ($magnetLink !== null) {
-	   		
+
 	   		$hashPattern = '/urn:btih:(.*)&dn=/';
 	   		$matches = array();
-	   		
+
 	   		if (preg_match($hashPattern, $magnetLink, $matches)) {
 	   			$hash = $matches[1];
 	   			$existingTorrent = $this->torrentService->findTorrentByHash($hash);
 	   		}
-	   			   		
+
 	   	} else {
-	   		$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($fileLink);		
+	   		$existingTorrent = $this->torrentService->findTorrentByMagnetOrFile($fileLink);
 	   	}
-	   
+
 	   	if ($existingTorrent !== null) {
 	   		$this->logger->warn("[SEARCH-TORRENTS-MATCH] Matched torrent $torrentName " . $existingTorrent->getHash());
 	   		return $existingTorrent;
@@ -495,7 +529,15 @@ class SearchTorrentsService {
 
 	   	if ($resultsPageHtml == null) {
 	   		$this->logger->debug("Cache miss, connecting to website and caching");
-	   		$resultsPageHtml = @file_get_contents($searchUrl);
+
+
+            $ctx = stream_context_create(array('http'=>
+                array(
+                    'timeout' => 15,  // 15 seconds of timeout
+                )
+            ));
+
+	   		$resultsPageHtml = @file_get_contents($searchUrl, false, $ctx);
 
 	   		if ($resultsPageHtml === FALSE) {
 	   			$this->logger->error("Cannot connect to site $siteId");
@@ -727,15 +769,15 @@ class SearchTorrentsService {
 
    private function sortByDate($torrents) {
    	$dateSort = function ($torrentA, $torrentB) {
-   		
+
    		if ($torrentB->getDate() == null) {
    			return -1;
-   		} 
-   		
+   		}
+
    		if ($torrentA->getDate() == null) {
    			return 1;
    		}
-   		
+
    		$timeA = $torrentA->getDate()->getTimestamp();
    		$timeB = $torrentB->getDate()->getTimestamp();
 

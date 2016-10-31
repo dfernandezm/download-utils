@@ -12,4 +12,16 @@ web/client/js/init.js.map
 /deploy/dist/
 build.properties
 /components/filebot/scripts/
+/components/filemanager/
 /.vagrant/
+/deploy/local/.vagrant/
+/deploy/local/*.box
+*.DS_Store
+deploy/local/.vagrant/
+deploy/local/*.box
+/.idea/
+.idea
+*.box
+/bower_components/
+
+*.log

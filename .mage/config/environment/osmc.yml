@@ -10,20 +10,30 @@ deployment:
     - app/logs/*
     - .settings
     - eclipse
+    - Vagrantfile
+    - gulpfile.js
+    - webpack.config.js
+    - README.md
+    - LICENSE.txt
+    - .vagrant
+    - .DS_Store
+    - .idea
+    - package.json
 releases:
   enabled: true
   max: 4
   symlink: current
   directory: releases
 hosts:
-  - 192.168.1.74
+  - 192.168.1.66
 tasks:
   pre-deploy:
     - checkout-custom-filebot-scripts
     - create-build-properties
     - build-client
   on-deploy:
-    - configure-web-layer: {environ: raspberry, serverName: media-stage.morenware.com, documentRoot: "/var/www/dutils/current/web"}
+    - configure-web-layer: {environ: raspberry, serverName: cosas.morenware.com, documentRoot: "/var/www/dutils/current/web"}
+    - create-cron-jobs
     - init-database
     - symfony2/doctrine-migrate
     - symfony2/cache-warmup
